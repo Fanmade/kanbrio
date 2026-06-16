@@ -43,11 +43,6 @@ Write tools require a token with the `write` ability.
 - Add user administration.
 - Maybe an admin permission?
 
-## Generate project short name
-If a project title is entered and there is no short name yet, the short name should be generated from the title.
-The short name should be generated from the project title by uppercasing the first three letters.  
-As soon as there are three or more words in the title, the short name should be generated from the first letters of the first three (or four) words.
-
 ## Add @mentions
 
 ## Add tagging tasks and stories in descriptions and comments
@@ -55,9 +50,3 @@ As soon as there are three or more words in the title, the short name should be 
 ## Improve visuals
 - The project looks a little bit ugly.
 - Maybe Claude Design can help?
-
-## Testing
-- Add browser tests.
-
-## Login
-- Change the tab index to not go up from the password field to the "forgot password" link, but down to the "remember me" checkbox and then to the login button.
