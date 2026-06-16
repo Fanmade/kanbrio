@@ -62,7 +62,7 @@ Requirements: PHP 8.4+, Composer, Node.js, and a Flux Pro license.
 # Install dependencies, create .env, generate the key, migrate, and build assets
 composer setup
 
-# Seed the database (creates the admin user and local demo data)
+# Seed the database (creates the configured admin and local demo data)
 php artisan migrate:fresh --seed
 
 # Run the full dev stack (server, queue, logs, Vite)
@@ -73,13 +73,18 @@ The app is served at <http://localhost:8000>.
 
 ### Default admin
 
-The seeder creates an administrator you can log in with:
+The seeder creates an administrator (with all permissions) only when you set
+both credentials in your `.env`:
 
-- **Email:** `admin@example.com`
-- **Password:** `password`
+```dotenv
+ADMIN_NAME="Admin"        # optional, defaults to "Admin"
+ADMIN_EMAIL=you@example.com
+ADMIN_PASSWORD=change-me
+```
 
 The admin can create projects and invite users. In `local`, the `DemoSeeder`
-also populates example projects, stories, and tasks.
+also populates example projects, stories, and tasks (and seeds its own demo
+admin if none is configured).
 
 ## Inviting users
 

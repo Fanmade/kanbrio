@@ -17,7 +17,7 @@ class DemoSeeder extends Seeder
      */
     public function run(): void
     {
-        $admin = User::query()->where('email', 'admin@example.com')->firstOrFail();
+        $admin = $this->resolveAdmin();
 
         $members = User::factory(3)->create();
         $everyone = $members->push($admin);
@@ -46,12 +46,30 @@ class DemoSeeder extends Seeder
     }
 
     /**
-     * Backdate a handful of "completed" activities so the dashboard chart
+     * Resolve the administrator to center the demo data around, falling back
+     * to a freshly created admin when none was configured via the environment.
+     */
+    private function resolveAdmin(): User
+    {
+        $email = config('admin.email');
+
+        if (filled($email) && ($admin = User::query()->where('email', $email)->first())) {
+            return $admin;
+        }
+
+        return User::factory()->admin()->create([
+            'name' => config('admin.name') ?: 'Admin',
+            'email' => $email ?: 'admin@example.com',
+        ]);
+    }
+
+    /**
+     * Backdate a handful of "completed" activities, so the dashboard chart
      * shows progress over the last two weeks.
      *
-     * @param  Collection<int, Task>  $tasks
+     * @param Collection<int, Task> $tasks
      */
-    private function seedCompletionActivity(User $admin, $tasks): void
+    private function seedCompletionActivity(User $admin, Collection $tasks): void
     {
         foreach (range(0, 13) as $offset) {
             $completions = rand(0, 3);
