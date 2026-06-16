@@ -19,7 +19,6 @@
 - Include search functionality.
 
 ## Stories and tasks
-- Add optional due dates to stories and tasks.
 - Add optional types to stories and tasks (e.g. bug, feature, etc.).
 
 ## Boards

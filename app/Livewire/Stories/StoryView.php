@@ -26,6 +26,8 @@ class StoryView extends Component
 
     public string $description = '';
 
+    public string $dueDate = '';
+
     public string $keywords = '';
 
     /** @var array<int, int> */
@@ -94,6 +96,7 @@ class StoryView extends Component
 
         $this->title = $this->story()->title;
         $this->description = (string) $this->story()->description;
+        $this->dueDate = $this->story()->due_date?->format('Y-m-d') ?? '';
         $this->keywords = $this->story()->keywordList();
         $this->editing = true;
     }
@@ -107,9 +110,14 @@ class StoryView extends Component
         $validated = $this->validate([
             'title' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string'],
+            'dueDate' => ['nullable', 'date'],
         ]);
 
-        $story->update($validated);
+        $story->update([
+            'title' => $validated['title'],
+            'description' => $validated['description'],
+            'due_date' => $validated['dueDate'] ?: null,
+        ]);
 
         $changes = $story->syncKeywords($this->keywords);
         if ($changes['attached'] !== [] || $changes['detached'] !== []) {

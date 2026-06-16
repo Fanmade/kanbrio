@@ -30,9 +30,11 @@ class CreateStoryTool extends Tool
             'short_name' => ['required', 'string'],
             'title' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string'],
+            'due_date' => ['nullable', 'date_format:Y-m-d'],
         ], [
             'short_name.required' => 'You must provide the project short_name (e.g. "PROJ").',
             'title.required' => 'You must provide a story title.',
+            'due_date' => 'The due date must be a calendar date in "YYYY-MM-DD" format.',
         ]);
 
         $project = ReferenceResolver::project($validated['short_name']);
@@ -44,6 +46,7 @@ class CreateStoryTool extends Tool
         $story = $project->stories()->create([
             'title' => $validated['title'],
             'description' => $validated['description'] ?? null,
+            'due_date' => $validated['due_date'] ?? null,
         ]);
 
         $story->setRelation('project', $project);
@@ -52,6 +55,7 @@ class CreateStoryTool extends Tool
             'reference' => $story->reference,
             'title' => $story->title,
             'description' => $story->description,
+            'due_date' => $story->due_date?->format('Y-m-d'),
         ]);
     }
 
@@ -73,6 +77,9 @@ class CreateStoryTool extends Tool
 
             'description' => $schema->string()
                 ->description('Optional story description.'),
+
+            'due_date' => $schema->string()
+                ->description('Optional due date in "YYYY-MM-DD" format.'),
         ];
     }
 
@@ -87,6 +94,7 @@ class CreateStoryTool extends Tool
             'reference' => $schema->string()->description('The created story reference, e.g. "PROJ1".')->required(),
             'title' => $schema->string()->description('The created story title.')->required(),
             'description' => $schema->string()->description('The story description; may be null.'),
+            'due_date' => $schema->string()->description('The story due date in "YYYY-MM-DD" format; may be null.'),
         ];
     }
 }

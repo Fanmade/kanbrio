@@ -38,10 +38,12 @@ class GetStoryTool extends Tool
             'reference' => $story->reference,
             'title' => $story->title,
             'description' => $story->description,
+            'due_date' => $story->due_date?->format('Y-m-d'),
             'project' => $story->project->short_name,
             'tasks' => $story->tasks->map(static fn (Task $task): array => [
                 'reference' => $task->reference,
                 'title' => $task->title,
+                'due_date' => $task->due_date?->format('Y-m-d'),
                 'status' => $task->status->value,
             ])->all(),
         ]);
@@ -72,10 +74,12 @@ class GetStoryTool extends Tool
             'reference' => $schema->string()->description('The story reference, e.g. "PROJ1".')->required(),
             'title' => $schema->string()->description('The story title.')->required(),
             'description' => $schema->string()->description('The story description; may be null.'),
+            'due_date' => $schema->string()->description('The story due date in "YYYY-MM-DD" format; may be null.'),
             'project' => $schema->string()->description('The short name of the project the story belongs to.')->required(),
             'tasks' => $schema->array()->items($schema->object([
                 'reference' => $schema->string()->description('The task reference, e.g. "PROJ1-3".')->required(),
                 'title' => $schema->string()->description('The task title.')->required(),
+                'due_date' => $schema->string()->description('The task due date in "YYYY-MM-DD" format; may be null.'),
                 'status' => $schema->string()->description('The task status.')->required(),
             ]))->description('The tasks in the story.')->required(),
         ];

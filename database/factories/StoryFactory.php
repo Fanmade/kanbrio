@@ -22,7 +22,16 @@ class StoryFactory extends Factory
             'project_id' => Project::factory(),
             'title' => fake()->sentence(4),
             'description' => fake()->paragraphs(2, true),
+            'due_date' => null,
             // story_number is assigned atomically by the HasScopedNumber trait.
         ];
+    }
+
+    /**
+     * Give the story a due date.
+     */
+    public function dueOn(string $date): static
+    {
+        return $this->state(fn () => ['due_date' => $date]);
     }
 }

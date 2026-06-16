@@ -24,6 +24,7 @@ class TaskFactory extends Factory
             'title' => fake()->sentence(4),
             'description' => fake()->paragraph(),
             'status' => fake()->randomElement(Status::cases()),
+            'due_date' => null,
             // task_number is assigned atomically by the HasScopedNumber trait.
         ];
     }
@@ -31,5 +32,13 @@ class TaskFactory extends Factory
     public function status(Status $status): static
     {
         return $this->state(fn () => ['status' => $status]);
+    }
+
+    /**
+     * Give the task a due date.
+     */
+    public function dueOn(string $date): static
+    {
+        return $this->state(fn () => ['due_date' => $date]);
     }
 }

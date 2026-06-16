@@ -25,6 +25,8 @@ class ProjectBoard extends Component
 
     public string $storyDescription = '';
 
+    public string $storyDueDate = '';
+
     // Create-task modal state.
     public bool $showTaskModal = false;
 
@@ -33,6 +35,8 @@ class ProjectBoard extends Component
     public string $taskTitle = '';
 
     public string $taskDescription = '';
+
+    public string $taskDueDate = '';
 
     public string $taskStatus = Status::Planned->value;
 
@@ -94,14 +98,16 @@ class ProjectBoard extends Component
         $validated = $this->validate([
             'storyTitle' => ['required', 'string', 'max:255'],
             'storyDescription' => ['nullable', 'string'],
+            'storyDueDate' => ['nullable', 'date'],
         ]);
 
         $this->project()->stories()->create([
             'title' => $validated['storyTitle'],
             'description' => $validated['storyDescription'] ?? null,
+            'due_date' => $validated['storyDueDate'] ?: null,
         ]);
 
-        $this->reset('storyTitle', 'storyDescription', 'showStoryModal');
+        $this->reset('storyTitle', 'storyDescription', 'storyDueDate', 'showStoryModal');
         unset($this->stories, $this->columns);
 
         Flux::toast(variant: 'success', text: __('Story created.'));
@@ -109,7 +115,7 @@ class ProjectBoard extends Component
 
     public function openTaskModal(?int $storyId = null, ?string $status = null): void
     {
-        $this->reset('taskTitle', 'taskDescription');
+        $this->reset('taskTitle', 'taskDescription', 'taskDueDate');
         $this->taskStoryId = $storyId ?? $this->stories()->first()?->id;
         $this->taskStatus = $status ?? Status::Planned->value;
         $this->showTaskModal = true;
@@ -123,6 +129,7 @@ class ProjectBoard extends Component
             'taskStoryId' => ['required', 'integer'],
             'taskTitle' => ['required', 'string', 'max:255'],
             'taskDescription' => ['nullable', 'string'],
+            'taskDueDate' => ['nullable', 'date'],
             'taskStatus' => ['required', 'string', 'in:'.collect(Status::cases())->map->value->implode(',')],
         ]);
 
@@ -131,11 +138,12 @@ class ProjectBoard extends Component
         $task = $story->tasks()->make([
             'title' => $validated['taskTitle'],
             'description' => $validated['taskDescription'] ?? null,
+            'due_date' => $validated['taskDueDate'] ?: null,
         ]);
         $task->status = Status::from($validated['taskStatus']);
         $task->save();
 
-        $this->reset('taskTitle', 'taskDescription', 'showTaskModal');
+        $this->reset('taskTitle', 'taskDescription', 'taskDueDate', 'showTaskModal');
         unset($this->stories, $this->columns);
 
         Flux::toast(variant: 'success', text: __('Task created.'));

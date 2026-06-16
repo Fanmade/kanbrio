@@ -30,8 +30,10 @@ class UpdateStoryTool extends Tool
             'reference' => ['required', 'string'],
             'title' => ['nullable', 'string', 'max:255'],
             'description' => ['nullable', 'string'],
+            'due_date' => ['nullable', 'date_format:Y-m-d'],
         ], [
             'reference.required' => 'You must provide the story reference (e.g. "PROJ1").',
+            'due_date' => 'The due date must be a calendar date in "YYYY-MM-DD" format. Pass null to clear it.',
         ]);
 
         $story = ReferenceResolver::story($validated['reference']);
@@ -50,8 +52,12 @@ class UpdateStoryTool extends Tool
             $updates['description'] = $validated['description'];
         }
 
+        if ($request->has('due_date')) {
+            $updates['due_date'] = $validated['due_date'];
+        }
+
         if ($updates === []) {
-            return Response::error('Provide a title and/or description to update.');
+            return Response::error('Provide a title, description and/or due date to update.');
         }
 
         $story->update($updates);
@@ -60,6 +66,7 @@ class UpdateStoryTool extends Tool
             'reference' => $story->reference,
             'title' => $story->title,
             'description' => $story->description,
+            'due_date' => $story->due_date?->format('Y-m-d'),
         ]);
     }
 
@@ -80,6 +87,9 @@ class UpdateStoryTool extends Tool
 
             'description' => $schema->string()
                 ->description('New description for the story.'),
+
+            'due_date' => $schema->string()
+                ->description('New due date in "YYYY-MM-DD" format. Pass null to clear it.'),
         ];
     }
 
@@ -94,6 +104,7 @@ class UpdateStoryTool extends Tool
             'reference' => $schema->string()->description('The story reference, e.g. "PROJ1".')->required(),
             'title' => $schema->string()->description('The updated story title.')->required(),
             'description' => $schema->string()->description('The updated story description; may be null.'),
+            'due_date' => $schema->string()->description('The story due date in "YYYY-MM-DD" format; may be null.'),
         ];
     }
 }

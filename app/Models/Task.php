@@ -28,12 +28,13 @@ use Illuminate\Support\Collection;
  * @property string $title
  * @property string|null $description
  * @property Status $status
+ * @property Carbon|null $due_date
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property-read string $reference
  * @property-read Story $story
  */
-#[Fillable(['title', 'description'])]
+#[Fillable(['title', 'description', 'due_date'])]
 class Task extends Model implements Subscribable
 {
     /** @use HasFactory<TaskFactory> */
@@ -48,6 +49,7 @@ class Task extends Model implements Subscribable
     {
         return [
             'status' => Status::class,
+            'due_date' => 'date',
         ];
     }
 

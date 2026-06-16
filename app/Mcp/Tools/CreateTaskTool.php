@@ -34,10 +34,12 @@ class CreateTaskTool extends Tool
             'reference' => ['required', 'string'],
             'title' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string'],
+            'due_date' => ['nullable', 'date_format:Y-m-d'],
             'status' => ['nullable', new Enum(Status::class)],
         ], [
             'reference.required' => 'You must provide the story reference to add the task to (e.g. "PROJ1").',
             'title.required' => 'You must provide a task title.',
+            'due_date' => 'The due date must be a calendar date in "YYYY-MM-DD" format.',
             'status' => 'The status must be one of "'.$statuses.'".',
         ]);
 
@@ -50,6 +52,7 @@ class CreateTaskTool extends Tool
         $task = $story->tasks()->make([
             'title' => $validated['title'],
             'description' => $validated['description'] ?? null,
+            'due_date' => $validated['due_date'] ?? null,
         ]);
         $task->status = isset($validated['status']) ? Status::from($validated['status']) : Status::Planned;
         $task->save();
@@ -60,6 +63,7 @@ class CreateTaskTool extends Tool
             'reference' => $task->reference,
             'title' => $task->title,
             'description' => $task->description,
+            'due_date' => $task->due_date?->format('Y-m-d'),
             'status' => $task->status->value,
         ]);
     }
@@ -83,6 +87,9 @@ class CreateTaskTool extends Tool
             'description' => $schema->string()
                 ->description('Optional task description.'),
 
+            'due_date' => $schema->string()
+                ->description('Optional due date in "YYYY-MM-DD" format.'),
+
             'status' => $schema->string()
                 ->enum(array_map(static fn (Status $status): string => $status->value, Status::cases()))
                 ->description('Optional initial status. Defaults to "Planned".'),
@@ -100,6 +107,7 @@ class CreateTaskTool extends Tool
             'reference' => $schema->string()->description('The created task reference, e.g. "PROJ1-3".')->required(),
             'title' => $schema->string()->description('The created task title.')->required(),
             'description' => $schema->string()->description('The task description; may be null.'),
+            'due_date' => $schema->string()->description('The task due date in "YYYY-MM-DD" format; may be null.'),
             'status' => $schema->string()->description('The task status.')->required(),
         ];
     }

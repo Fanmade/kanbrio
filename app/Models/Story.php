@@ -27,18 +27,29 @@ use Illuminate\Support\Collection;
  * @property int $story_number
  * @property string $title
  * @property string|null $description
+ * @property Carbon|null $due_date
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property-read string $reference
  * @property-read Project $project
  */
-#[Fillable(['title', 'description'])]
+#[Fillable(['title', 'description', 'due_date'])]
 class Story extends Model implements Subscribable
 {
     /** @use HasFactory<StoryFactory> */
     use HasAttachments, HasComments, HasFactory, HasKeywords, HasScopedNumber, HasSubscribers, LogsActivity;
 
     protected string $scopedNumberColumn = 'story_number';
+
+    /**
+     * @return array<string, string>
+     */
+    protected function casts(): array
+    {
+        return [
+            'due_date' => 'date',
+        ];
+    }
 
     /**
      * @return Builder<static>

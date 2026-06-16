@@ -29,6 +29,8 @@ class TaskView extends Component
 
     public string $description = '';
 
+    public string $dueDate = '';
+
     public string $keywords = '';
 
     public string $status = Status::Planned->value;
@@ -125,6 +127,7 @@ class TaskView extends Component
 
         $this->title = $task->title;
         $this->description = (string) $task->description;
+        $this->dueDate = $task->due_date?->format('Y-m-d') ?? '';
         $this->keywords = $task->keywordList();
         $this->editing = true;
     }
@@ -137,9 +140,14 @@ class TaskView extends Component
         $validated = $this->validate([
             'title' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string'],
+            'dueDate' => ['nullable', 'date'],
         ]);
 
-        $task->update($validated);
+        $task->update([
+            'title' => $validated['title'],
+            'description' => $validated['description'],
+            'due_date' => $validated['dueDate'] ?: null,
+        ]);
 
         $changes = $task->syncKeywords($this->keywords);
         if ($changes['attached'] !== [] || $changes['detached'] !== []) {

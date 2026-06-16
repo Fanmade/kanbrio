@@ -21,6 +21,7 @@ Built on Laravel with Livewire and Flux UI. English and German out of the box.
   whole section can be collapsed, remembered per user.
 - **Attachments** with inline image and PDF thumbnails.
 - **Keywords** on stories and tasks.
+- **Due dates** on stories and tasks, highlighted on the board when overdue.
 - **Notifications** — subscribe per project (assignment auto-subscribes you),
   manage everything from a dedicated page, unread badge in the header.
 - **Markdown** descriptions and comments.

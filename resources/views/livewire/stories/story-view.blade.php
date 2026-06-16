@@ -17,6 +17,7 @@
             <flux:input wire:model="title" :label="__('Title')" />
             <x-attachments.markdown-editor :label="__('Description')" />
             <x-attachments.upload-button />
+            <flux:input type="date" wire:model="dueDate" :label="__('Due date')" :description="__('Optional')" />
             <flux:input wire:model="keywords" :label="__('Keywords')" :description="__('Optional, comma-separated')" />
             <div class="flex gap-2">
                 <flux:button type="submit" variant="primary">{{ __('Save') }}</flux:button>
@@ -31,7 +32,10 @@
             @endcan
         </div>
 
-        <x-keyword-badges :keywords="$this->story->keywords" />
+        <div class="flex flex-wrap items-center gap-1">
+            <x-due-date-badge :date="$this->story->due_date" />
+            <x-keyword-badges :keywords="$this->story->keywords" />
+        </div>
 
         <x-attachments.dropzone :enabled="$canUpdate">
             <flux:card>

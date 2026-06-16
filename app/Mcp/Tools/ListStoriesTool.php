@@ -44,6 +44,7 @@ class ListStoriesTool extends Tool
                 'reference' => $story->reference,
                 'title' => $story->title,
                 'description' => $story->description,
+                'due_date' => $story->due_date?->format('Y-m-d'),
             ])->all(),
         ]);
     }
@@ -74,6 +75,7 @@ class ListStoriesTool extends Tool
                 'reference' => $schema->string()->description('The story reference, e.g. "PROJ1".')->required(),
                 'title' => $schema->string()->description('The story title.')->required(),
                 'description' => $schema->string()->description('The story description; may be null.'),
+                'due_date' => $schema->string()->description('The story due date in "YYYY-MM-DD" format; may be null.'),
             ]))->description('The stories in the project.')->required(),
         ];
     }

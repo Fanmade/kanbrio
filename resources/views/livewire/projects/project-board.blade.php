@@ -23,6 +23,7 @@
             <flux:heading size="lg">{{ __('New story') }}</flux:heading>
             <flux:input wire:model="storyTitle" :label="__('Title')" />
             <flux:textarea wire:model="storyDescription" :label="__('Description')" rows="3" />
+            <flux:input type="date" wire:model="storyDueDate" :label="__('Due date')" :description="__('Optional')" />
             <div class="flex justify-end gap-2">
                 <flux:modal.close>
                     <flux:button variant="ghost">{{ __('Cancel') }}</flux:button>
@@ -50,6 +51,7 @@
 
                 <flux:input wire:model="taskTitle" :label="__('Title')" />
                 <flux:textarea wire:model="taskDescription" :label="__('Description')" rows="3" />
+                <flux:input type="date" wire:model="taskDueDate" :label="__('Due date')" :description="__('Optional')" />
 
                 <flux:select wire:model="taskStatus" :label="__('Status')">
                     @foreach (\App\Enums\Status::columns() as $status)

@@ -49,7 +49,10 @@
                                     <p class="mt-0.5 text-sm font-medium text-zinc-800 dark:text-zinc-100">{{ $task->title }}</p>
                                 </a>
 
-                                <x-keyword-badges :keywords="$task->keywords" class="mt-2" />
+                                <div class="mt-2 flex flex-wrap items-center gap-1">
+                                    <x-due-date-badge :date="$task->due_date" />
+                                    <x-keyword-badges :keywords="$task->keywords" />
+                                </div>
 
                                 <div class="mt-2 flex items-center justify-between">
                                     @if ($task->assignees->isNotEmpty())

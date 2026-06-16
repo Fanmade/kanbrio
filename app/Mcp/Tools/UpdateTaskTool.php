@@ -34,9 +34,11 @@ class UpdateTaskTool extends Tool
             'reference' => ['required', 'string'],
             'title' => ['nullable', 'string', 'max:255'],
             'description' => ['nullable', 'string'],
+            'due_date' => ['nullable', 'date_format:Y-m-d'],
             'status' => ['nullable', new Enum(Status::class)],
         ], [
             'reference.required' => 'You must provide the task reference (e.g. "PROJ1-3").',
+            'due_date' => 'The due date must be a calendar date in "YYYY-MM-DD" format. Pass null to clear it.',
             'status' => 'The status must be one of "'.$statuses.'".',
         ]);
 
@@ -54,6 +56,10 @@ class UpdateTaskTool extends Tool
 
         if ($request->has('description')) {
             $updates['description'] = $validated['description'];
+        }
+
+        if ($request->has('due_date')) {
+            $updates['due_date'] = $validated['due_date'];
         }
 
         $statusProvided = $request->has('status') && isset($validated['status']);
@@ -82,6 +88,7 @@ class UpdateTaskTool extends Tool
             'reference' => $task->reference,
             'title' => $task->title,
             'description' => $task->description,
+            'due_date' => $task->due_date?->format('Y-m-d'),
             'status' => $task->status->value,
         ]);
     }
@@ -104,6 +111,9 @@ class UpdateTaskTool extends Tool
             'description' => $schema->string()
                 ->description('New description for the task.'),
 
+            'due_date' => $schema->string()
+                ->description('New due date in "YYYY-MM-DD" format. Pass null to clear it.'),
+
             'status' => $schema->string()
                 ->enum(array_map(static fn (Status $status): string => $status->value, Status::cases()))
                 ->description('New status for the task.'),
@@ -121,6 +131,7 @@ class UpdateTaskTool extends Tool
             'reference' => $schema->string()->description('The task reference, e.g. "PROJ1-3".')->required(),
             'title' => $schema->string()->description('The updated task title.')->required(),
             'description' => $schema->string()->description('The updated task description; may be null.'),
+            'due_date' => $schema->string()->description('The task due date in "YYYY-MM-DD" format; may be null.'),
             'status' => $schema->string()->description('The task status.')->required(),
         ];
     }
