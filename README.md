@@ -102,6 +102,15 @@ composer types:check # Larastan / PHPStan
 php artisan test     # Pest
 ```
 
+Browser tests (Pest 4 + Playwright) live in `tests/Browser` and run as a
+separate suite so the default gate stays fast and Playwright-free:
+
+```bash
+composer test:browser
+```
+
+They require the Playwright Chromium binary (`npx playwright install chromium`).
+
 ## Project layout
 
 - `app/Livewire/` — class-based Livewire components (board, projects, stories,

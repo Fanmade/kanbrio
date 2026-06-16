@@ -37,7 +37,7 @@
         <form wire:submit="createProject" class="flex flex-col gap-4">
             <flux:heading size="lg">{{ __('New project') }}</flux:heading>
 
-            <flux:input wire:model.blur.live="title" :label="__('Title')" />
+            <flux:input wire:model.blur.live="title" :label="__('Title')" data-test="project-title" />
 
             <flux:input
                 wire:model="short_name"
@@ -45,6 +45,7 @@
                 :description="__('2-4 letters, e.g. ABC')"
                 maxlength="4"
                 class="uppercase"
+                data-test="project-short-name"
             />
 
             <flux:textarea wire:model="description" :label="__('Description')" rows="3" />
