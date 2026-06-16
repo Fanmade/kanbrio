@@ -6,6 +6,7 @@ enum Permission: string
 {
     case CreateProjects = 'create-projects';
     case InviteUsers = 'invite-users';
+    case CreateApiTokens = 'create-api-tokens';
 
     /**
      * The human-readable, translatable label for the permission.
@@ -15,6 +16,7 @@ enum Permission: string
         return match ($this) {
             self::CreateProjects => __('Create projects'),
             self::InviteUsers => __('Invite users'),
+            self::CreateApiTokens => __('Create API tokens'),
         };
     }
 }

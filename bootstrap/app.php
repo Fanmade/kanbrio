@@ -19,6 +19,6 @@ return Application::configure(basePath: dirname(__DIR__))
     })
     ->withExceptions(static function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(
-            static fn (Request $request) => $request->is('api/*'),
+            static fn (Request $request) => $request->is('api/*', 'mcp'),
         );
     })->create();

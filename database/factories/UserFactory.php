@@ -54,11 +54,19 @@ class UserFactory extends Factory
     }
 
     /**
+     * Indicate that the user can create API tokens.
+     */
+    public function canCreateApiTokens(): static
+    {
+        return $this->withPermission(Permission::CreateApiTokens);
+    }
+
+    /**
      * Indicate that the user is an administrator with all capabilities.
      */
     public function admin(): static
     {
-        return $this->withPermission(Permission::CreateProjects, Permission::InviteUsers);
+        return $this->withPermission(Permission::CreateProjects, Permission::InviteUsers, Permission::CreateApiTokens);
     }
 
     /**
