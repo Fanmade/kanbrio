@@ -50,3 +50,9 @@ Write tools require a token with the `write` ability.
 ## Improve visuals
 - The project looks a little bit ugly.
 - Maybe Claude Design can help?
+
+## Add proper documentation
+
+## Improve user assignment UI
+- Add a "assign to me" button.
+- Currently, there is a full-width multi-select for selecting users. To see who is assigned to a task, you have to open the multi-select. Consider using a more compact and intuitive UI for displaying assigned users.
