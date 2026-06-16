@@ -1,12 +1,18 @@
 {
     "mcpServers": {
         "laravel-boost": {
-            "command": "wsl.exe",
+            "command": "php",
             "args": [
-                "/usr/bin/php8.5",
-                "/home/fanmade/projects/kanbrio/artisan",
+                "artisan",
                 "boost:mcp"
             ]
+        },
+        "kanbrio": {
+            "type": "http",
+            "url": "http://localhost:8000/mcp",
+            "headers": {
+                "Authorization": "Bearer ${KANBRIO_MCP_TOKEN}"
+            }
         }
     }
 }
