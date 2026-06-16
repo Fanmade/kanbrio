@@ -77,5 +77,5 @@
 
     <livewire:comments.comment-list :commentable="$this->task" :wire:key="'comments-task-'.$this->task->id" />
 
-    <x-activity-feed :activities="$this->task->activities" />
+    <livewire:activity.activity-feed :subject="$this->task" :wire:key="'activity-task-'.$this->task->id" />
 </div>

@@ -80,5 +80,5 @@
 
     <livewire:comments.comment-list :commentable="$this->story" :wire:key="'comments-story-'.$this->story->id" />
 
-    <x-activity-feed :activities="$this->story->activities" />
+    <livewire:activity.activity-feed :subject="$this->story" :wire:key="'activity-story-'.$this->story->id" />
 </div>
