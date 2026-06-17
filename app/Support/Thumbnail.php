@@ -124,15 +124,13 @@ class Thumbnail
             ]);
 
             if (! $result->successful()) {
-                dump($result->errorOutput());
                 return null;
             }
 
             $png = (string) file_get_contents($output);
 
             return $png === '' ? null : $png;
-        } catch (Throwable $e) {
-            dump($e->getMessage());
+        } catch (Throwable) {
             return null;
         } finally {
             @unlink($input);
