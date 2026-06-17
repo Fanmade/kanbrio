@@ -4,12 +4,14 @@ namespace App\Livewire\Stories;
 
 use App\Concerns\HandlesAttachments;
 use App\Enums\Priority;
+use App\Enums\Status;
 use App\Models\Project;
 use App\Models\Story;
 use App\Models\Task;
 use App\Models\User;
 use Flux\Flux;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Validation\Rules\Enum;
 use Livewire\Attributes\Computed;
 use Livewire\Component;
 
@@ -36,6 +38,19 @@ class StoryView extends Component
     /** @var array<int, int> */
     public array $assigneeIds = [];
 
+    // Create-task modal state.
+    public bool $showTaskModal = false;
+
+    public string $taskTitle = '';
+
+    public string $taskDescription = '';
+
+    public string $taskDueDate = '';
+
+    public int $taskPriority;
+
+    public string $taskStatus = Status::Planned->value;
+
     public function mount(string $short_name, int $story_number): void
     {
         $this->shortName = $short_name;
@@ -45,6 +60,7 @@ class StoryView extends Component
         $this->authorize('view', $story);
 
         $this->priority = $story->priority->value;
+        $this->taskPriority = $story->priority->value;
         $this->assigneeIds = $story->assignees->pluck('id')->all();
     }
 
@@ -152,5 +168,43 @@ class StoryView extends Component
         unset($this->story);
 
         Flux::toast(variant: 'success', text: __('Story updated.'));
+    }
+
+    public function openTaskModal(): void
+    {
+        $this->authorize('update', $this->story());
+
+        $this->reset('taskTitle', 'taskDescription', 'taskDueDate');
+        $this->taskStatus = Status::Planned->value;
+        $this->taskPriority = $this->story()->priority->value;
+        $this->showTaskModal = true;
+    }
+
+    public function createTask(): void
+    {
+        $story = $this->story();
+        $this->authorize('update', $story);
+
+        $validated = $this->validate([
+            'taskTitle' => ['required', 'string', 'max:255'],
+            'taskDescription' => ['nullable', 'string'],
+            'taskPriority' => ['required', new Enum(Priority::class)],
+            'taskDueDate' => ['nullable', 'date'],
+            'taskStatus' => ['required', 'string', 'in:'.collect(Status::cases())->map->value->implode(',')],
+        ]);
+
+        $task = $story->tasks()->make([
+            'title' => $validated['taskTitle'],
+            'description' => $validated['taskDescription'] ?? null,
+            'due_date' => $validated['taskDueDate'] ?: null,
+        ]);
+        $task->priority = Priority::from($validated['taskPriority']);
+        $task->status = Status::from($validated['taskStatus']);
+        $task->save();
+
+        $this->reset('taskTitle', 'taskDescription', 'taskDueDate', 'showTaskModal');
+        unset($this->story);
+
+        Flux::toast(variant: 'success', text: __('Task created.'));
     }
 }

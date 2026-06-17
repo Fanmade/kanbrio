@@ -72,7 +72,12 @@
     @endcan
 
     <div>
-        <flux:heading size="sm" class="mb-2">{{ __('Tasks') }}</flux:heading>
+        <div class="mb-2 flex items-center justify-between">
+            <flux:heading size="sm">{{ __('Tasks') }}</flux:heading>
+            @can('update', $this->story)
+                <flux:button size="sm" icon="plus" wire:click="openTaskModal" data-test="new-task">{{ __('New task') }}</flux:button>
+            @endcan
+        </div>
         <flux:card class="flex flex-col divide-y divide-zinc-100 p-0 dark:divide-zinc-700">
             @forelse ($this->story->tasks as $task)
                 <a
@@ -95,4 +100,30 @@
     <livewire:comments.comment-list :commentable="$this->story" :wire:key="'comments-story-'.$this->story->id" />
 
     <livewire:activity.activity-feed :subject="$this->story" :wire:key="'activity-story-'.$this->story->id" />
+
+    {{-- Create task --}}
+    <flux:modal wire:model="showTaskModal" class="md:w-96">
+        <form wire:submit="createTask" class="flex flex-col gap-4">
+            <flux:heading size="lg">{{ __('New task') }}</flux:heading>
+            <flux:input wire:model="taskTitle" :label="__('Title')" data-test="task-title" />
+            <flux:textarea wire:model="taskDescription" :label="__('Description')" rows="3" />
+            <flux:select wire:model="taskPriority" :label="__('Priority')" data-test="task-priority">
+                @foreach (\App\Enums\Priority::ordered() as $priority)
+                    <flux:select.option :value="$priority->value">{{ $priority->label() }}</flux:select.option>
+                @endforeach
+            </flux:select>
+            <flux:input type="date" wire:model="taskDueDate" :label="__('Due date')" :description="__('Optional')" />
+            <flux:select wire:model="taskStatus" :label="__('Status')">
+                @foreach (\App\Enums\Status::columns() as $status)
+                    <flux:select.option :value="$status->value">{{ $status->label() }}</flux:select.option>
+                @endforeach
+            </flux:select>
+            <div class="flex justify-end gap-2">
+                <flux:modal.close>
+                    <flux:button variant="ghost">{{ __('Cancel') }}</flux:button>
+                </flux:modal.close>
+                <flux:button type="submit" variant="primary">{{ __('Create') }}</flux:button>
+            </div>
+        </form>
+    </flux:modal>
 </div>
