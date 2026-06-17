@@ -16,13 +16,6 @@ class CommandPalette extends Component
     public string $query = '';
 
     /**
-     * Whether the palette is open. Gates rendering of the result list so a closed
-     * palette never leaves its (hidden) items in the DOM, where they would shadow
-     * matching page elements for accessibility tools and text-based selectors.
-     */
-    public bool $open = false;
-
-    /**
      * Entity matches (projects, stories, tasks) for the current query.
      *
      * @return Collection<int, SearchResult>
@@ -83,10 +76,11 @@ class CommandPalette extends Component
     }
 
     /**
-     * Reset the palette when it closes so the next open starts empty.
+     * Clear the query when the palette closes, so the next open starts on the
+     * quick-actions view rather than a stale search.
      */
     public function close(): void
     {
-        $this->reset('open', 'query');
+        $this->reset('query');
     }
 }
