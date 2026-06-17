@@ -48,6 +48,7 @@ class ListTasksTool extends Tool
             ->map(static fn (Task $task): array => [
                 'reference' => $task->reference,
                 'title' => $task->title,
+                'priority' => $task->priority->name,
                 'due_date' => $task->due_date?->format('Y-m-d'),
                 'status' => $task->status->value,
             ])
@@ -87,6 +88,7 @@ class ListTasksTool extends Tool
             'tasks' => $schema->array()->items($schema->object([
                 'reference' => $schema->string()->description('The task reference, e.g. "PROJ1-3".')->required(),
                 'title' => $schema->string()->description('The task title.')->required(),
+                'priority' => $schema->string()->description('The task priority: Lowest, Low, Medium, High or Highest.')->required(),
                 'due_date' => $schema->string()->description('The task due date in "YYYY-MM-DD" format; may be null.'),
                 'status' => $schema->string()->description('The task status.')->required(),
             ]))->description('The tasks in the story.')->required(),

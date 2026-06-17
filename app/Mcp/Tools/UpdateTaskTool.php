@@ -2,11 +2,13 @@
 
 namespace App\Mcp\Tools;
 
+use App\Enums\Priority;
 use App\Enums\Status;
 use App\Mcp\Concerns\RequiresWriteAccess;
 use App\Support\ReferenceResolver;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Illuminate\JsonSchema\Types\Type;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Enum;
 use Laravel\Mcp\Request;
 use Laravel\Mcp\Response;
@@ -14,7 +16,7 @@ use Laravel\Mcp\ResponseFactory;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Tool;
 
-#[Description('Updates a task\'s title, description and/or status, identified by its reference (e.g. "PROJ1-3"). Status changes are recorded in the activity log. Requires a write-access token; the user must be a member of the project.')]
+#[Description('Updates a task\'s title, description, priority and/or status, identified by its reference (e.g. "PROJ1-3"). Status changes are recorded in the activity log. Requires a write-access token; the user must be a member of the project.')]
 class UpdateTaskTool extends Tool
 {
     use RequiresWriteAccess;
@@ -34,10 +36,12 @@ class UpdateTaskTool extends Tool
             'reference' => ['required', 'string'],
             'title' => ['nullable', 'string', 'max:255'],
             'description' => ['nullable', 'string'],
+            'priority' => ['nullable', Rule::in(Priority::names())],
             'due_date' => ['nullable', 'date_format:Y-m-d'],
             'status' => ['nullable', new Enum(Status::class)],
         ], [
             'reference.required' => 'You must provide the task reference (e.g. "PROJ1-3").',
+            'priority' => 'The priority must be one of: '.implode(', ', Priority::names()).'.',
             'due_date' => 'The due date must be a calendar date in "YYYY-MM-DD" format. Pass null to clear it.',
             'status' => 'The status must be one of "'.$statuses.'".',
         ]);
@@ -58,6 +62,10 @@ class UpdateTaskTool extends Tool
             $updates['description'] = $validated['description'];
         }
 
+        if ($request->has('priority') && isset($validated['priority'])) {
+            $updates['priority'] = Priority::fromName($validated['priority']);
+        }
+
         if ($request->has('due_date')) {
             $updates['due_date'] = $validated['due_date'];
         }
@@ -65,7 +73,7 @@ class UpdateTaskTool extends Tool
         $statusProvided = $request->has('status') && isset($validated['status']);
 
         if ($updates === [] && ! $statusProvided) {
-            return Response::error('Provide a title, description and/or status to update.');
+            return Response::error('Provide a title, description, priority, due date and/or status to update.');
         }
 
         if ($updates !== []) {
@@ -88,6 +96,7 @@ class UpdateTaskTool extends Tool
             'reference' => $task->reference,
             'title' => $task->title,
             'description' => $task->description,
+            'priority' => $task->priority->name,
             'due_date' => $task->due_date?->format('Y-m-d'),
             'status' => $task->status->value,
         ]);
@@ -111,6 +120,10 @@ class UpdateTaskTool extends Tool
             'description' => $schema->string()
                 ->description('New description for the task.'),
 
+            'priority' => $schema->string()
+                ->enum(Priority::names())
+                ->description('New priority: one of Lowest, Low, Medium, High, Highest.'),
+
             'due_date' => $schema->string()
                 ->description('New due date in "YYYY-MM-DD" format. Pass null to clear it.'),
 
@@ -131,6 +144,7 @@ class UpdateTaskTool extends Tool
             'reference' => $schema->string()->description('The task reference, e.g. "PROJ1-3".')->required(),
             'title' => $schema->string()->description('The updated task title.')->required(),
             'description' => $schema->string()->description('The updated task description; may be null.'),
+            'priority' => $schema->string()->description('The task priority: Lowest, Low, Medium, High or Highest.')->required(),
             'due_date' => $schema->string()->description('The task due date in "YYYY-MM-DD" format; may be null.'),
             'status' => $schema->string()->description('The task status.')->required(),
         ];

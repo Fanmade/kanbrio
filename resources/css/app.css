@@ -29,6 +29,24 @@
     --color-accent-content: var(--color-neutral-800);
     --color-accent-foreground: var(--color-white);
 }
+@theme {
+    /* Brand blue — the single accent */
+    --color-brand-50:  #EAF2FF;
+    --color-brand-100: #D3E4FF;
+    --color-brand-200: #A8C8FF;
+    --color-brand-300: #7AABFF;
+    --color-brand-400: #4A8BFF;
+    --color-brand-500: #0D6FFA;
+    --color-brand-600: #0B59CC;
+    --color-brand-700: #0B4A9E;
+    --color-brand-800: #0C3E7F;
+    --color-brand-900: #0B305F;
+    --color-brand-950: #08203F;
+
+    /* Teal — secondary / “done” (full scale on the sheet) */
+    --color-teal-500: #0AC1B4;
+    --color-teal-600: #079E94;
+}
 
 @layer theme {
     .dark {
@@ -37,7 +55,31 @@
         --color-accent-foreground: var(--color-neutral-800);
     }
 }
-
+@layer theme {
+    :root, :host {
+        --color-accent:            var(--color-brand-600);
+        --color-accent-content:    var(--color-brand-700);
+        --color-accent-foreground: var(--color-white);
+    }
+    .dark {
+        --color-accent:            var(--color-brand-500);
+        --color-accent-content:    var(--color-brand-400);
+        --color-accent-foreground: var(--color-white);
+    }
+}
+@theme {
+    --color-zinc-50:  #F8FAFC;
+    --color-zinc-100: #F1F5F9;
+    --color-zinc-200: #E2E8F0;
+    --color-zinc-300: #CBD5E1;
+    --color-zinc-400: #94A3B8;
+    --color-zinc-500: #64748B;
+    --color-zinc-600: #475569;
+    --color-zinc-700: #334155;
+    --color-zinc-800: #1E293B;
+    --color-zinc-900: #0F172A;
+    --color-zinc-950: #020617;
+}
 @layer base {
 
     *,

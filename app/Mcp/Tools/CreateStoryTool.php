@@ -2,10 +2,12 @@
 
 namespace App\Mcp\Tools;
 
+use App\Enums\Priority;
 use App\Mcp\Concerns\RequiresWriteAccess;
 use App\Support\ReferenceResolver;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Illuminate\JsonSchema\Types\Type;
+use Illuminate\Validation\Rule;
 use Laravel\Mcp\Request;
 use Laravel\Mcp\Response;
 use Laravel\Mcp\ResponseFactory;
@@ -30,10 +32,12 @@ class CreateStoryTool extends Tool
             'short_name' => ['required', 'string'],
             'title' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string'],
+            'priority' => ['nullable', Rule::in(Priority::names())],
             'due_date' => ['nullable', 'date_format:Y-m-d'],
         ], [
             'short_name.required' => 'You must provide the project short_name (e.g. "PROJ").',
             'title.required' => 'You must provide a story title.',
+            'priority' => 'The priority must be one of: '.implode(', ', Priority::names()).'.',
             'due_date' => 'The due date must be a calendar date in "YYYY-MM-DD" format.',
         ]);
 
@@ -46,6 +50,9 @@ class CreateStoryTool extends Tool
         $story = $project->stories()->create([
             'title' => $validated['title'],
             'description' => $validated['description'] ?? null,
+            'priority' => isset($validated['priority'])
+                ? Priority::fromName($validated['priority'])
+                : Priority::default(),
             'due_date' => $validated['due_date'] ?? null,
         ]);
 
@@ -55,6 +62,7 @@ class CreateStoryTool extends Tool
             'reference' => $story->reference,
             'title' => $story->title,
             'description' => $story->description,
+            'priority' => $story->priority->name,
             'due_date' => $story->due_date?->format('Y-m-d'),
         ]);
     }
@@ -78,6 +86,10 @@ class CreateStoryTool extends Tool
             'description' => $schema->string()
                 ->description('Optional story description.'),
 
+            'priority' => $schema->string()
+                ->enum(Priority::names())
+                ->description('Optional priority: one of Lowest, Low, Medium, High, Highest. Defaults to Medium.'),
+
             'due_date' => $schema->string()
                 ->description('Optional due date in "YYYY-MM-DD" format.'),
         ];
@@ -94,6 +106,7 @@ class CreateStoryTool extends Tool
             'reference' => $schema->string()->description('The created story reference, e.g. "PROJ1".')->required(),
             'title' => $schema->string()->description('The created story title.')->required(),
             'description' => $schema->string()->description('The story description; may be null.'),
+            'priority' => $schema->string()->description('The story priority: Lowest, Low, Medium, High or Highest.')->required(),
             'due_date' => $schema->string()->description('The story due date in "YYYY-MM-DD" format; may be null.'),
         ];
     }

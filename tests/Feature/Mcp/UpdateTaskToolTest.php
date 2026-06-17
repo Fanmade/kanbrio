@@ -1,5 +1,6 @@
 <?php
 
+use App\Enums\Priority;
 use App\Enums\Status;
 use App\Mcp\Servers\KanbrioServer;
 use App\Mcp\Tools\UpdateTaskTool;
@@ -52,6 +53,23 @@ it('changes the task status and records the activity', function () {
         'field' => 'status',
         'new_value' => Status::Done->value,
     ]);
+});
+
+it('updates a task priority', function () {
+    $user = User::factory()->create();
+    Sanctum::actingAs($user, ['read', 'write']);
+    $project = Project::factory()->withMembers([$user])->create(['short_name' => 'ABC']);
+    $story = Story::factory()->for($project)->create();
+    $task = Task::factory()->for($story)->priority(Priority::Medium)->create();
+
+    KanbrioServer::tool(UpdateTaskTool::class, [
+        'reference' => $task->reference,
+        'priority' => 'Lowest',
+    ])
+        ->assertOk()
+        ->assertSee('Lowest');
+
+    assertDatabaseHas('tasks', ['id' => $task->id, 'priority' => Priority::Lowest->value]);
 });
 
 it('errors when no fields are provided to update', function () {

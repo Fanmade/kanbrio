@@ -2,6 +2,7 @@
 
 namespace Database\Factories;
 
+use App\Enums\Priority;
 use App\Enums\Status;
 use App\Models\Story;
 use App\Models\Task;
@@ -32,6 +33,11 @@ class TaskFactory extends Factory
     public function status(Status $status): static
     {
         return $this->state(fn () => ['status' => $status]);
+    }
+
+    public function priority(Priority $priority): static
+    {
+        return $this->state(fn () => ['priority' => $priority]);
     }
 
     /**

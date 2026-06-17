@@ -9,6 +9,7 @@ use App\Concerns\HasScopedNumber;
 use App\Concerns\HasSubscribers;
 use App\Concerns\LogsActivity;
 use App\Contracts\Subscribable;
+use App\Enums\Priority;
 use Database\Factories\StoryFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Builder;
@@ -27,13 +28,14 @@ use Illuminate\Support\Collection;
  * @property int $story_number
  * @property string $title
  * @property string|null $description
+ * @property Priority $priority
  * @property Carbon|null $due_date
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property-read string $reference
  * @property-read Project $project
  */
-#[Fillable(['title', 'description', 'due_date'])]
+#[Fillable(['title', 'description', 'priority', 'due_date'])]
 class Story extends Model implements Subscribable
 {
     /** @use HasFactory<StoryFactory> */
@@ -47,6 +49,7 @@ class Story extends Model implements Subscribable
     protected function casts(): array
     {
         return [
+            'priority' => Priority::class,
             'due_date' => 'date',
         ];
     }

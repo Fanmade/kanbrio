@@ -25,6 +25,8 @@ Built on Laravel with Livewire and Flux UI. English and German out of the box.
   image and PDF thumbnails. Files above the size limit are rejected with a
   clear message.
 - **Keywords** on stories and tasks.
+- **Priorities** — five levels (Lowest, Low, Medium, High, Highest; Medium is the
+  default) on stories and tasks, with new tasks inheriting their story's priority.
 - **Due dates** on stories and tasks, highlighted on the board when overdue.
 - **Notifications** — subscribe per project (assignment auto-subscribes you),
   manage everything from a dedicated page, unread badge in the header.

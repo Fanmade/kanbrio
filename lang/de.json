@@ -49,6 +49,12 @@
     "In progress": "In Bearbeitung",
     "Done": "Erledigt",
 
+    "Lowest": "Niedrigste",
+    "Low": "Niedrig",
+    "Medium": "Mittel",
+    "High": "Hoch",
+    "Highest": "Höchste",
+
     "Assignees": "Zuständige",
     "Assign members": "Mitglieder zuweisen",
     "Keywords": "Schlagwörter",

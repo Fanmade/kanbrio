@@ -1,5 +1,6 @@
 <?php
 
+use App\Enums\Priority;
 use App\Enums\Status;
 use App\Mcp\Servers\KanbrioServer;
 use App\Mcp\Tools\CreateTaskTool;
@@ -43,6 +44,50 @@ it('defaults a new task to Planned status', function () {
     ])->assertOk();
 
     assertDatabaseHas('tasks', ['story_id' => $story->id, 'status' => Status::Planned->value]);
+});
+
+it('creates a task with an explicit priority', function () {
+    $user = User::factory()->create();
+    Sanctum::actingAs($user, ['read', 'write']);
+    $project = Project::factory()->withMembers([$user])->create(['short_name' => 'ABC']);
+    $story = Story::factory()->for($project)->priority(Priority::Low)->create();
+
+    KanbrioServer::tool(CreateTaskTool::class, [
+        'reference' => $story->reference,
+        'title' => 'A task',
+        'priority' => 'High',
+    ])
+        ->assertOk()
+        ->assertSee('High');
+
+    assertDatabaseHas('tasks', ['story_id' => $story->id, 'priority' => Priority::High->value]);
+});
+
+it('inherits the story priority when none is given via MCP', function () {
+    $user = User::factory()->create();
+    Sanctum::actingAs($user, ['read', 'write']);
+    $project = Project::factory()->withMembers([$user])->create(['short_name' => 'ABC']);
+    $story = Story::factory()->for($project)->priority(Priority::Highest)->create();
+
+    KanbrioServer::tool(CreateTaskTool::class, [
+        'reference' => $story->reference,
+        'title' => 'A task',
+    ])->assertOk();
+
+    assertDatabaseHas('tasks', ['story_id' => $story->id, 'priority' => Priority::Highest->value]);
+});
+
+it('rejects an unknown priority', function () {
+    $user = User::factory()->create();
+    Sanctum::actingAs($user, ['read', 'write']);
+    $project = Project::factory()->withMembers([$user])->create(['short_name' => 'ABC']);
+    $story = Story::factory()->for($project)->create();
+
+    KanbrioServer::tool(CreateTaskTool::class, [
+        'reference' => $story->reference,
+        'title' => 'A task',
+        'priority' => 'Urgent',
+    ])->assertHasErrors();
 });
 
 it('denies creating a task in a story the user cannot access', function () {

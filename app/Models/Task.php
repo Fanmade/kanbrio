@@ -9,6 +9,7 @@ use App\Concerns\HasScopedNumber;
 use App\Concerns\HasSubscribers;
 use App\Concerns\LogsActivity;
 use App\Contracts\Subscribable;
+use App\Enums\Priority;
 use App\Enums\Status;
 use Database\Factories\TaskFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -27,6 +28,7 @@ use Illuminate\Support\Collection;
  * @property int $task_number
  * @property string $title
  * @property string|null $description
+ * @property Priority $priority
  * @property Status $status
  * @property Carbon|null $due_date
  * @property Carbon|null $created_at
@@ -34,7 +36,7 @@ use Illuminate\Support\Collection;
  * @property-read string $reference
  * @property-read Story $story
  */
-#[Fillable(['title', 'description', 'due_date'])]
+#[Fillable(['title', 'description', 'priority', 'due_date'])]
 class Task extends Model implements Subscribable
 {
     /** @use HasFactory<TaskFactory> */
@@ -43,11 +45,24 @@ class Task extends Model implements Subscribable
     protected string $scopedNumberColumn = 'task_number';
 
     /**
+     * A new task inherits its parent story's priority unless one is set explicitly.
+     */
+    protected static function booted(): void
+    {
+        static::creating(static function (Task $task): void {
+            if ($task->priority === null) {
+                $task->priority = $task->story?->priority ?? Priority::default();
+            }
+        });
+    }
+
+    /**
      * @return array<string, string>
      */
     protected function casts(): array
     {
         return [
+            'priority' => Priority::class,
             'status' => Status::class,
             'due_date' => 'date',
         ];
