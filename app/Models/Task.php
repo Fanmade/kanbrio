@@ -50,7 +50,10 @@ class Task extends Model implements Subscribable
     protected static function booted(): void
     {
         static::creating(static function (Task $task): void {
+            // priority is non-null once settled, but unset before save — guard the transient null.
+            // @phpstan-ignore identical.alwaysFalse
             if ($task->priority === null) {
+                // @phpstan-ignore nullCoalesce.expr
                 $task->priority = $task->story?->priority ?? Priority::default();
             }
         });
