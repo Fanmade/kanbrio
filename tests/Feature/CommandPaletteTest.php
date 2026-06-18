@@ -39,6 +39,15 @@ it('finds a project by its short name', function () {
         ->assertSee('Acme Board');
 });
 
+it('matches titles case-insensitively regardless of query case', function () {
+    Livewire::actingAs($this->user)
+        ->test(CommandPalette::class)
+        ->set('query', 'deploy') // stored as "Deploy fix"
+        ->assertSee('Deploy fix')
+        ->set('query', 'ACME') // stored as "Acme Board"
+        ->assertSee('Acme Board');
+});
+
 it('finds a task by its keyword', function () {
     $this->task->syncKeywords('urgent');
 

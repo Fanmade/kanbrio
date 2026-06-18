@@ -89,12 +89,13 @@ class GlobalSearch
     private function projects(array $projectIds, string $query): Collection
     {
         $like = $this->like($query);
+        $operator = $this->likeOperator();
 
         return Project::query()
             ->whereIn('id', $projectIds)
             ->where(static fn (Builder $builder): Builder => $builder
-                ->where('title', 'like', $like)
-                ->orWhere('short_name', 'like', $like))
+                ->where('title', $operator, $like)
+                ->orWhere('short_name', $operator, $like))
             ->orderBy('title')
             ->limit(self::LIMIT)
             ->get()
@@ -108,13 +109,14 @@ class GlobalSearch
     private function stories(array $projectIds, string $query): Collection
     {
         $like = $this->like($query);
+        $operator = $this->likeOperator();
 
         return Story::query()
             ->with('project')
             ->whereIn('project_id', $projectIds)
             ->where(static fn (Builder $builder): Builder => $builder
-                ->where('title', 'like', $like)
-                ->orWhereHas('keywords', static fn (Builder $keyword): Builder => $keyword->where('name', 'like', $like)))
+                ->where('title', $operator, $like)
+                ->orWhereHas('keywords', static fn (Builder $keyword): Builder => $keyword->where('name', $operator, $like)))
             ->limit(self::LIMIT)
             ->get()
             ->map(fn (Story $story): SearchResult => $this->toResult($story));
@@ -127,13 +129,14 @@ class GlobalSearch
     private function tasks(array $projectIds, string $query): Collection
     {
         $like = $this->like($query);
+        $operator = $this->likeOperator();
 
         return Task::query()
             ->with('story.project')
             ->whereHas('story', static fn (Builder $story): Builder => $story->whereIn('project_id', $projectIds))
             ->where(static fn (Builder $builder): Builder => $builder
-                ->where('title', 'like', $like)
-                ->orWhereHas('keywords', static fn (Builder $keyword): Builder => $keyword->where('name', 'like', $like)))
+                ->where('title', $operator, $like)
+                ->orWhereHas('keywords', static fn (Builder $keyword): Builder => $keyword->where('name', $operator, $like)))
             ->limit(self::LIMIT)
             ->get()
             ->map(fn (Task $task): SearchResult => $this->toResult($task));
@@ -185,5 +188,29 @@ class GlobalSearch
     private function like(string $query): string
     {
         return '%'.str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], $query).'%';
+    }
+
+    /**
+     * The case-insensitive LIKE operator for the active connection.
+     */
+    private function likeOperator(): string
+    {
+        return self::likeOperatorFor((new Project)->getConnection()->getDriverName());
+    }
+
+    /**
+     * Map a connection driver to a case-insensitive LIKE operator.
+     *
+     * `ilike` is a PostgreSQL-only extension, not standard SQL. PostgreSQL is also
+     * the odd one out in treating `like` as case-sensitive under its default
+     * collation, so it needs `ilike`. Everywhere else plain `like` already folds
+     * case — SQLite for ASCII, MySQL/MariaDB/SQL Server via their default
+     * case-insensitive collations — and none of them understand the `ilike`
+     * keyword. Without this the palette silently misses matches whose case differs
+     * from the stored title on production PostgreSQL.
+     */
+    public static function likeOperatorFor(string $driver): string
+    {
+        return $driver === 'pgsql' ? 'ilike' : 'like';
     }
 }
