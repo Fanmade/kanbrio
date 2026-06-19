@@ -9,7 +9,6 @@ use App\Models\User;
 use Flux\Flux;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Mail;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Title;
@@ -94,7 +93,7 @@ class UserManagement extends Component
         // Prevent an administrator from revoking their own management access and
         // locking themselves out of this area.
         if ($granted && $case === Permission::ManageUsers && $user->is(Auth::user())) {
-            Flux::toast(variant: 'warning', text: __('You cannot revoke your own user management permission.'));
+            Flux::toast(text: __('You cannot revoke your own user management permission.'), variant: 'warning');
 
             return;
         }
@@ -112,7 +111,7 @@ class UserManagement extends Component
 
         unset($this->users);
 
-        Flux::toast(variant: 'success', text: __('Permissions updated.'));
+        Flux::toast(text: __('Permissions updated.'), variant: 'success');
     }
 
     /**
@@ -128,7 +127,7 @@ class UserManagement extends Component
 
         unset($this->users);
 
-        Flux::toast(variant: 'success', text: __('Account deactivated.'));
+        Flux::toast(text: __('Account deactivated.'), variant: 'success');
     }
 
     /**
@@ -144,7 +143,7 @@ class UserManagement extends Component
 
         unset($this->users);
 
-        Flux::toast(variant: 'success', text: __('Account reactivated.'));
+        Flux::toast(text: __('Account reactivated.'), variant: 'success');
     }
 
     /**
@@ -198,7 +197,7 @@ class UserManagement extends Component
 
         unset($this->users);
 
-        Flux::toast(variant: 'success', text: __('Account removed.'));
+        Flux::toast(text: __('Account removed.'), variant: 'success');
     }
 
     /**
@@ -206,7 +205,7 @@ class UserManagement extends Component
      */
     public function resendInvitation(int $invitationId): void
     {
-        Gate::authorize('manage-users');
+        $this->authorize('manage-users');
 
         $invitation = Invitation::query()->valid()->findOrFail($invitationId);
 
@@ -216,7 +215,7 @@ class UserManagement extends Component
 
         unset($this->pendingInvitations);
 
-        Flux::toast(variant: 'success', text: __('Invitation resent.'));
+        Flux::toast(text: __('Invitation resent.'), variant: 'success');
     }
 
     /**
@@ -224,12 +223,12 @@ class UserManagement extends Component
      */
     public function revokeInvitation(int $invitationId): void
     {
-        Gate::authorize('manage-users');
+        $this->authorize('manage-users');
 
         Invitation::query()->valid()->findOrFail($invitationId)->delete();
 
         unset($this->pendingInvitations);
 
-        Flux::toast(variant: 'success', text: __('Invitation revoked.'));
+        Flux::toast(text: __('Invitation revoked.'), variant: 'success');
     }
 }
