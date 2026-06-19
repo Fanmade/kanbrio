@@ -26,6 +26,8 @@
                         'assignee_changed' => __('updated the assignees'),
                         'dependency_changed' => __('updated the dependencies'),
                         'tags_changed' => __('updated the tags'),
+                        'archived' => __('archived this'),
+                        'unarchived' => __('restored this from the archive'),
                         'commented' => __('added a comment'),
                         default => $activity->action,
                     };

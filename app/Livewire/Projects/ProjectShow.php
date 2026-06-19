@@ -32,6 +32,8 @@ class ProjectShow extends Component
 
     public bool $showStoryModal = false;
 
+    public bool $showArchived = false;
+
     public string $storyTitle = '';
 
     public string $storyDescription = '';
@@ -61,7 +63,7 @@ class ProjectShow extends Component
     }
 
     /**
-     * Stories that have at least one unfinished task.
+     * Active (non-archived) stories that have at least one unfinished task.
      *
      * @return Collection<int, Story>
      */
@@ -69,12 +71,13 @@ class ProjectShow extends Component
     public function openStories(): Collection
     {
         return $this->project()->stories
+            ->reject(static fn (Story $story) => $story->isArchived())
             ->filter(static fn (Story $story) => $story->tasks->contains(static fn ($task) => $task->status !== Status::Done))
             ->values();
     }
 
     /**
-     * Stories whose tasks are all done.
+     * Active (non-archived) stories whose tasks are all done.
      *
      * @return Collection<int, Story>
      */
@@ -82,9 +85,55 @@ class ProjectShow extends Component
     public function completedStories(): Collection
     {
         return $this->project()->stories
+            ->reject(static fn (Story $story) => $story->isArchived())
             ->filter(static fn (Story $story) => $story->tasks->isNotEmpty()
                 && $story->tasks->every(static fn ($task) => $task->status === Status::Done))
             ->values();
+    }
+
+    /**
+     * Archived stories, surfaced only behind the "Show archived" toggle.
+     *
+     * @return Collection<int, Story>
+     */
+    #[Computed]
+    public function archivedStories(): Collection
+    {
+        return $this->project()->stories
+            ->filter(static fn (Story $story) => $story->isArchived())
+            ->values();
+    }
+
+    /**
+     * Archive a story, removing it from the project overview and the board.
+     */
+    public function archiveStory(int $storyId): void
+    {
+        $story = $this->project()->stories()->whereKey($storyId)->firstOrFail();
+
+        $this->authorize('update', $story);
+
+        $story->archive();
+
+        unset($this->project);
+
+        Flux::toast(variant: 'success', text: __('Story archived.'));
+    }
+
+    /**
+     * Restore a story from the archive.
+     */
+    public function unarchiveStory(int $storyId): void
+    {
+        $story = $this->project()->stories()->whereKey($storyId)->firstOrFail();
+
+        $this->authorize('update', $story);
+
+        $story->unarchive();
+
+        unset($this->project);
+
+        Flux::toast(variant: 'success', text: __('Story restored.'));
     }
 
     public function edit(): void

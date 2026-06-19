@@ -16,8 +16,15 @@ class Board extends Component
     use BuildsKanbanColumns;
 
     /**
+     * Whether archived tasks (and tasks of archived stories) are shown.
+     */
+    public bool $showArchived = false;
+
+    /**
      * Board columns for every task in the projects the user can access,
-     * ordered by project, story, then task so groups stay adjacent.
+     * ordered by project, story, then task so groups stay adjacent. Archived
+     * tasks, and tasks belonging to an archived story, are hidden unless
+     * {@see $showArchived} is on.
      *
      * @return array<int, array<string, mixed>>
      */
@@ -25,9 +32,17 @@ class Board extends Component
     public function columns(): array
     {
         $projectIds = Auth::user()->projects()->pluck('projects.id');
+        $showArchived = $this->showArchived;
 
         $tasks = Task::query()
-            ->whereHas('story', static fn ($query) => $query->whereIn('project_id', $projectIds))
+            ->whereHas('story', static function ($query) use ($projectIds, $showArchived): void {
+                $query->whereIn('project_id', $projectIds);
+
+                if (! $showArchived) {
+                    $query->whereNull('archived_at');
+                }
+            })
+            ->when(! $showArchived, static fn ($query) => $query->whereNull('archived_at'))
             ->with(['story.project', 'assignees', 'tags'])
             ->get()
             ->sortBy(static fn (Task $task) => sprintf(
@@ -80,6 +95,30 @@ class Board extends Component
 
         $this->applyTaskReorder($task, $status, $beforeId, $afterId);
 
-        unset($this->columns);
+        unset($this->columns, $this->blockedTaskIds);
+    }
+
+    /**
+     * Archive a task, removing it from the board.
+     */
+    public function archiveTask(int $taskId): void
+    {
+        $task = Task::with('story.project')->findOrFail($taskId);
+
+        $this->applyTaskArchive($task);
+
+        unset($this->columns, $this->blockedTaskIds);
+    }
+
+    /**
+     * Restore a task from the archive.
+     */
+    public function unarchiveTask(int $taskId): void
+    {
+        $task = Task::with('story.project')->findOrFail($taskId);
+
+        $this->applyTaskUnarchive($task);
+
+        unset($this->columns, $this->blockedTaskIds);
     }
 }

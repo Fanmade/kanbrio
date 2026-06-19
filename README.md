@@ -28,6 +28,10 @@ Built on Laravel with Livewire and Flux UI. English and German out of the box.
   you arrange them in within each column.
 - **Story completion progress bars** on the project overview, in the story
   header, and on story search results — each based on the share of its tasks done.
+- **Archiving** — archive finished tasks or whole stories to clear them from the
+  board and project overview without deleting them. Archived items are hidden by
+  default and revealed with a "Show archived" toggle; archiving keeps a task's
+  status and is fully reversible.
 - **Dashboard** — per-status task counts, a 14-day completion chart, and a "My
   tasks" list for picking the next thing to work on: your in-progress and to-do
   tasks plus unassigned to-do tasks across your projects (work assigned to others

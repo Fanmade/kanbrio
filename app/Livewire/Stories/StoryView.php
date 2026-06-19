@@ -185,6 +185,38 @@ class StoryView extends Component
         Flux::toast(variant: 'success', text: __('Story updated.'));
     }
 
+    /**
+     * Archive this story, hiding it (and its tasks) from the board and overview.
+     */
+    public function archiveStory(): void
+    {
+        $story = $this->story();
+
+        $this->authorize('update', $story);
+
+        $story->archive();
+
+        unset($this->story);
+
+        Flux::toast(variant: 'success', text: __('Story archived.'));
+    }
+
+    /**
+     * Restore this story from the archive.
+     */
+    public function unarchiveStory(): void
+    {
+        $story = $this->story();
+
+        $this->authorize('update', $story);
+
+        $story->unarchive();
+
+        unset($this->story);
+
+        Flux::toast(variant: 'success', text: __('Story restored.'));
+    }
+
     public function openTaskModal(): void
     {
         $this->authorize('update', $this->story());

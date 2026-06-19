@@ -28,6 +28,8 @@ class ProjectBoard extends Component
     // Board filters.
     public ?int $priorityFilter = null;
 
+    public bool $showArchived = false;
+
     // Create-story modal state.
     public bool $showStoryModal = false;
 
@@ -83,7 +85,8 @@ class ProjectBoard extends Component
     }
 
     /**
-     * The board columns for this project's tasks.
+     * The board columns for this project's tasks. Archived tasks, and tasks of
+     * an archived story, are hidden unless {@see $showArchived} is on.
      *
      * @return array<int, array<string, mixed>>
      */
@@ -97,6 +100,10 @@ class ProjectBoard extends Component
 
             return $story->tasks->each(static fn (Task $task) => $task->setRelation('story', $story));
         });
+
+        if (! $this->showArchived) {
+            $tasks = $tasks->reject(static fn (Task $task): bool => $task->isArchived() || $task->story->isArchived());
+        }
 
         if ($this->priorityFilter) {
             $tasks = $tasks->filter(fn (Task $task): bool => $task->priority->value === $this->priorityFilter);
@@ -138,7 +145,27 @@ class ProjectBoard extends Component
     {
         $this->applyTaskReorder($this->resolveProjectTask($taskId), $status, $beforeId, $afterId);
 
-        unset($this->stories, $this->columns);
+        unset($this->stories, $this->columns, $this->blockedTaskIds);
+    }
+
+    /**
+     * Archive a task, removing it from this project's board.
+     */
+    public function archiveTask(int $taskId): void
+    {
+        $this->applyTaskArchive($this->resolveProjectTask($taskId));
+
+        unset($this->stories, $this->columns, $this->blockedTaskIds);
+    }
+
+    /**
+     * Restore a task from the archive.
+     */
+    public function unarchiveTask(int $taskId): void
+    {
+        $this->applyTaskUnarchive($this->resolveProjectTask($taskId));
+
+        unset($this->stories, $this->columns, $this->blockedTaskIds);
     }
 
     public function createStory(): void
@@ -169,7 +196,7 @@ class ProjectBoard extends Component
     public function openTaskModal(?int $storyId = null, ?string $status = null): void
     {
         $this->reset('taskTitle', 'taskDescription', 'taskDueDate');
-        $this->taskStoryId = $storyId ?? $this->stories()->first()?->id;
+        $this->taskStoryId = $storyId ?? $this->stories()->reject(static fn (Story $story): bool => $story->isArchived())->first()?->id;
         $this->taskStatus = $status ?? Status::Planned->value;
         $this->taskPriority = $this->priorityForStory($this->taskStoryId);
         $this->showTaskModal = true;

@@ -26,9 +26,21 @@
         </form>
     @else
         <div class="flex items-start justify-between gap-4">
-            <flux:heading size="xl">{{ $this->story->title }}</flux:heading>
+            <div class="flex items-center gap-2">
+                <flux:heading size="xl">{{ $this->story->title }}</flux:heading>
+                @if ($this->story->isArchived())
+                    <flux:badge size="sm" color="zinc" icon="archive-box" data-test="story-archived-badge">{{ __('Archived') }}</flux:badge>
+                @endif
+            </div>
             @can('update', $this->story)
-                <flux:button size="sm" icon="pencil-square" wire:click="edit">{{ __('Edit') }}</flux:button>
+                <div class="flex shrink-0 items-center gap-2">
+                    @if ($this->story->isArchived())
+                        <flux:button size="sm" icon="arrow-up-tray" wire:click="unarchiveStory" data-test="unarchive-story">{{ __('Unarchive') }}</flux:button>
+                    @else
+                        <flux:button size="sm" icon="archive-box" wire:click="archiveStory" data-test="archive-story">{{ __('Archive') }}</flux:button>
+                    @endif
+                    <flux:button size="sm" icon="pencil-square" wire:click="edit">{{ __('Edit') }}</flux:button>
+                </div>
             @endcan
         </div>
 
@@ -90,11 +102,16 @@
                     wire:navigate
                     class="flex items-center justify-between gap-2 px-4 py-3 hover:bg-zinc-50 dark:hover:bg-zinc-800"
                 >
-                    <div class="flex items-center gap-2">
+                    <div class="flex min-w-0 items-center gap-2">
                         <flux:text size="xs" class="font-mono text-zinc-400">{{ $task->reference }}</flux:text>
-                        <span class="text-sm">{{ $task->title }}</span>
+                        <span @class(['text-sm', 'truncate text-zinc-400' => $task->isArchived()])>{{ $task->title }}</span>
                     </div>
-                    <flux:badge size="sm" :color="$task->status->color()" :icon="$task->status->icon()">{{ $task->status->label() }}</flux:badge>
+                    <div class="flex shrink-0 items-center gap-1">
+                        @if ($task->isArchived())
+                            <flux:badge size="sm" color="zinc" icon="archive-box">{{ __('Archived') }}</flux:badge>
+                        @endif
+                        <flux:badge size="sm" :color="$task->status->color()" :icon="$task->status->icon()">{{ $task->status->label() }}</flux:badge>
+                    </div>
                 </a>
             @empty
                 <flux:text size="sm" class="px-4 py-3 text-zinc-400">{{ __('No tasks yet.') }}</flux:text>

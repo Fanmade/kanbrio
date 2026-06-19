@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Concerns\Archivable;
 use App\Concerns\HasAttachments;
 use App\Concerns\HasComments;
 use App\Concerns\HasDependencies;
@@ -34,6 +35,7 @@ use Illuminate\Support\Collection;
  * @property Status $status
  * @property float $position
  * @property Carbon|null $due_date
+ * @property Carbon|null $archived_at
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property-read string $reference
@@ -77,6 +79,7 @@ class Task extends Model implements Dependable, Subscribable
             'status' => Status::class,
             'position' => 'double',
             'due_date' => 'date',
+            'archived_at' => 'datetime',
         ];
     }
 

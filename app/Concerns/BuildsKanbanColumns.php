@@ -59,6 +59,26 @@ trait BuildsKanbanColumns
     }
 
     /**
+     * Authorize and archive a task, hiding it from the board.
+     */
+    protected function applyTaskArchive(Task $task): void
+    {
+        $this->authorize('updateStatus', $task);
+
+        $task->archive();
+    }
+
+    /**
+     * Authorize and restore a task from the archive.
+     */
+    protected function applyTaskUnarchive(Task $task): void
+    {
+        $this->authorize('updateStatus', $task);
+
+        $task->unarchive();
+    }
+
+    /**
      * Authorize and apply a drag-and-drop placement: move the task to the given
      * status (if changed, recording the activity) and reposition it between its
      * new neighbours — the cards immediately above ($beforeId) and below

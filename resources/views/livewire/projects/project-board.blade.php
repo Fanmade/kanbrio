@@ -9,6 +9,7 @@
             <flux:heading size="xl">{{ __('Board') }}</flux:heading>
 
             <div class="flex items-center gap-2">
+                <flux:switch wire:model.live="showArchived" :label="__('Show archived')" align="left" data-test="show-archived" />
                 <flux:select wire:model.live="priorityFilter" size="sm" class="max-w-44" data-test="priority-filter">
                     <flux:select.option value="">{{ __('All priorities') }}</flux:select.option>
                     @foreach (\App\Enums\Priority::ordered() as $priority)
@@ -55,7 +56,7 @@
                 </flux:callout>
             @else
                 <flux:select wire:model.live="taskStoryId" :label="__('Story')">
-                    @foreach ($this->stories as $story)
+                    @foreach ($this->stories->reject(fn ($story) => $story->isArchived()) as $story)
                         <flux:select.option :value="$story->id">{{ $story->reference }} · {{ $story->title }}</flux:select.option>
                     @endforeach
                 </flux:select>

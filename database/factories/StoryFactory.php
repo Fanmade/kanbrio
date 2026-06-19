@@ -35,6 +35,14 @@ class StoryFactory extends Factory
     }
 
     /**
+     * Mark the story as archived.
+     */
+    public function archived(): static
+    {
+        return $this->state(fn () => ['archived_at' => now()]);
+    }
+
+    /**
      * Give the story a due date.
      */
     public function dueOn(string $date): static

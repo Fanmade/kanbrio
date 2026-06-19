@@ -55,13 +55,18 @@
     <div class="flex flex-col gap-3">
         <div class="flex items-center justify-between">
             <flux:heading size="lg">{{ __('Open stories') }}</flux:heading>
-            @can('update', $this->project)
-                <flux:button size="sm" icon="plus" wire:click="$set('showStoryModal', true)">{{ __('New story') }}</flux:button>
-            @endcan
+            <div class="flex items-center gap-3">
+                @if ($this->archivedStories->isNotEmpty())
+                    <flux:switch wire:model.live="showArchived" :label="__('Show archived')" align="left" data-test="show-archived" />
+                @endif
+                @can('update', $this->project)
+                    <flux:button size="sm" icon="plus" wire:click="$set('showStoryModal', true)">{{ __('New story') }}</flux:button>
+                @endcan
+            </div>
         </div>
 
         @forelse ($this->openStories as $story)
-            <x-story-card :story="$story" :short-name="$this->project->short_name" :hide-finished-tasks="true" />
+            <x-story-card :story="$story" :short-name="$this->project->short_name" :hide-finished-tasks="true" :can-archive="$canUpdate" />
         @empty
             <flux:card>
                 <flux:text class="text-zinc-400">{{ __('No open stories. Create one to get started.') }}</flux:text>
@@ -75,7 +80,18 @@
             <flux:heading size="lg" class="text-zinc-500 dark:text-zinc-400">{{ __('Completed stories') }}</flux:heading>
 
             @foreach ($this->completedStories as $story)
-                <x-story-card :story="$story" :short-name="$this->project->short_name" />
+                <x-story-card :story="$story" :short-name="$this->project->short_name" :can-archive="$canUpdate" />
+            @endforeach
+        </div>
+    @endif
+
+    {{-- Archived stories --}}
+    @if ($showArchived && $this->archivedStories->isNotEmpty())
+        <div class="flex flex-col gap-3" data-test="archived-stories">
+            <flux:heading size="lg" class="text-zinc-500 dark:text-zinc-400">{{ __('Archived stories') }}</flux:heading>
+
+            @foreach ($this->archivedStories as $story)
+                <x-story-card :story="$story" :short-name="$this->project->short_name" :can-archive="$canUpdate" />
             @endforeach
         </div>
     @endif

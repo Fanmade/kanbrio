@@ -35,6 +35,14 @@ class TaskFactory extends Factory
         return $this->state(fn () => ['status' => $status]);
     }
 
+    /**
+     * Mark the task as archived.
+     */
+    public function archived(): static
+    {
+        return $this->state(fn () => ['archived_at' => now()]);
+    }
+
     public function priority(Priority $priority): static
     {
         return $this->state(fn () => ['priority' => $priority]);

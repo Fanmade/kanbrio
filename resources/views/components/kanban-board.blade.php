@@ -25,7 +25,10 @@
                         wire:key="task-{{ $task->id }}"
                         data-task-card
                         data-task-id="{{ $task->id }}"
-                        class="group cursor-grab rounded-lg border border-zinc-200 bg-white p-3 shadow-sm active:cursor-grabbing dark:border-zinc-700 dark:bg-zinc-900"
+                        @class([
+                            'group cursor-grab rounded-lg border border-zinc-200 bg-white p-3 shadow-sm active:cursor-grabbing dark:border-zinc-700 dark:bg-zinc-900',
+                            'opacity-60' => $task->isArchived(),
+                        ])
                     >
                         <div class="mb-1.5 flex items-start justify-between gap-2">
                             {{-- Story badge — hover (or focus) reveals the full story title --}}
@@ -72,6 +75,24 @@
                                                 @endif
                                             @endforeach
                                         </flux:menu.group>
+                                        <flux:menu.separator />
+                                        @if ($task->isArchived())
+                                            <flux:menu.item
+                                                icon="arrow-up-tray"
+                                                wire:click="unarchiveTask({{ $task->id }})"
+                                                :data-test="'unarchive-'.$task->id"
+                                            >
+                                                {{ __('Unarchive') }}
+                                            </flux:menu.item>
+                                        @else
+                                            <flux:menu.item
+                                                icon="archive-box"
+                                                wire:click="archiveTask({{ $task->id }})"
+                                                :data-test="'archive-'.$task->id"
+                                            >
+                                                {{ __('Archive') }}
+                                            </flux:menu.item>
+                                        @endif
                                     </flux:menu>
                                 </flux:dropdown>
                             </div>
@@ -86,6 +107,18 @@
                         </a>
 
                         <div class="mt-2 flex flex-wrap items-center gap-1">
+                            @if ($task->isArchived())
+                                <flux:badge size="sm" color="zinc" icon="archive-box" :data-test="'archived-badge-'.$task->id">
+                                    {{ __('Archived') }}
+                                </flux:badge>
+                            @endif
+                            @if (in_array($task->id, $blockedIds, true))
+                                <flux:tooltip :content="__('Blocked by an unfinished dependency')">
+                                    <flux:badge size="sm" color="red" icon="lock-closed" :data-test="'blocked-'.$task->id">
+                                        {{ __('Blocked') }}
+                                    </flux:badge>
+                                </flux:tooltip>
+                            @endif
                             <x-priority-badge :priority="$task->priority" />
                             <x-due-date-badge :date="$task->due_date" />
                             <x-tag-badges :tags="$task->tags" />

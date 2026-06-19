@@ -1,4 +1,4 @@
-@props(['story', 'shortName', 'hideFinishedTasks' => false])
+@props(['story', 'shortName', 'hideFinishedTasks' => false, 'canArchive' => false])
 
 @php
     $visibleTasks = $hideFinishedTasks
@@ -6,16 +6,42 @@
         : $story->tasks;
 @endphp
 
-<flux:card class="p-0">
-    <a
-        href="{{ route('story.show', ['short_name' => $shortName, 'story_number' => $story->story_number]) }}"
-        wire:navigate
-        class="flex min-w-0 items-center gap-2 px-4 py-3 hover:bg-zinc-50 dark:hover:bg-zinc-800"
-    >
-        <flux:icon.book-open variant="micro" class="text-zinc-400" />
-        <span class="font-mono text-xs text-zinc-400">{{ $shortName }}{{ $story->story_number }}</span>
-        <span class="truncate text-sm font-medium">{{ $story->title }}</span>
-    </a>
+<flux:card @class(['p-0', 'opacity-70' => $story->isArchived()])>
+    <div class="flex items-center">
+        <a
+            href="{{ route('story.show', ['short_name' => $shortName, 'story_number' => $story->story_number]) }}"
+            wire:navigate
+            class="flex min-w-0 flex-1 items-center gap-2 px-4 py-3 hover:bg-zinc-50 dark:hover:bg-zinc-800"
+        >
+            <flux:icon.book-open variant="micro" class="text-zinc-400" />
+            <span class="font-mono text-xs text-zinc-400">{{ $shortName }}{{ $story->story_number }}</span>
+            <span class="truncate text-sm font-medium">{{ $story->title }}</span>
+        </a>
+
+        @if ($canArchive)
+            <flux:dropdown position="bottom" align="end" class="pe-2">
+                <flux:button
+                    size="xs"
+                    variant="subtle"
+                    icon="ellipsis-horizontal"
+                    inset
+                    :aria-label="__('Story actions')"
+                    :data-test="'story-menu-'.$story->id"
+                />
+                <flux:menu>
+                    @if ($story->isArchived())
+                        <flux:menu.item icon="arrow-up-tray" wire:click="unarchiveStory({{ $story->id }})" :data-test="'unarchive-story-'.$story->id">
+                            {{ __('Unarchive') }}
+                        </flux:menu.item>
+                    @else
+                        <flux:menu.item icon="archive-box" wire:click="archiveStory({{ $story->id }})" :data-test="'archive-story-'.$story->id">
+                            {{ __('Archive') }}
+                        </flux:menu.item>
+                    @endif
+                </flux:menu>
+            </flux:dropdown>
+        @endif
+    </div>
 
     <x-story-progress :progress="$story->progress()" bar-class="flex-1" class="px-4 pb-3" />
 
