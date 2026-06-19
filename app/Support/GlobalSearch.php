@@ -113,6 +113,7 @@ class GlobalSearch
 
         return Story::query()
             ->with('project')
+            ->withProgressCounts()
             ->whereIn('project_id', $projectIds)
             ->where(static fn (Builder $builder): Builder => $builder
                 ->where('title', $operator, $like)
@@ -170,6 +171,7 @@ class GlobalSearch
                 icon: 'rectangle-stack',
                 reference: $model->reference,
                 pinned: $pinned,
+                progress: $model->progress(),
             ),
             $model instanceof Project => new SearchResult(
                 type: 'project',

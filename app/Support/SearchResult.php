@@ -17,5 +17,6 @@ readonly class SearchResult
         public string $icon,
         public ?string $reference = null,
         public bool $pinned = false,
+        public ?StoryProgress $progress = null,
     ) {}
 }

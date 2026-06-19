@@ -14,6 +14,7 @@ use App\Enums\Status;
 use App\Support\StoryProgress;
 use Database\Factories\StoryFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -93,11 +94,35 @@ class Story extends Model implements Subscribable
     }
 
     /**
-     * Completeness derived from the story's tasks. Counts in memory when the
-     * tasks relation is already loaded to avoid extra queries in list views.
+     * Eager-load the per-story task counts that {@see progress()} reads, so a list
+     * of stories can report completeness from a single query instead of an N+1.
+     *
+     * @param  Builder<static>  $query
+     * @return Builder<static>
+     */
+    #[Scope]
+    protected function withProgressCounts(Builder $query): Builder
+    {
+        return $query->withCount([
+            'tasks as tasks_total',
+            'tasks as tasks_done' => static fn (Builder $tasks): Builder => $tasks->where('status', Status::Done),
+        ]);
+    }
+
+    /**
+     * Completeness derived from the story's tasks. Prefers counts aggregated by
+     * the {@see withProgressCounts()} scope, then an already-loaded tasks
+     * relation, falling back to two count queries.
      */
     public function progress(): StoryProgress
     {
+        if (array_key_exists('tasks_total', $this->attributes) && array_key_exists('tasks_done', $this->attributes)) {
+            return new StoryProgress(
+                done: (int) $this->attributes['tasks_done'],
+                total: (int) $this->attributes['tasks_total'],
+            );
+        }
+
         if ($this->relationLoaded('tasks')) {
             return new StoryProgress(
                 done: $this->tasks->where('status', Status::Done)->count(),

@@ -42,6 +42,9 @@
                     <flux:command.item wire:click="go('{{ $item->url }}')" :icon="$item->icon" wire:key="{{ $item->type }}-{{ $loop->index }}">
                         <span class="flex w-full items-center gap-2">
                             <span class="flex-1 truncate">{{ $item->title }}</span>
+                            @if ($item->progress)
+                                <x-story-progress :progress="$item->progress" bar-class="w-10" class="shrink-0" />
+                            @endif
                             @if ($item->reference)
                                 <flux:badge size="sm" color="{{ $item->pinned ? 'blue' : 'zinc' }}">{{ $item->reference }}</flux:badge>
                             @endif
