@@ -17,7 +17,7 @@ Built on Laravel with Livewire and Flux UI. English and German out of the box.
 - **Kanban board** — drag-and-drop across the four statuses (Planned, ToDo,
   In progress, Done), per project or globally across every project you can see.
 - **Stories grouped on the board**, with completion progress bars on the project
-  overview.
+  overview and in the story header — each based on the share of its tasks done.
 - **Multi-assignee** stories and tasks for pairing and ensemble work.
 - **Comments** with one-level replies, editing, and soft-delete tombstones. The
   whole section can be collapsed, remembered per user.

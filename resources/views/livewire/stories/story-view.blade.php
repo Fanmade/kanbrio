@@ -32,10 +32,13 @@
             @endcan
         </div>
 
-        <div class="flex flex-wrap items-center gap-1">
-            <x-priority-badge :priority="$this->story->priority" />
-            <x-due-date-badge :date="$this->story->due_date" />
-            <x-keyword-badges :keywords="$this->story->keywords" />
+        <div class="flex flex-wrap items-center justify-between gap-2">
+            <div class="flex flex-wrap items-center gap-1">
+                <x-priority-badge :priority="$this->story->priority" />
+                <x-due-date-badge :date="$this->story->due_date" />
+                <x-keyword-badges :keywords="$this->story->keywords" />
+            </div>
+            <x-story-progress :progress="$this->story->progress()" />
         </div>
 
         <x-attachments.dropzone :enabled="$canUpdate">

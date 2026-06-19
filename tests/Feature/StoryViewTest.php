@@ -1,9 +1,11 @@
 <?php
 
 use App\Enums\Priority;
+use App\Enums\Status;
 use App\Livewire\Stories\StoryView;
 use App\Models\Project;
 use App\Models\Story;
+use App\Models\Task;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
@@ -20,6 +22,29 @@ beforeEach(function () {
 
     $this->mountStory = fn () => Livewire::actingAs($this->member)
         ->test(StoryView::class, ['short_name' => 'ABC', 'story_number' => $this->story->story_number]);
+});
+
+it('shows story completeness based on its subtasks', function () {
+    Task::factory()->for($this->story)->status(Status::Done)->create();
+    Task::factory()->for($this->story)->status(Status::ToDo)->count(2)->create();
+
+    ($this->mountStory)()->assertSee('1 / 3');
+});
+
+it('does not show a progress bar for a story with no tasks', function () {
+    ($this->mountStory)()->assertDontSee('0 / 0');
+});
+
+it('reflects newly created tasks in the completeness', function () {
+    Task::factory()->for($this->story)->status(Status::Done)->create();
+
+    ($this->mountStory)()
+        ->assertSee('1 / 1')
+        ->call('openTaskModal')
+        ->set('taskTitle', 'New task')
+        ->set('taskStatus', Status::ToDo->value)
+        ->call('createTask')
+        ->assertSee('1 / 2');
 });
 
 it('enters edit mode and populates the form from the story', function () {
