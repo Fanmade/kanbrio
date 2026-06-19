@@ -4,10 +4,12 @@ namespace App\Models;
 
 use App\Concerns\HasAttachments;
 use App\Concerns\HasComments;
+use App\Concerns\HasDependencies;
 use App\Concerns\HasScopedNumber;
 use App\Concerns\HasSubscribers;
 use App\Concerns\HasTags;
 use App\Concerns\LogsActivity;
+use App\Contracts\Dependable;
 use App\Contracts\Subscribable;
 use App\Enums\Priority;
 use App\Enums\Status;
@@ -39,10 +41,10 @@ use Illuminate\Support\Collection;
  * @property-read Project $project
  */
 #[Fillable(['title', 'description', 'priority', 'due_date'])]
-class Story extends Model implements Subscribable
+class Story extends Model implements Dependable, Subscribable
 {
     /** @use HasFactory<StoryFactory> */
-    use HasAttachments, HasComments, HasFactory, HasScopedNumber, HasSubscribers, HasTags, LogsActivity;
+    use Archivable, HasAttachments, HasComments, HasDependencies, HasFactory, HasScopedNumber, HasSubscribers, HasTags, LogsActivity;
 
     protected string $scopedNumberColumn = 'story_number';
 
@@ -144,6 +146,15 @@ class Story extends Model implements Subscribable
     public function assignees(): BelongsToMany
     {
         return $this->belongsToMany(User::class)->withTimestamps();
+    }
+
+    /**
+     * Whether every task in the story is done. Drives dependency resolution:
+     * a story stops blocking the work that depends on it once it is complete.
+     */
+    public function isComplete(): bool
+    {
+        return $this->progress()->isComplete();
     }
 
     /**

@@ -74,6 +74,8 @@
         </flux:field>
     @endcan
 
+    @include('partials.dependencies')
+
     <div>
         <div class="mb-2 flex items-center justify-between">
             <flux:heading size="sm">{{ __('Tasks') }}</flux:heading>

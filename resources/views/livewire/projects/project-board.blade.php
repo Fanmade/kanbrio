@@ -21,7 +21,7 @@
         </div>
     </div>
 
-    <x-kanban-board :columns="$this->columns" />
+    <x-kanban-board :columns="$this->columns" :blocked-ids="$this->blockedTaskIds" />
 
     {{-- Create story --}}
     <flux:modal wire:model="showStoryModal" class="md:w-96">

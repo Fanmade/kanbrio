@@ -3,6 +3,7 @@
 namespace App\Livewire\Tasks;
 
 use App\Concerns\HandlesAttachments;
+use App\Concerns\ManagesDependencies;
 use App\Enums\Priority;
 use App\Enums\Status;
 use App\Models\Project;
@@ -18,6 +19,7 @@ use Livewire\Component;
 class TaskView extends Component
 {
     use HandlesAttachments;
+    use ManagesDependencies;
 
     #[Locked]
     public string $shortName;
@@ -78,6 +80,11 @@ class TaskView extends Component
     }
 
     protected function attachable(): Project|Story|Task
+    {
+        return $this->task();
+    }
+
+    protected function dependable(): Story|Task
     {
         return $this->task();
     }

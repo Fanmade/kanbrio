@@ -4,6 +4,7 @@ namespace App\Livewire;
 
 use App\Concerns\BuildsKanbanColumns;
 use App\Models\Task;
+use App\Support\BlockedTasks;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Title;
@@ -41,6 +42,24 @@ class Board extends Component
     }
 
     /**
+     * The ids of visible tasks that are blocked by an unfinished dependency.
+     *
+     * @return array<int, int>
+     */
+    #[Computed]
+    public function blockedTaskIds(): array
+    {
+        $projectIds = Auth::user()->projects()->pluck('projects.id');
+
+        $taskIds = Task::query()
+            ->whereHas('story', static fn ($query) => $query->whereIn('project_id', $projectIds))
+            ->pluck('id')
+            ->all();
+
+        return BlockedTasks::ids($taskIds);
+    }
+
+    /**
      * Move a task on the global board (authorization cascades to project access).
      */
     public function moveTask(int $taskId, string $status): void
@@ -49,7 +68,7 @@ class Board extends Component
 
         $this->applyTaskMove($task, $status);
 
-        unset($this->columns);
+        unset($this->columns, $this->blockedTaskIds);
     }
 
     /**

@@ -10,6 +10,7 @@ use App\Enums\Status;
 use App\Models\Project;
 use App\Models\Story;
 use App\Models\Task;
+use App\Support\BlockedTasks;
 use Flux\Flux;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Validation\Rules\Enum;
@@ -105,13 +106,29 @@ class ProjectBoard extends Component
     }
 
     /**
+     * The ids of this project's tasks that are blocked by an unfinished dependency.
+     *
+     * @return array<int, int>
+     */
+    #[Computed]
+    public function blockedTaskIds(): array
+    {
+        $taskIds = $this->stories()
+            ->flatMap(static fn (Story $story) => $story->tasks)
+            ->pluck('id')
+            ->all();
+
+        return BlockedTasks::ids($taskIds);
+    }
+
+    /**
      * Move a task to a new status column (drag-and-drop drop handler).
      */
     public function moveTask(int $taskId, string $status): void
     {
         $this->applyTaskMove($this->resolveProjectTask($taskId), $status);
 
-        unset($this->stories, $this->columns);
+        unset($this->stories, $this->columns, $this->blockedTaskIds);
     }
 
     /**

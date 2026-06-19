@@ -24,6 +24,7 @@
                         'status_changed' => __('changed status from :old to :new', ['old' => $old, 'new' => $new]),
                         'priority_changed' => __('changed priority from :old to :new', ['old' => $oldPriority, 'new' => $newPriority]),
                         'assignee_changed' => __('updated the assignees'),
+                        'dependency_changed' => __('updated the dependencies'),
                         'tags_changed' => __('updated the tags'),
                         'commented' => __('added a comment'),
                         default => $activity->action,

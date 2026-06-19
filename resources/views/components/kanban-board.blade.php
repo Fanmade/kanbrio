@@ -1,4 +1,4 @@
-@props(['columns'])
+@props(['columns', 'blockedIds' => []])
 
 <div class="grid flex-1 grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
     @foreach ($columns as $column)

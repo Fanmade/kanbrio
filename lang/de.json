@@ -301,5 +301,22 @@
     "Resend": "Erneut senden",
     "Revoke": "Widerrufen",
     "Invitation resent.": "Einladung erneut gesendet.",
-    "Invitation revoked.": "Einladung widerrufen."
+    "Invitation revoked.": "Einladung widerrufen.",
+    "Dependencies": "Abhängigkeiten",
+    "Blocked": "Blockiert",
+    "Blocked by": "Blockiert von",
+    "Blocks": "Blockiert",
+    "Nothing is blocking this.": "Nichts blockiert dies.",
+    "This blocks nothing.": "Dies blockiert nichts.",
+    "Relationship": "Beziehung",
+    "Reference": "Referenz",
+    "Add": "Hinzufügen",
+    "Remove dependency": "Abhängigkeit entfernen",
+    "Blocked by an unfinished dependency": "Durch eine offene Abhängigkeit blockiert",
+    "No story or task found for that reference.": "Keine Story oder Aufgabe für diese Referenz gefunden.",
+    "You do not have access to that item.": "Du hast keinen Zugriff auf dieses Element.",
+    "That would make an item depend on itself or create a cycle.": "Das würde ein Element von sich selbst abhängig machen oder einen Zyklus erzeugen.",
+    "Dependency added.": "Abhängigkeit hinzugefügt.",
+    "Dependency removed.": "Abhängigkeit entfernt.",
+    "updated the dependencies": "hat die Abhängigkeiten aktualisiert"
 }

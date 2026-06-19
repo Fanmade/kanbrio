@@ -32,4 +32,13 @@ readonly class StoryProgress
     {
         return $this->total > 0;
     }
+
+    /**
+     * Whether every task is done. An empty story is never complete: there is
+     * nothing finished to unblock the work that depends on it.
+     */
+    public function isComplete(): bool
+    {
+        return $this->total > 0 && $this->done === $this->total;
+    }
 }

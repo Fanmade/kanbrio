@@ -4,6 +4,7 @@ namespace App\Livewire\Stories;
 
 use App\Actions\CreateTask;
 use App\Concerns\HandlesAttachments;
+use App\Concerns\ManagesDependencies;
 use App\Enums\Priority;
 use App\Enums\Status;
 use App\Models\Project;
@@ -20,6 +21,7 @@ use Livewire\Component;
 class StoryView extends Component
 {
     use HandlesAttachments;
+    use ManagesDependencies;
 
     #[Locked]
     public string $shortName;
@@ -84,6 +86,11 @@ class StoryView extends Component
     }
 
     protected function attachable(): Project|Story|Task
+    {
+        return $this->story();
+    }
+
+    protected function dependable(): Story|Task
     {
         return $this->story();
     }

@@ -46,6 +46,10 @@ Built on Laravel with Livewire and Flux UI. English and German out of the box.
   default) on stories and tasks, with new tasks inheriting their story's priority.
   Board columns are ordered by priority and can be filtered to a single level.
 - **Due dates** on stories and tasks, highlighted on the board when overdue.
+- **Dependencies** — mark a story or task as blocked by, or blocking, another
+  item (by reference). Blockers and blocked items are listed on the item view,
+  and a card is flagged "Blocked" on the board while any blocker is unfinished.
+  Self-links and cycles are rejected.
 - **Notifications** — subscribe per project (assignment auto-subscribes you),
   manage everything from a dedicated page, unread badge in the header.
 - **Markdown** descriptions and comments.

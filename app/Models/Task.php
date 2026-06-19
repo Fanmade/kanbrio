@@ -4,10 +4,12 @@ namespace App\Models;
 
 use App\Concerns\HasAttachments;
 use App\Concerns\HasComments;
+use App\Concerns\HasDependencies;
 use App\Concerns\HasScopedNumber;
 use App\Concerns\HasSubscribers;
 use App\Concerns\HasTags;
 use App\Concerns\LogsActivity;
+use App\Contracts\Dependable;
 use App\Contracts\Subscribable;
 use App\Enums\Priority;
 use App\Enums\Status;
@@ -38,10 +40,10 @@ use Illuminate\Support\Collection;
  * @property-read Story $story
  */
 #[Fillable(['title', 'description', 'priority', 'due_date'])]
-class Task extends Model implements Subscribable
+class Task extends Model implements Dependable, Subscribable
 {
     /** @use HasFactory<TaskFactory> */
-    use HasAttachments, HasComments, HasFactory, HasScopedNumber, HasSubscribers, HasTags, LogsActivity;
+    use Archivable, HasAttachments, HasComments, HasDependencies, HasFactory, HasScopedNumber, HasSubscribers, HasTags, LogsActivity;
 
     protected string $scopedNumberColumn = 'task_number';
 
@@ -123,6 +125,15 @@ class Task extends Model implements Subscribable
             ->merge($this->story->subscribers()->get())
             ->merge($this->story->project->subscribers()->get())
             ->unique('id');
+    }
+
+    /**
+     * Whether the task is done. Drives dependency resolution: a task stops
+     * blocking the work that depends on it once it is done.
+     */
+    public function isComplete(): bool
+    {
+        return $this->status === Status::Done;
     }
 
     /**
