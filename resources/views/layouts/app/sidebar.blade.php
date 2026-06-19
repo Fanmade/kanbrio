@@ -44,13 +44,20 @@
 
             <flux:spacer />
 
-            @can('invite-users')
+            @canany(['invite-users', 'manage-users'])
                 <flux:sidebar.nav>
-                    <flux:sidebar.item icon="user-plus" :href="route('invitations.create')" :current="request()->routeIs('invitations.create')" wire:navigate>
-                        {{ __('Invite user') }}
-                    </flux:sidebar.item>
+                    @can('invite-users')
+                        <flux:sidebar.item icon="user-plus" :href="route('invitations.create')" :current="request()->routeIs('invitations.create')" wire:navigate>
+                            {{ __('Invite user') }}
+                        </flux:sidebar.item>
+                    @endcan
+                    @can('manage-users')
+                        <flux:sidebar.item icon="users" :href="route('admin.users')" :current="request()->routeIs('admin.users')" wire:navigate data-test="nav-user-administration">
+                            {{ __('User administration') }}
+                        </flux:sidebar.item>
+                    @endcan
                 </flux:sidebar.nav>
-            @endcan
+            @endcanany
         </flux:sidebar>
 
         <flux:header class="border-b border-zinc-200 bg-white dark:border-zinc-700 dark:bg-zinc-900">

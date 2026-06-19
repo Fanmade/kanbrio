@@ -62,11 +62,34 @@ class UserFactory extends Factory
     }
 
     /**
+     * Indicate that the user can manage other user accounts.
+     */
+    public function canManageUsers(): static
+    {
+        return $this->withPermission(Permission::ManageUsers);
+    }
+
+    /**
      * Indicate that the user is an administrator with all capabilities.
      */
     public function admin(): static
     {
-        return $this->withPermission(Permission::CreateProjects, Permission::InviteUsers, Permission::CreateApiTokens);
+        return $this->withPermission(
+            Permission::CreateProjects,
+            Permission::InviteUsers,
+            Permission::CreateApiTokens,
+            Permission::ManageUsers,
+        );
+    }
+
+    /**
+     * Indicate that the user's account has been deactivated.
+     */
+    public function deactivated(): static
+    {
+        return $this->state(fn (array $attributes): array => [
+            'deactivated_at' => now(),
+        ]);
     }
 
     /**

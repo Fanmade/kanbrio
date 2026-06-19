@@ -13,6 +13,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Carbon;
@@ -27,6 +28,8 @@ use Laravel\Sanctum\HasApiTokens;
  * @property string $name
  * @property string $email
  * @property Carbon|null $email_verified_at
+ * @property Carbon|null $deactivated_at
+ * @property Carbon|null $deleted_at
  * @property string $password
  * @property string|null $two_factor_secret
  * @property string|null $two_factor_recovery_codes
@@ -42,7 +45,28 @@ use Laravel\Sanctum\HasApiTokens;
 class User extends Authenticatable implements PasskeyUser
 {
     /** @use HasFactory<UserFactory> */
-    use HasApiTokens, HasFactory, Notifiable, PasskeyAuthenticatable, TwoFactorAuthenticatable;
+    use HasApiTokens, HasFactory, Notifiable, PasskeyAuthenticatable, SoftDeletes, TwoFactorAuthenticatable;
+
+    /**
+     * Detach a user's collaborative relationships when their account is removed,
+     * so a soft-deleted account no longer holds project access, task assignments
+     * or notification subscriptions. A force delete leaves the database cascades
+     * to clean up.
+     */
+    protected static function booted(): void
+    {
+        static::deleting(static function (User $user): void {
+            if ($user->isForceDeleting()) {
+                return;
+            }
+
+            $user->projects()->detach();
+            $user->assignedTasks()->detach();
+            $user->subscribedProjects()->detach();
+            $user->subscribedStories()->detach();
+            $user->subscribedTasks()->detach();
+        });
+    }
 
     /**
      * Get the attributes that should be cast.
@@ -53,9 +77,43 @@ class User extends Authenticatable implements PasskeyUser
     {
         return [
             'email_verified_at' => 'datetime',
+            'deactivated_at' => 'datetime',
             'password' => 'hashed',
             'preferences' => 'array',
         ];
+    }
+
+    /**
+     * Determine whether the user's account is currently deactivated.
+     */
+    public function isDeactivated(): bool
+    {
+        return $this->deactivated_at !== null;
+    }
+
+    /**
+     * Deactivate the account, preventing the user from signing in while keeping
+     * their data and assignments intact. The change is reversible via reactivate().
+     */
+    public function deactivate(): void
+    {
+        if ($this->isDeactivated()) {
+            return;
+        }
+
+        $this->forceFill(['deactivated_at' => now()])->save();
+    }
+
+    /**
+     * Restore a previously deactivated account.
+     */
+    public function reactivate(): void
+    {
+        if (! $this->isDeactivated()) {
+            return;
+        }
+
+        $this->forceFill(['deactivated_at' => null])->save();
     }
 
     /**
@@ -95,6 +153,16 @@ class User extends Authenticatable implements PasskeyUser
     public function permissions(): HasMany
     {
         return $this->hasMany(UserPermission::class);
+    }
+
+    /**
+     * The invitations this user has sent.
+     *
+     * @return HasMany<Invitation, $this>
+     */
+    public function invitations(): HasMany
+    {
+        return $this->hasMany(Invitation::class, 'invited_by');
     }
 
     /**

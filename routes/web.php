@@ -3,6 +3,7 @@
 use App\Http\Controllers\AttachmentDownloadController;
 use App\Http\Controllers\AttachmentThumbnailController;
 use App\Http\Controllers\AttachmentViewController;
+use App\Livewire\Admin\UserManagement;
 use App\Livewire\Board;
 use App\Livewire\Dashboard;
 use App\Livewire\Invitations\AcceptInvitation;
@@ -34,6 +35,7 @@ Route::middleware(['auth', 'verified'])->group(static function () {
     Route::livewire('board', Board::class)->name('board');
     Route::livewire('notifications', ManageNotifications::class)->name('notifications.index');
     Route::livewire('invite', InviteUser::class)->name('invitations.create');
+    Route::livewire('admin/users', UserManagement::class)->name('admin.users');
 
     /*
      * Attachment delivery is scoped under the owning project's short name and
