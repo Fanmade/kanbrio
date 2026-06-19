@@ -13,6 +13,27 @@ use function Pest\Laravel\actingAs;
 
 uses(RefreshDatabase::class);
 
+/**
+ * Determine whether the rendered button carrying the given data-test value has
+ * a disabled attribute on its opening tag.
+ */
+function buttonIsDisabled(string $html, string $dataTest): bool
+{
+    $needle = 'data-test="'.$dataTest.'"';
+    $position = strpos($html, $needle);
+
+    if ($position === false) {
+        return false;
+    }
+
+    $tagStart = strrpos(substr($html, 0, $position), '<');
+    $tagEnd = strpos($html, '>', $position);
+    $tag = substr($html, $tagStart, $tagEnd - $tagStart);
+
+    // Match the rendered disabled attribute, not the Tailwind "disabled:" variant classes.
+    return str_contains($tag, 'disabled="disabled"');
+}
+
 it('forbids users without the manage-users permission from reaching the area', function () {
     actingAs(User::factory()->create())
         ->get(route('admin.users'))
@@ -76,6 +97,22 @@ it('prevents an administrator from revoking their own manage-users permission', 
         ->call('togglePermission', $admin->id, Permission::ManageUsers->value);
 
     expect($admin->fresh()->hasPermission(Permission::ManageUsers))->toBeTrue();
+});
+
+it('renders the administrator\'s own manage-users toggle as disabled', function () {
+    $admin = User::factory()->canManageUsers()->create();
+    $other = User::factory()->canManageUsers()->create();
+
+    $html = Livewire::actingAs($admin)
+        ->test(UserManagement::class)
+        ->html();
+
+    expect($html)
+        ->toContain('data-test="perm-'.$admin->id.'-'.Permission::ManageUsers->value.'"')
+        // The own manage-users button is disabled; another admin's stays interactive.
+        ->and(buttonIsDisabled($html, 'perm-'.$admin->id.'-'.Permission::ManageUsers->value))->toBeTrue()
+        ->and(buttonIsDisabled($html, 'perm-'.$other->id.'-'.Permission::ManageUsers->value))->toBeFalse()
+        ->and(buttonIsDisabled($html, 'perm-'.$admin->id.'-'.Permission::CreateProjects->value))->toBeFalse();
 });
 
 it('filters users by name or email', function () {

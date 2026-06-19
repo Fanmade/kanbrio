@@ -114,6 +114,16 @@ class ProjectBoard extends Component
         unset($this->stories, $this->columns);
     }
 
+    /**
+     * Drag-and-drop placement: move and reorder a task within this project's board.
+     */
+    public function reorderTask(int $taskId, string $status, ?int $beforeId, ?int $afterId): void
+    {
+        $this->applyTaskReorder($this->resolveProjectTask($taskId), $status, $beforeId, $afterId);
+
+        unset($this->stories, $this->columns);
+    }
+
     public function createStory(): void
     {
         $this->authorize('update', $this->project());

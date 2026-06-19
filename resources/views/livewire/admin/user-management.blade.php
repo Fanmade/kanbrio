@@ -58,15 +58,29 @@
                     <flux:text size="sm" class="text-zinc-500">{{ __('Permissions') }}:</flux:text>
                     @foreach ($this->permissions as $permission)
                         @php($granted = $user->hasPermission($permission))
-                        <flux:button
-                            size="xs"
-                            :variant="$granted ? 'primary' : 'ghost'"
-                            :icon="$granted ? 'check' : 'plus'"
-                            wire:click="togglePermission({{ $user->id }}, '{{ $permission->value }}')"
-                            :data-test="'perm-'.$user->id.'-'.$permission->value"
-                        >
-                            {{ $permission->label() }}
-                        </flux:button>
+                        @if ($this->locksSelfOutOfManagement($user, $permission))
+                            <flux:tooltip :content="__('You cannot revoke your own user management permission.')">
+                                <flux:button
+                                    size="xs"
+                                    variant="primary"
+                                    icon="check"
+                                    disabled
+                                    :data-test="'perm-'.$user->id.'-'.$permission->value"
+                                >
+                                    {{ $permission->label() }}
+                                </flux:button>
+                            </flux:tooltip>
+                        @else
+                            <flux:button
+                                size="xs"
+                                :variant="$granted ? 'primary' : 'ghost'"
+                                :icon="$granted ? 'check' : 'plus'"
+                                wire:click="togglePermission({{ $user->id }}, '{{ $permission->value }}')"
+                                :data-test="'perm-'.$user->id.'-'.$permission->value"
+                            >
+                                {{ $permission->label() }}
+                            </flux:button>
+                        @endif
                     @endforeach
                 </div>
             </flux:card>
