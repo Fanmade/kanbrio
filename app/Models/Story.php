@@ -10,6 +10,8 @@ use App\Concerns\HasSubscribers;
 use App\Concerns\LogsActivity;
 use App\Contracts\Subscribable;
 use App\Enums\Priority;
+use App\Enums\Status;
+use App\Support\StoryProgress;
 use Database\Factories\StoryFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Builder;
@@ -88,6 +90,25 @@ class Story extends Model implements Subscribable
     public function tasks(): HasMany
     {
         return $this->hasMany(Task::class)->orderBy('task_number');
+    }
+
+    /**
+     * Completeness derived from the story's tasks. Counts in memory when the
+     * tasks relation is already loaded to avoid extra queries in list views.
+     */
+    public function progress(): StoryProgress
+    {
+        if ($this->relationLoaded('tasks')) {
+            return new StoryProgress(
+                done: $this->tasks->where('status', Status::Done)->count(),
+                total: $this->tasks->count(),
+            );
+        }
+
+        return new StoryProgress(
+            done: $this->tasks()->where('status', Status::Done)->count(),
+            total: $this->tasks()->count(),
+        );
     }
 
     /**

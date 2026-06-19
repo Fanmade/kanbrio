@@ -1,9 +1,6 @@
 @props(['story', 'shortName', 'hideFinishedTasks' => false])
 
 @php
-    $total = $story->tasks->count();
-    $done = $story->tasks->filter(fn ($task) => $task->status === \App\Enums\Status::Done)->count();
-    $percent = $total > 0 ? (int) round($done / $total * 100) : 0;
     $visibleTasks = $hideFinishedTasks
         ? $story->tasks->reject(fn ($task) => $task->status === \App\Enums\Status::Done)
         : $story->tasks;
@@ -20,14 +17,7 @@
         <span class="truncate text-sm font-medium">{{ $story->title }}</span>
     </a>
 
-    @if ($total > 0)
-        <div class="flex items-center gap-3 px-4 pb-3">
-            <flux:progress :value="$percent" color="green" class="flex-1" />
-            <flux:text size="xs" class="shrink-0 whitespace-nowrap text-zinc-400">
-                {{ $done }} / {{ $total }} {{ __('done') }}
-            </flux:text>
-        </div>
-    @endif
+    <x-story-progress :progress="$story->progress()" bar-class="flex-1" class="px-4 pb-3" />
 
     @if ($story->keywords->isNotEmpty())
         <div class="px-4 pb-3">
