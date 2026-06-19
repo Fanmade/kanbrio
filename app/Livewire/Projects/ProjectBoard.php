@@ -78,7 +78,7 @@ class ProjectBoard extends Component
     #[Computed]
     public function stories(): Collection
     {
-        return $this->project()->stories()->with(['tasks.assignees', 'tasks.keywords'])->get();
+        return $this->project()->stories()->with(['tasks.assignees', 'tasks.tags'])->get();
     }
 
     /**

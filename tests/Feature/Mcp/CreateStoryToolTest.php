@@ -56,3 +56,19 @@ it('requires a title', function () {
     KanbrioServer::tool(CreateStoryTool::class, ['short_name' => 'ABC'])
         ->assertHasErrors();
 });
+
+it('applies tags when creating a story via MCP', function () {
+    $user = User::factory()->create();
+    Sanctum::actingAs($user, ['read', 'write']);
+    Project::factory()->withMembers([$user])->create(['short_name' => 'ABC']);
+
+    KanbrioServer::tool(CreateStoryTool::class, [
+        'short_name' => 'ABC',
+        'title' => 'First story',
+        'tags' => ['design'],
+    ])
+        ->assertOk()
+        ->assertSee('design');
+
+    assertDatabaseHas('tags', ['name' => 'design']);
+});

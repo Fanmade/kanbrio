@@ -95,3 +95,25 @@ it('denies updating a task with a read-only token', function () {
         'status' => Status::Done->value,
     ])->assertHasErrors();
 });
+
+it('replaces a task\'s tags and records the activity via MCP', function () {
+    $user = User::factory()->create();
+    Sanctum::actingAs($user, ['read', 'write']);
+    $project = Project::factory()->withMembers([$user])->create(['short_name' => 'ABC']);
+    $story = Story::factory()->for($project)->create();
+    $task = Task::factory()->for($story)->create();
+    $task->syncTags('old');
+
+    KanbrioServer::tool(UpdateTaskTool::class, [
+        'reference' => $task->reference,
+        'tags' => ['design'],
+    ])
+        ->assertOk()
+        ->assertSee('design');
+
+    expect($task->fresh()->tags()->pluck('name')->all())->toBe(['design']);
+    assertDatabaseHas('activities', [
+        'subject_id' => $task->id,
+        'action' => 'tags_changed',
+    ]);
+});

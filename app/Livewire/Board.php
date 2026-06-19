@@ -27,7 +27,7 @@ class Board extends Component
 
         $tasks = Task::query()
             ->whereHas('story', static fn ($query) => $query->whereIn('project_id', $projectIds))
-            ->with(['story.project', 'assignees', 'keywords'])
+            ->with(['story.project', 'assignees', 'tags'])
             ->get()
             ->sortBy(static fn (Task $task) => sprintf(
                 '%s-%05d-%05d',

@@ -35,7 +35,7 @@ class GlobalSearch
      * Search the user's accessible projects, stories and tasks.
      *
      * A query that parses as a reference (e.g. "PROJ1-3") yields a pinned
-     * "jump to" result at the top, followed by text/keyword matches.
+     * "jump to" result at the top, followed by text/tag matches.
      *
      * @return Collection<int, SearchResult>
      */
@@ -117,7 +117,7 @@ class GlobalSearch
             ->whereIn('project_id', $projectIds)
             ->where(static fn (Builder $builder): Builder => $builder
                 ->where('title', $operator, $like)
-                ->orWhereHas('keywords', static fn (Builder $keyword): Builder => $keyword->where('name', $operator, $like)))
+                ->orWhereHas('tags', static fn (Builder $tag): Builder => $tag->where('name', $operator, $like)))
             ->limit(self::LIMIT)
             ->get()
             ->map(fn (Story $story): SearchResult => $this->toResult($story));
@@ -137,7 +137,7 @@ class GlobalSearch
             ->whereHas('story', static fn (Builder $story): Builder => $story->whereIn('project_id', $projectIds))
             ->where(static fn (Builder $builder): Builder => $builder
                 ->where('title', $operator, $like)
-                ->orWhereHas('keywords', static fn (Builder $keyword): Builder => $keyword->where('name', $operator, $like)))
+                ->orWhereHas('tags', static fn (Builder $tag): Builder => $tag->where('name', $operator, $like)))
             ->limit(self::LIMIT)
             ->get()
             ->map(fn (Task $task): SearchResult => $this->toResult($task));

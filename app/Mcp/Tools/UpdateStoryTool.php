@@ -34,6 +34,8 @@ class UpdateStoryTool extends Tool
             'description' => ['nullable', 'string'],
             'priority' => ['nullable', Rule::in(Priority::names())],
             'due_date' => ['nullable', 'date_format:Y-m-d'],
+            'tags' => ['nullable', 'array'],
+            'tags.*' => ['string'],
         ], [
             'reference.required' => 'You must provide the story reference (e.g. "PROJ1").',
             'priority' => 'The priority must be one of: '.implode(', ', Priority::names()).'.',
@@ -64,11 +66,23 @@ class UpdateStoryTool extends Tool
             $updates['due_date'] = $validated['due_date'];
         }
 
-        if ($updates === []) {
-            return Response::error('Provide a title, description, priority and/or due date to update.');
+        $tagsProvided = $request->has('tags');
+
+        if ($updates === [] && ! $tagsProvided) {
+            return Response::error('Provide a title, description, priority, due date and/or tags to update.');
         }
 
-        $story->update($updates);
+        if ($updates !== []) {
+            $story->update($updates);
+        }
+
+        if ($tagsProvided) {
+            $changes = $story->syncTags($validated['tags'] ?? []);
+
+            if ($changes['attached'] !== [] || $changes['detached'] !== []) {
+                $story->recordActivity('tags_changed', 'tags');
+            }
+        }
 
         return Response::structured([
             'reference' => $story->reference,
@@ -76,6 +90,7 @@ class UpdateStoryTool extends Tool
             'description' => $story->description,
             'priority' => $story->priority->name,
             'due_date' => $story->due_date?->format('Y-m-d'),
+            'tags' => $story->tags()->pluck('name')->all(),
         ]);
     }
 
@@ -103,6 +118,10 @@ class UpdateStoryTool extends Tool
 
             'due_date' => $schema->string()
                 ->description('New due date in "YYYY-MM-DD" format. Pass null to clear it.'),
+
+            'tags' => $schema->array()
+                ->items($schema->string())
+                ->description('The complete set of tags for the story, as an array of tag names (e.g. ["UI/UX", "bug"]). Replaces the existing tags; pass [] to clear them. Tags that do not exist yet are created.'),
         ];
     }
 
@@ -119,6 +138,7 @@ class UpdateStoryTool extends Tool
             'description' => $schema->string()->description('The updated story description; may be null.'),
             'priority' => $schema->string()->description('The story priority: Lowest, Low, Medium, High or Highest.')->required(),
             'due_date' => $schema->string()->description('The story due date in "YYYY-MM-DD" format; may be null.'),
+            'tags' => $schema->array()->items($schema->string())->description('The tag names applied to the story.')->required(),
         ];
     }
 }

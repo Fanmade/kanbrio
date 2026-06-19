@@ -19,9 +19,9 @@
 
     <x-story-progress :progress="$story->progress()" bar-class="flex-1" class="px-4 pb-3" />
 
-    @if ($story->keywords->isNotEmpty())
+    @if ($story->tags->isNotEmpty())
         <div class="px-4 pb-3">
-            <x-keyword-badges :keywords="$story->keywords" />
+            <x-tag-badges :tags="$story->tags" />
         </div>
     @endif
 

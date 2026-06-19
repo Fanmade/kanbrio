@@ -13,7 +13,7 @@ use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Tool;
 use Laravel\Mcp\Server\Tools\Annotations\IsReadOnly;
 
-#[Description('Gets a single story by its reference (e.g. "PROJ1"), including its tasks. Only stories in projects the authenticated user is a member of are accessible.')]
+#[Description('Gets a single story by its reference (e.g. "PROJ1"), including its tags and its tasks. Only stories in projects the authenticated user is a member of are accessible.')]
 #[IsReadOnly]
 class GetStoryTool extends Tool
 {
@@ -34,6 +34,8 @@ class GetStoryTool extends Tool
             return Response::error('No story with reference "'.$validated['reference'].'" exists, or you do not have access to it. References look like "PROJ1".');
         }
 
+        $story->loadMissing(['tags', 'tasks.tags']);
+
         return Response::structured([
             'reference' => $story->reference,
             'title' => $story->title,
@@ -41,12 +43,14 @@ class GetStoryTool extends Tool
             'priority' => $story->priority->name,
             'due_date' => $story->due_date?->format('Y-m-d'),
             'project' => $story->project->short_name,
+            'tags' => $story->tags->pluck('name')->all(),
             'tasks' => $story->tasks->map(static fn (Task $task): array => [
                 'reference' => $task->reference,
                 'title' => $task->title,
                 'priority' => $task->priority->name,
                 'due_date' => $task->due_date?->format('Y-m-d'),
                 'status' => $task->status->value,
+                'tags' => $task->tags->pluck('name')->all(),
             ])->all(),
         ]);
     }
@@ -79,12 +83,14 @@ class GetStoryTool extends Tool
             'priority' => $schema->string()->description('The story priority: Lowest, Low, Medium, High or Highest.')->required(),
             'due_date' => $schema->string()->description('The story due date in "YYYY-MM-DD" format; may be null.'),
             'project' => $schema->string()->description('The short name of the project the story belongs to.')->required(),
+            'tags' => $schema->array()->items($schema->string())->description('The tag names applied to the story.')->required(),
             'tasks' => $schema->array()->items($schema->object([
                 'reference' => $schema->string()->description('The task reference, e.g. "PROJ1-3".')->required(),
                 'title' => $schema->string()->description('The task title.')->required(),
                 'priority' => $schema->string()->description('The task priority: Lowest, Low, Medium, High or Highest.')->required(),
                 'due_date' => $schema->string()->description('The task due date in "YYYY-MM-DD" format; may be null.'),
                 'status' => $schema->string()->description('The task status.')->required(),
+                'tags' => $schema->array()->items($schema->string())->description('The tag names applied to the task.')->required(),
             ]))->description('The tasks in the story.')->required(),
         ];
     }

@@ -25,7 +25,7 @@
 
     <flux:modal name="command-palette" variant="bare" wire:close="close" class="mx-auto w-full max-w-2xl my-[12vh] max-h-screen overflow-y-hidden">
         {{-- filter="manual" disables Flux's client-side text filtering so server-side
-             matches (keywords, reference jumps) are never hidden by the typed query. --}}
+             matches (tags, reference jumps) are never hidden by the typed query. --}}
         <flux:command filter="manual" class="flex w-full flex-col border-none shadow-lg max-h-[76vh]">
             <flux:command.input
                 wire:model.live.debounce.200ms="query"

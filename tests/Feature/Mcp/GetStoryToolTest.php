@@ -37,3 +37,14 @@ it('returns an error for a malformed story reference', function () {
     KanbrioServer::actingAs($user)->tool(GetStoryTool::class, ['reference' => 'not-a-ref'])
         ->assertHasErrors();
 });
+
+it('includes the story tags', function () {
+    $user = User::factory()->create();
+    $project = Project::factory()->withMembers([$user])->create(['short_name' => 'ABC']);
+    $story = Story::factory()->for($project)->create();
+    $story->syncTags('design');
+
+    KanbrioServer::actingAs($user)->tool(GetStoryTool::class, ['reference' => $story->reference])
+        ->assertOk()
+        ->assertSee('design');
+});

@@ -13,7 +13,7 @@ use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Tool;
 use Laravel\Mcp\Server\Tools\Annotations\IsReadOnly;
 
-#[Description('Gets a single task by its reference (e.g. "PROJ1-3"), including status, priority, description, assignees and its story/project references. Only tasks in projects the authenticated user is a member of are accessible.')]
+#[Description('Gets a single task by its reference (e.g. "PROJ1-3"), including status, priority, description, tags, assignees and its story/project references. Only tasks in projects the authenticated user is a member of are accessible.')]
 #[IsReadOnly]
 class GetTaskTool extends Tool
 {
@@ -41,6 +41,7 @@ class GetTaskTool extends Tool
             'priority' => $task->priority->name,
             'due_date' => $task->due_date?->format('Y-m-d'),
             'status' => $task->status->value,
+            'tags' => $task->tags->pluck('name')->all(),
             'story' => $task->story->reference,
             'project' => $task->story->project->short_name,
             'assignees' => $task->assignees->map(static fn (User $user): array => [
@@ -78,6 +79,7 @@ class GetTaskTool extends Tool
             'priority' => $schema->string()->description('The task priority: Lowest, Low, Medium, High or Highest.')->required(),
             'due_date' => $schema->string()->description('The task due date in "YYYY-MM-DD" format; may be null.'),
             'status' => $schema->string()->description('The task status.')->required(),
+            'tags' => $schema->array()->items($schema->string())->description('The tag names applied to the task.')->required(),
             'story' => $schema->string()->description('The reference of the story the task belongs to, e.g. "PROJ1".')->required(),
             'project' => $schema->string()->description('The short name of the project the task belongs to.')->required(),
             'assignees' => $schema->array()->items($schema->object([

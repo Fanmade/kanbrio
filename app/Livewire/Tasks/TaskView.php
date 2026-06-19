@@ -36,7 +36,7 @@ class TaskView extends Component
 
     public string $dueDate = '';
 
-    public string $keywords = '';
+    public string $tags = '';
 
     public string $status = Status::Planned->value;
 
@@ -65,7 +65,7 @@ class TaskView extends Component
         $project = Project::where('short_name', $this->shortName)->firstOrFail();
 
         $task = Task::query()
-            ->with(['assignees', 'keywords', 'story.project'])
+            ->with(['assignees', 'tags', 'story.project'])
             ->whereHas('story', fn ($q) => $q
                 ->where('project_id', $project->id)
                 ->where('story_number', $this->storyNumber))
@@ -160,7 +160,7 @@ class TaskView extends Component
         $this->title = $task->title;
         $this->description = (string) $task->description;
         $this->dueDate = $task->due_date?->format('Y-m-d') ?? '';
-        $this->keywords = $task->keywordList();
+        $this->tags = $task->tagList();
         $this->editing = true;
     }
 
@@ -181,9 +181,9 @@ class TaskView extends Component
             'due_date' => $validated['dueDate'] ?: null,
         ]);
 
-        $changes = $task->syncKeywords($this->keywords);
+        $changes = $task->syncTags($this->tags);
         if ($changes['attached'] !== [] || $changes['detached'] !== []) {
-            $task->recordActivity('keywords_changed', 'keywords');
+            $task->recordActivity('tags_changed', 'tags');
         }
 
         $this->editing = false;

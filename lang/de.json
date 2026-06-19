@@ -60,9 +60,9 @@
 
     "Assignees": "Zuständige",
     "Assign members": "Mitglieder zuweisen",
-    "Keywords": "Schlagwörter",
+    "Tags": "Schlagwörter",
     "Optional, comma-separated": "Optional, durch Kommas getrennt",
-    "updated the keywords": "hat die Schlagwörter aktualisiert",
+    "updated the tags": "hat die Schlagwörter aktualisiert",
 
     "Comments": "Kommentare",
     "Write a comment…": "Kommentar schreiben…",
@@ -93,7 +93,7 @@
     "changed the status of": "änderte den Status von",
     "changed the priority of": "änderte die Priorität von",
     "updated the assignees of": "änderte die Zuständigen von",
-    "updated the keywords of": "änderte die Schlagwörter von",
+    "updated the tags of": "änderte die Schlagwörter von",
     "commented on": "kommentierte",
     "updated": "aktualisierte",
     "Activity": "Aktivität",

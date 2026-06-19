@@ -47,7 +47,7 @@ class ProjectShow extends Component
     public function project(): Project
     {
         $project = Project::where('short_name', $this->shortName)
-            ->with(['stories.keywords', 'stories.tasks.assignees'])
+            ->with(['stories.tags', 'stories.tasks.assignees'])
             ->firstOrFail();
 
         $this->authorize('view', $project);

@@ -51,8 +51,8 @@ it('matches titles case-insensitively regardless of query case', function () {
         ->assertSee('Acme Board');
 });
 
-it('finds a task by its keyword', function () {
-    $this->task->syncKeywords('urgent');
+it('finds a task by its tag', function () {
+    $this->task->syncTags('urgent');
 
     Livewire::actingAs($this->user)
         ->test(CommandPalette::class)
@@ -60,8 +60,8 @@ it('finds a task by its keyword', function () {
         ->assertSee('Deploy fix');
 });
 
-it('finds a story by its keyword', function () {
-    $this->story->syncKeywords('backend');
+it('finds a story by its tag', function () {
+    $this->story->syncTags('backend');
 
     Livewire::actingAs($this->user)
         ->test(CommandPalette::class)

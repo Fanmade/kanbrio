@@ -40,6 +40,8 @@ class ListTasksTool extends Tool
             return Response::error('No story with reference "'.$validated['reference'].'" exists, or you do not have access to it. References look like "PROJ1".');
         }
 
+        $story->loadMissing('tasks.tags');
+
         $tasks = $story->tasks
             ->when(
                 isset($validated['status']),
@@ -51,6 +53,7 @@ class ListTasksTool extends Tool
                 'priority' => $task->priority->name,
                 'due_date' => $task->due_date?->format('Y-m-d'),
                 'status' => $task->status->value,
+                'tags' => $task->tags->pluck('name')->all(),
             ])
             ->values();
 
@@ -91,6 +94,7 @@ class ListTasksTool extends Tool
                 'priority' => $schema->string()->description('The task priority: Lowest, Low, Medium, High or Highest.')->required(),
                 'due_date' => $schema->string()->description('The task due date in "YYYY-MM-DD" format; may be null.'),
                 'status' => $schema->string()->description('The task status.')->required(),
+                'tags' => $schema->array()->items($schema->string())->description('The tag names applied to the task.')->required(),
             ]))->description('The tasks in the story.')->required(),
         ];
     }

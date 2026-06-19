@@ -35,6 +35,8 @@ class CreateStoryTool extends Tool
             'description' => ['nullable', 'string'],
             'priority' => ['nullable', Rule::in(Priority::names())],
             'due_date' => ['nullable', 'date_format:Y-m-d'],
+            'tags' => ['nullable', 'array'],
+            'tags.*' => ['string'],
         ], [
             'short_name.required' => 'You must provide the project short_name (e.g. "PROJ").',
             'title.required' => 'You must provide a story title.',
@@ -58,12 +60,17 @@ class CreateStoryTool extends Tool
 
         $story->setRelation('project', $project);
 
+        if (isset($validated['tags'])) {
+            $story->syncTags($validated['tags']);
+        }
+
         return Response::structured([
             'reference' => $story->reference,
             'title' => $story->title,
             'description' => $story->description,
             'priority' => $story->priority->name,
             'due_date' => $story->due_date?->format('Y-m-d'),
+            'tags' => $story->tags()->pluck('name')->all(),
         ]);
     }
 
@@ -92,6 +99,10 @@ class CreateStoryTool extends Tool
 
             'due_date' => $schema->string()
                 ->description('Optional due date in "YYYY-MM-DD" format.'),
+
+            'tags' => $schema->array()
+                ->items($schema->string())
+                ->description('Optional tags to apply, as an array of tag names (e.g. ["UI/UX", "bug"]). Tags that do not exist yet are created.'),
         ];
     }
 
@@ -108,6 +119,7 @@ class CreateStoryTool extends Tool
             'description' => $schema->string()->description('The story description; may be null.'),
             'priority' => $schema->string()->description('The story priority: Lowest, Low, Medium, High or Highest.')->required(),
             'due_date' => $schema->string()->description('The story due date in "YYYY-MM-DD" format; may be null.'),
+            'tags' => $schema->array()->items($schema->string())->description('The tag names applied to the story.')->required(),
         ];
     }
 }

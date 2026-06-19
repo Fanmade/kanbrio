@@ -32,7 +32,7 @@ class ListStoriesTool extends Tool
 
         $project = Project::query()
             ->where('short_name', $validated['short_name'])
-            ->with(['stories.project'])
+            ->with(['stories.project', 'stories.tags'])
             ->first();
 
         if ($project === null || ! $user->can('view', $project)) {
@@ -46,6 +46,7 @@ class ListStoriesTool extends Tool
                 'description' => $story->description,
                 'priority' => $story->priority->name,
                 'due_date' => $story->due_date?->format('Y-m-d'),
+                'tags' => $story->tags->pluck('name')->all(),
             ])->all(),
         ]);
     }
@@ -78,6 +79,7 @@ class ListStoriesTool extends Tool
                 'description' => $schema->string()->description('The story description; may be null.'),
                 'priority' => $schema->string()->description('The story priority: Lowest, Low, Medium, High or Highest.')->required(),
                 'due_date' => $schema->string()->description('The story due date in "YYYY-MM-DD" format; may be null.'),
+                'tags' => $schema->array()->items($schema->string())->description('The tag names applied to the story.')->required(),
             ]))->description('The stories in the project.')->required(),
         ];
     }

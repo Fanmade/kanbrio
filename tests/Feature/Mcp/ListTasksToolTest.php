@@ -47,3 +47,15 @@ it('denies listing tasks of a story the user cannot access', function () {
     KanbrioServer::actingAs($user)->tool(ListTasksTool::class, ['reference' => $story->reference])
         ->assertHasErrors();
 });
+
+it('includes each task\'s tags', function () {
+    $user = User::factory()->create();
+    $project = Project::factory()->withMembers([$user])->create(['short_name' => 'ABC']);
+    $story = Story::factory()->for($project)->create();
+    $task = Task::factory()->for($story)->create();
+    $task->syncTags('design');
+
+    KanbrioServer::actingAs($user)->tool(ListTasksTool::class, ['reference' => $story->reference])
+        ->assertOk()
+        ->assertSee('design');
+});

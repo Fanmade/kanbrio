@@ -13,7 +13,7 @@ Built on Laravel with Livewire and Flux UI. English and German out of the box.
 - **Readable scoped URLs** — `/{SHORT}` for a project, `/{SHORT}{n}` for a story,
   `/{SHORT}{n}-{m}` for a task (e.g. `/ABC`, `/ABC1`, `/ABC1-3`).
 - **Command palette** (`⌘K` / `Ctrl+K`) — search projects, stories and tasks by
-  title or keyword, jump straight to a typed reference, and run quick actions.
+  title or tag, jump straight to a typed reference, and run quick actions.
 - **Kanban board** — drag-and-drop across the four statuses (Planned, ToDo,
   In progress, Done), per project or globally across every project you can see.
 - **Stories grouped on the board**, with completion progress bars on the project
@@ -25,7 +25,7 @@ Built on Laravel with Livewire and Flux UI. English and German out of the box.
 - **Attachments** — drag files onto a description to upload them, with inline
   image and PDF thumbnails. Files above the size limit are rejected with a
   clear message.
-- **Keywords** on stories and tasks.
+- **Tags** on stories and tasks.
 - **Priorities** — five levels (Lowest, Low, Medium, High, Highest; Medium is the
   default) on stories and tasks, with new tasks inheriting their story's priority.
   Board columns are ordered by priority and can be filtered to a single level.
@@ -132,7 +132,7 @@ They require the Playwright Chromium binary (`npx playwright install chromium`).
 - `app/Livewire/` — class-based Livewire components (board, projects, stories,
   tasks, comments, notifications, invitations).
 - `app/Concerns/` — shared model traits (scoped numbering, activity logging,
-  comments, keywords, attachments, subscriptions).
+  comments, tags, attachments, subscriptions).
 - `app/Models/` — Project, Story, Task, Comment, Attachment, Activity,
   Invitation, User.
 - `app/Policies/` — per-resource authorization cascading through membership.

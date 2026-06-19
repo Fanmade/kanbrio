@@ -62,3 +62,20 @@ it('denies updating a story with a read-only token', function () {
         'title' => 'New title',
     ])->assertHasErrors();
 });
+
+it('replaces a story\'s tags via MCP', function () {
+    $user = User::factory()->create();
+    Sanctum::actingAs($user, ['read', 'write']);
+    $project = Project::factory()->withMembers([$user])->create(['short_name' => 'ABC']);
+    $story = Story::factory()->for($project)->create();
+    $story->syncTags('old');
+
+    KanbrioServer::tool(UpdateStoryTool::class, [
+        'reference' => $story->reference,
+        'tags' => ['design'],
+    ])
+        ->assertOk()
+        ->assertSee('design');
+
+    expect($story->fresh()->tags()->pluck('name')->all())->toBe(['design']);
+});

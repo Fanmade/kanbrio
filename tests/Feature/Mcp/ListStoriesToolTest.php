@@ -28,3 +28,14 @@ it('denies listing stories of a project the user is not a member of', function (
     KanbrioServer::actingAs($user)->tool(ListStoriesTool::class, ['short_name' => 'ABC'])
         ->assertHasErrors();
 });
+
+it('includes each story\'s tags', function () {
+    $user = User::factory()->create();
+    $project = Project::factory()->withMembers([$user])->create(['short_name' => 'ABC']);
+    $story = Story::factory()->for($project)->create();
+    $story->syncTags('design');
+
+    KanbrioServer::actingAs($user)->tool(ListStoriesTool::class, ['short_name' => 'ABC'])
+        ->assertOk()
+        ->assertSee('design');
+});

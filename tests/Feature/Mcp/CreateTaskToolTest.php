@@ -113,3 +113,21 @@ it('denies creating a task with a read-only token', function () {
         'title' => 'A task',
     ])->assertHasErrors();
 });
+
+it('applies tags when creating a task via MCP', function () {
+    $user = User::factory()->create();
+    Sanctum::actingAs($user, ['read', 'write']);
+    $project = Project::factory()->withMembers([$user])->create(['short_name' => 'ABC']);
+    $story = Story::factory()->for($project)->create();
+
+    KanbrioServer::tool(CreateTaskTool::class, [
+        'reference' => $story->reference,
+        'title' => 'A task',
+        'tags' => ['design', 'bug'],
+    ])
+        ->assertOk()
+        ->assertSee('design');
+
+    assertDatabaseHas('tags', ['name' => 'design']);
+    assertDatabaseHas('tags', ['name' => 'bug']);
+});

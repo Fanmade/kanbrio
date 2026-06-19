@@ -4,9 +4,9 @@ namespace App\Models;
 
 use App\Concerns\HasAttachments;
 use App\Concerns\HasComments;
-use App\Concerns\HasKeywords;
 use App\Concerns\HasScopedNumber;
 use App\Concerns\HasSubscribers;
+use App\Concerns\HasTags;
 use App\Concerns\LogsActivity;
 use App\Contracts\Subscribable;
 use App\Enums\Priority;
@@ -42,7 +42,7 @@ use Illuminate\Support\Collection;
 class Story extends Model implements Subscribable
 {
     /** @use HasFactory<StoryFactory> */
-    use HasAttachments, HasComments, HasFactory, HasKeywords, HasScopedNumber, HasSubscribers, LogsActivity;
+    use HasAttachments, HasComments, HasFactory, HasScopedNumber, HasSubscribers, HasTags, LogsActivity;
 
     protected string $scopedNumberColumn = 'story_number';
 

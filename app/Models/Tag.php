@@ -14,14 +14,14 @@ use Illuminate\Support\Carbon;
  * @property Carbon|null $updated_at
  */
 #[Fillable(['name'])]
-class Keyword extends Model
+class Tag extends Model
 {
     /**
      * @return MorphToMany<Story, $this>
      */
     public function stories(): MorphToMany
     {
-        return $this->morphedByMany(Story::class, 'keywordable');
+        return $this->morphedByMany(Story::class, 'taggable');
     }
 
     /**
@@ -29,6 +29,6 @@ class Keyword extends Model
      */
     public function tasks(): MorphToMany
     {
-        return $this->morphedByMany(Task::class, 'keywordable');
+        return $this->morphedByMany(Task::class, 'taggable');
     }
 }

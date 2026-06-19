@@ -40,6 +40,8 @@ class CreateTaskTool extends Tool
             'priority' => ['nullable', Rule::in(Priority::names())],
             'due_date' => ['nullable', 'date_format:Y-m-d'],
             'status' => ['nullable', new Enum(Status::class)],
+            'tags' => ['nullable', 'array'],
+            'tags.*' => ['string'],
         ], [
             'reference.required' => 'You must provide the story reference to add the task to (e.g. "PROJ1").',
             'title.required' => 'You must provide a task title.',
@@ -65,6 +67,10 @@ class CreateTaskTool extends Tool
 
         $task->setRelation('story', $story);
 
+        if (isset($validated['tags'])) {
+            $task->syncTags($validated['tags']);
+        }
+
         return Response::structured([
             'reference' => $task->reference,
             'title' => $task->title,
@@ -72,6 +78,7 @@ class CreateTaskTool extends Tool
             'priority' => $task->priority->name,
             'due_date' => $task->due_date?->format('Y-m-d'),
             'status' => $task->status->value,
+            'tags' => $task->tags()->pluck('name')->all(),
         ]);
     }
 
@@ -104,6 +111,10 @@ class CreateTaskTool extends Tool
             'status' => $schema->string()
                 ->enum(array_map(static fn (Status $status): string => $status->value, Status::cases()))
                 ->description('Optional initial status. Defaults to "Planned".'),
+
+            'tags' => $schema->array()
+                ->items($schema->string())
+                ->description('Optional tags to apply, as an array of tag names (e.g. ["UI/UX", "bug"]). Tags that do not exist yet are created.'),
         ];
     }
 
@@ -121,6 +132,7 @@ class CreateTaskTool extends Tool
             'priority' => $schema->string()->description('The task priority: Lowest, Low, Medium, High or Highest.')->required(),
             'due_date' => $schema->string()->description('The task due date in "YYYY-MM-DD" format; may be null.'),
             'status' => $schema->string()->description('The task status.')->required(),
+            'tags' => $schema->array()->items($schema->string())->description('The tag names applied to the task.')->required(),
         ];
     }
 }

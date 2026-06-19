@@ -35,7 +35,7 @@ class StoryView extends Component
 
     public string $dueDate = '';
 
-    public string $keywords = '';
+    public string $tags = '';
 
     public int $priority;
 
@@ -74,7 +74,7 @@ class StoryView extends Component
         $project = Project::where('short_name', $this->shortName)->firstOrFail();
 
         $story = $project->stories()
-            ->with(['assignees', 'keywords', 'tasks.assignees', 'project'])
+            ->with(['assignees', 'tags', 'tasks.assignees', 'project'])
             ->where('story_number', $this->storyNumber)
             ->firstOrFail();
 
@@ -145,7 +145,7 @@ class StoryView extends Component
         $this->title = $this->story()->title;
         $this->description = (string) $this->story()->description;
         $this->dueDate = $this->story()->due_date?->format('Y-m-d') ?? '';
-        $this->keywords = $this->story()->keywordList();
+        $this->tags = $this->story()->tagList();
         $this->editing = true;
     }
 
@@ -167,9 +167,9 @@ class StoryView extends Component
             'due_date' => $validated['dueDate'] ?: null,
         ]);
 
-        $changes = $story->syncKeywords($this->keywords);
+        $changes = $story->syncTags($this->tags);
         if ($changes['attached'] !== [] || $changes['detached'] !== []) {
-            $story->recordActivity('keywords_changed', 'keywords');
+            $story->recordActivity('tags_changed', 'tags');
         }
 
         $this->editing = false;

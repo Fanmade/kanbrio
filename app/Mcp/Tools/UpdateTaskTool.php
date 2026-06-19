@@ -39,6 +39,8 @@ class UpdateTaskTool extends Tool
             'priority' => ['nullable', Rule::in(Priority::names())],
             'due_date' => ['nullable', 'date_format:Y-m-d'],
             'status' => ['nullable', new Enum(Status::class)],
+            'tags' => ['nullable', 'array'],
+            'tags.*' => ['string'],
         ], [
             'reference.required' => 'You must provide the task reference (e.g. "PROJ1-3").',
             'priority' => 'The priority must be one of: '.implode(', ', Priority::names()).'.',
@@ -71,9 +73,10 @@ class UpdateTaskTool extends Tool
         }
 
         $statusProvided = $request->has('status') && isset($validated['status']);
+        $tagsProvided = $request->has('tags');
 
-        if ($updates === [] && ! $statusProvided) {
-            return Response::error('Provide a title, description, priority, due date and/or status to update.');
+        if ($updates === [] && ! $statusProvided && ! $tagsProvided) {
+            return Response::error('Provide a title, description, priority, due date, status and/or tags to update.');
         }
 
         if ($updates !== []) {
@@ -92,6 +95,14 @@ class UpdateTaskTool extends Tool
             }
         }
 
+        if ($tagsProvided) {
+            $changes = $task->syncTags($validated['tags'] ?? []);
+
+            if ($changes['attached'] !== [] || $changes['detached'] !== []) {
+                $task->recordActivity('tags_changed', 'tags');
+            }
+        }
+
         return Response::structured([
             'reference' => $task->reference,
             'title' => $task->title,
@@ -99,6 +110,7 @@ class UpdateTaskTool extends Tool
             'priority' => $task->priority->name,
             'due_date' => $task->due_date?->format('Y-m-d'),
             'status' => $task->status->value,
+            'tags' => $task->tags()->pluck('name')->all(),
         ]);
     }
 
@@ -130,6 +142,10 @@ class UpdateTaskTool extends Tool
             'status' => $schema->string()
                 ->enum(array_map(static fn (Status $status): string => $status->value, Status::cases()))
                 ->description('New status for the task.'),
+
+            'tags' => $schema->array()
+                ->items($schema->string())
+                ->description('The complete set of tags for the task, as an array of tag names (e.g. ["UI/UX", "bug"]). Replaces the existing tags; pass [] to clear them. Tags that do not exist yet are created.'),
         ];
     }
 
@@ -147,6 +163,7 @@ class UpdateTaskTool extends Tool
             'priority' => $schema->string()->description('The task priority: Lowest, Low, Medium, High or Highest.')->required(),
             'due_date' => $schema->string()->description('The task due date in "YYYY-MM-DD" format; may be null.'),
             'status' => $schema->string()->description('The task status.')->required(),
+            'tags' => $schema->array()->items($schema->string())->description('The tag names applied to the task.')->required(),
         ];
     }
 }

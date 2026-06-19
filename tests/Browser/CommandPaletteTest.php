@@ -11,10 +11,10 @@ beforeEach(function () {
     $this->project->members()->attach($this->user);
     $this->story = Story::factory()->for($this->project)->create(['title' => 'Login flow']);
     $this->task = Task::factory()->for($this->story)->create(['title' => 'Deploy fix']);
-    $this->task->syncKeywords('urgent');
+    $this->task->syncTags('urgent');
 });
 
-it('opens from the header and finds a task by keyword', function () {
+it('opens from the header and finds a task by tag', function () {
     $this->actingAs($this->user);
 
     $page = visit('/dashboard');

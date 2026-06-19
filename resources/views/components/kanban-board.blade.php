@@ -52,7 +52,7 @@
                                 <div class="mt-2 flex flex-wrap items-center gap-1">
                                     <x-priority-badge :priority="$task->priority" />
                                     <x-due-date-badge :date="$task->due_date" />
-                                    <x-keyword-badges :keywords="$task->keywords" />
+                                    <x-tag-badges :tags="$task->tags" />
                                 </div>
 
                                 <div class="mt-2 flex items-center justify-between">
