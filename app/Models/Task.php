@@ -30,6 +30,7 @@ use Illuminate\Support\Collection;
  * @property string|null $description
  * @property Priority $priority
  * @property Status $status
+ * @property float $position
  * @property Carbon|null $due_date
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
@@ -56,6 +57,11 @@ class Task extends Model implements Subscribable
                 // @phpstan-ignore nullCoalesce.expr
                 $task->priority = $task->story?->priority ?? Priority::default();
             }
+
+            // New tasks land at the bottom of the board (largest position).
+            if (! $task->isDirty('position')) {
+                $task->position = (static::max('position') ?? 0) + 1;
+            }
         });
     }
 
@@ -67,6 +73,7 @@ class Task extends Model implements Subscribable
         return [
             'priority' => Priority::class,
             'status' => Status::class,
+            'position' => 'double',
             'due_date' => 'date',
         ];
     }

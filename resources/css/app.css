@@ -108,3 +108,31 @@ select:focus[data-flux-control] {
 /* \[:where(&)\]:size-4 {
     @apply size-4;
 } */
+
+/* ---------------------------------------------------------------------------
+   Board drag-and-drop (SortableJS) — see resources/js/app.js
+   --------------------------------------------------------------------------- */
+
+/* The placeholder showing exactly where the dragged card will land. */
+.kanban-ghost {
+    @apply border-2 border-dashed border-brand-400 bg-brand-50/60 dark:bg-brand-500/10;
+}
+
+.kanban-ghost > * {
+    @apply invisible;
+}
+
+/* The card the pointer grabbed (kept in place while the ghost moves). */
+.kanban-chosen {
+    @apply ring-2 ring-brand-400;
+}
+
+/* The floating clone that follows the cursor. */
+.kanban-drag {
+    @apply rotate-2 cursor-grabbing opacity-95 shadow-lg shadow-black/20;
+}
+
+/* While a drag is in progress, highlight every column as a valid drop target. */
+body.kanban-dragging [data-task-list] {
+    @apply rounded-lg outline-2 outline-dashed outline-brand-300/70 transition-colors;
+}

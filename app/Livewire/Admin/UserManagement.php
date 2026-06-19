@@ -79,6 +79,15 @@ class UserManagement extends Component
     }
 
     /**
+     * Whether toggling the given permission would let an administrator revoke
+     * their own management access and lock themselves out of this area.
+     */
+    public function locksSelfOutOfManagement(User $user, Permission $permission): bool
+    {
+        return $permission === Permission::ManageUsers && $user->is(Auth::user());
+    }
+
+    /**
      * Grant or revoke a single permission for the given user.
      */
     public function togglePermission(int $userId, string $permission): void
@@ -90,9 +99,7 @@ class UserManagement extends Component
         $case = Permission::from($permission);
         $granted = $user->hasPermission($case);
 
-        // Prevent an administrator from revoking their own management access and
-        // locking themselves out of this area.
-        if ($granted && $case === Permission::ManageUsers && $user->is(Auth::user())) {
+        if ($granted && $this->locksSelfOutOfManagement($user, $case)) {
             Flux::toast(text: __('You cannot revoke your own user management permission.'), variant: 'warning');
 
             return;

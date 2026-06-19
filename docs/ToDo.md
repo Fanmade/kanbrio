@@ -17,9 +17,6 @@
 ## Stories and tasks
 - Add optional types to stories and tasks (e.g. bug, feature, etc.).
 
-## Boards
-- Make the drag-and-drop prettier with nice animations.
-
 ## Design
 - The system doesn't look very good yet.
 - Maybe Claude Design can help?

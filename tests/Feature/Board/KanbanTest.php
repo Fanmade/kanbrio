@@ -34,6 +34,48 @@ it('moves a task to a new status and logs the change', function () {
         ->and($activity->user_id)->toBe($this->member->id);
 });
 
+it('moves a task into every other status', function (Status $target) {
+    Livewire::actingAs($this->member)
+        ->test(ProjectBoard::class, ['short_name' => 'ABC'])
+        ->call('moveTask', $this->task->id, $target->value);
+
+    expect($this->task->fresh()->status)->toBe($target);
+})->with([
+    'to do' => Status::ToDo,
+    'in progress' => Status::InProgress,
+    'done' => Status::Done,
+]);
+
+it('renders the drag-and-drop wiring and keyboard move options', function () {
+    $html = Livewire::actingAs($this->member)
+        ->test(ProjectBoard::class, ['short_name' => 'ABC'])
+        ->html();
+
+    // SortableJS drop zones and draggable cards are wired up.
+    expect($html)
+        ->toContain('data-task-card')
+        ->toContain('data-task-id="'.$this->task->id.'"')
+        ->toContain('data-status="'.Status::Planned->value.'"')
+        // The keyboard menu offers every status except the task's current one.
+        ->toContain('data-test="move-'.$this->task->id.'-'.Status::Done->value.'"')
+        ->toContain('data-test="move-'.$this->task->id.'-'.Status::InProgress->value.'"')
+        ->not->toContain('data-test="move-'.$this->task->id.'-'.Status::Planned->value.'"');
+});
+
+it('shows the story reference badge with its title, plus the full task reference', function () {
+    $this->story->update(['title' => 'Polished board drag-and-drop']);
+
+    $html = Livewire::actingAs($this->member)
+        ->test(ProjectBoard::class, ['short_name' => 'ABC'])
+        ->html();
+
+    expect($html)
+        ->toContain('data-test="story-badge-'.$this->task->id.'"')
+        ->toContain($this->story->reference)          // badge label
+        ->toContain('Polished board drag-and-drop')   // story title, surfaced on hover
+        ->toContain($this->task->reference);          // full task id
+});
+
 it('ignores an invalid status', function () {
     Livewire::actingAs($this->member)
         ->test(ProjectBoard::class, ['short_name' => 'ABC'])
@@ -49,37 +91,80 @@ it('forbids non-members from opening the board', function () {
         ->assertForbidden();
 });
 
-it('groups consecutive tasks of the same story in a column', function () {
+it('lists every task of a status in a single flat column, not grouped by story', function () {
+    $otherStory = Story::factory()->for($this->project)->create();
+    Task::factory()->for($otherStory)->status(Status::Planned)->create();
     Task::factory()->for($this->story)->status(Status::Planned)->create();
 
     $component = Livewire::actingAs($this->member)
         ->test(ProjectBoard::class, ['short_name' => 'ABC']);
 
-    $columns = $component->instance()->columns();
-    $planned = collect($columns)->firstWhere('status', Status::Planned);
+    $planned = collect($component->instance()->columns())->firstWhere('status', Status::Planned);
 
-    expect($planned['groups'])->toHaveCount(1)
-        ->and($planned['groups'][0]['tasks'])->toHaveCount(2)
-        ->and($planned['groups'][0]['story']->id)->toBe($this->story->id);
+    expect($planned)->not->toHaveKey('groups')
+        ->and($planned['tasks'])->toHaveCount(3);
 });
 
-it('orders tasks within a column by priority, highest first', function () {
-    $this->task->update(['priority' => Priority::Medium]);
-
-    $story = Story::factory()->for($this->project)->create();
-    Task::factory()->for($story)->status(Status::Planned)->priority(Priority::Low)->create();
-    Task::factory()->for($story)->status(Status::Planned)->priority(Priority::Highest)->create();
+it('orders tasks within a column by their manual position', function () {
+    // Positions are assigned on creation, so the column reflects creation order
+    // regardless of priority until a card is dragged.
+    $first = $this->task; // created in beforeEach
+    $second = Task::factory()->for($this->story)->status(Status::Planned)->priority(Priority::Highest)->create();
+    $third = Task::factory()->for($this->story)->status(Status::Planned)->priority(Priority::Low)->create();
 
     $columns = Livewire::actingAs($this->member)
         ->test(ProjectBoard::class, ['short_name' => 'ABC'])
         ->instance()->columns();
 
-    $priorities = collect(collect($columns)->firstWhere('status', Status::Planned)['groups'])
-        ->flatMap(fn ($group) => $group['tasks'])
-        ->map(fn (Task $task) => $task->priority->value)
+    $ids = collect($columns)->firstWhere('status', Status::Planned)['tasks']
+        ->map(fn (Task $task) => $task->id)
         ->all();
 
-    expect($priorities)->toBe([5, 3, 2]); // Highest, Medium, Low
+    expect($ids)->toBe([$first->id, $second->id, $third->id]);
+});
+
+it('assigns each new task a distinct, increasing position', function () {
+    // Guards the board order: tasks must never share a position, or midpoint
+    // reordering has no room to insert between them.
+    $a = Task::factory()->for($this->story)->create();
+    $b = Task::factory()->for($this->story)->create();
+
+    expect($a->position)->toBeGreaterThan(0)
+        ->and($b->position)->toBeGreaterThan($a->position)
+        ->and($this->task->position)->not->toBe($a->position);
+});
+
+it('reorders a task within a column and persists the new order', function () {
+    $first = $this->task; // position 1
+    $second = Task::factory()->for($this->story)->status(Status::Planned)->create();
+    $third = Task::factory()->for($this->story)->status(Status::Planned)->create();
+
+    // Drag the third card to the very top: it lands above $first (no card before it).
+    $columns = Livewire::actingAs($this->member)
+        ->test(ProjectBoard::class, ['short_name' => 'ABC'])
+        ->call('reorderTask', $third->id, Status::Planned->value, null, $first->id)
+        ->instance()->columns();
+
+    $ids = collect($columns)->firstWhere('status', Status::Planned)['tasks']
+        ->map(fn (Task $task) => $task->id)
+        ->all();
+
+    expect($ids)->toBe([$third->id, $first->id, $second->id])
+        ->and($third->fresh()->position)->toBeLessThan($first->fresh()->position);
+});
+
+it('reordering a task into another column changes its status and logs it', function () {
+    $target = Task::factory()->for($this->story)->status(Status::Done)->create();
+
+    Livewire::actingAs($this->member)
+        ->test(ProjectBoard::class, ['short_name' => 'ABC'])
+        ->call('reorderTask', $this->task->id, Status::Done->value, $target->id, null);
+
+    $moved = $this->task->fresh();
+
+    expect($moved->status)->toBe(Status::Done)
+        ->and($moved->position)->toBeGreaterThan($target->fresh()->position)
+        ->and($this->task->activities()->where('action', 'status_changed')->count())->toBe(1);
 });
 
 it('filters the board by priority', function () {
@@ -94,7 +179,7 @@ it('filters the board by priority', function () {
         ->set('priorityFilter', Priority::Highest->value)
         ->instance()->columns();
 
-    $tasks = collect($columns)->flatMap(fn ($column) => collect($column['groups'])->flatMap(fn ($group) => $group['tasks']));
+    $tasks = collect($columns)->flatMap(fn ($column) => $column['tasks']);
 
     expect($tasks)->toHaveCount(1)
         ->and($tasks->first()->priority)->toBe(Priority::Highest);

@@ -51,4 +51,16 @@ class Board extends Component
 
         unset($this->columns);
     }
+
+    /**
+     * Drag-and-drop placement: move and reorder a task on the global board.
+     */
+    public function reorderTask(int $taskId, string $status, ?int $beforeId, ?int $afterId): void
+    {
+        $task = Task::with('story.project')->findOrFail($taskId);
+
+        $this->applyTaskReorder($task, $status, $beforeId, $afterId);
+
+        unset($this->columns);
+    }
 }

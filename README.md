@@ -23,9 +23,11 @@ Built on Laravel with Livewire and Flux UI. English and German out of the box.
   title or tag, jump straight to a typed reference, and run quick actions.
 - **Kanban board** — drag-and-drop across the four statuses (Planned, ToDo,
   In progress, Done), per project or globally across every project you can see.
-- **Stories grouped on the board**, with completion progress bars on the project
-  overview, in the story header, and on story search results — each based on the
-  share of its tasks done.
+  Dragging is smoothly animated with highlighted drop targets and works on touch;
+  each card also has a keyboard-accessible "Move to" menu. Cards keep the order
+  you arrange them in within each column.
+- **Story completion progress bars** on the project overview, in the story
+  header, and on story search results — each based on the share of its tasks done.
 - **Dashboard** — per-status task counts, a 14-day completion chart, and a "My
   tasks" list for picking the next thing to work on: your in-progress and to-do
   tasks plus unassigned to-do tasks across your projects (work assigned to others
