@@ -54,6 +54,28 @@ trait ManagesDependencies
     }
 
     /**
+     * The blocker links whose blocking item still exists, ready to render.
+     *
+     * @return Collection<int, Dependency>
+     */
+    #[Computed]
+    public function presentBlockerLinks(): Collection
+    {
+        return $this->blockerLinks()->filter(static fn (Dependency $link): bool => $link->blocker !== null)->values();
+    }
+
+    /**
+     * The blocking links whose dependent item still exists, ready to render.
+     *
+     * @return Collection<int, Dependency>
+     */
+    #[Computed]
+    public function presentBlockingLinks(): Collection
+    {
+        return $this->blockingLinks()->filter(static fn (Dependency $link): bool => $link->dependent !== null)->values();
+    }
+
+    /**
      * Whether the viewed item has an unfinished blocker.
      */
     #[Computed]
@@ -117,7 +139,7 @@ trait ManagesDependencies
         $item->recordActivity('dependency_changed', 'dependencies');
 
         $this->reset('dependencyReference');
-        unset($this->blockerLinks, $this->blockingLinks, $this->isBlocked);
+        unset($this->blockerLinks, $this->blockingLinks, $this->presentBlockerLinks, $this->presentBlockingLinks, $this->isBlocked);
 
         Flux::toast(variant: 'success', text: __('Dependency added.'));
     }
@@ -142,7 +164,7 @@ trait ManagesDependencies
 
         $item->recordActivity('dependency_changed', 'dependencies');
 
-        unset($this->blockerLinks, $this->blockingLinks, $this->isBlocked);
+        unset($this->blockerLinks, $this->blockingLinks, $this->presentBlockerLinks, $this->presentBlockingLinks, $this->isBlocked);
 
         Flux::toast(variant: 'success', text: __('Dependency removed.'));
     }
