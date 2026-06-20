@@ -60,8 +60,10 @@ it('cannot add a subtask at the maximum nesting depth', function () {
     $component = ($this->view)($child);
     expect($component->instance()->canAddSubtask)->toBeFalse();
 
-    // The new-subtask button is hidden, and a forced call is refused.
+    // With nothing to add and no children, the whole subtasks section is hidden —
+    // no button and no empty "No subtasks yet." placeholder. A forced call is refused.
     $component->assertDontSeeHtml('data-test="new-subtask"')
+        ->assertDontSee(__('No subtasks yet.'))
         ->set('subtaskTitle', 'Too deep')
         ->call('createSubtask');
 
@@ -81,7 +83,7 @@ it('rolls up progress from the whole descendant subtree', function () {
 
 it('shows ancestors, the rolled-up progress and the direct children on the detail page', function () {
     $child = Task::factory()->for($this->story)->childOf($this->task)->status(Status::Done)->create(['title' => 'Child A']);
-    $grandchild = Task::factory()->for($this->story)->childOf($child)->create(['title' => 'Grandchild']);
+    $grandchild = Task::factory()->for($this->story)->childOf($child)->status(Status::ToDo)->create(['title' => 'Grandchild']);
 
     // On the middle task's page: a breadcrumb link up to the root, its own child listed,
     // and a 0/1 rollup for its subtree.

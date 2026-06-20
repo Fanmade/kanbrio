@@ -76,37 +76,41 @@
 
                 <x-attachments.list :attachments="$this->attachments" />
 
-                {{-- Subtasks: the direct children, with a progress rollup over the whole subtree --}}
-                <div>
-                    <div class="mb-2 flex items-center justify-between gap-2">
-                        <flux:heading size="sm">{{ __('Subtasks') }}</flux:heading>
-                        <div class="flex items-center gap-3">
-                            <x-story-progress :progress="$this->task->progress()" />
-                            @if ($canUpdate && $this->canAddSubtask)
-                                <flux:button size="sm" icon="plus" wire:click="openSubtaskModal" data-test="new-subtask">{{ __('New subtask') }}</flux:button>
-                            @endif
+                {{-- Subtasks: the direct children, with a progress rollup over the whole
+                     subtree. Hidden entirely when there is nothing to show and nothing can
+                     be added (e.g. a task at the maximum nesting depth). --}}
+                @if ($this->task->children->isNotEmpty() || ($canUpdate && $this->canAddSubtask))
+                    <div>
+                        <div class="mb-2 flex items-center justify-between gap-2">
+                            <flux:heading size="sm">{{ __('Subtasks') }}</flux:heading>
+                            <div class="flex items-center gap-3">
+                                <x-story-progress :progress="$this->task->progress()" />
+                                @if ($canUpdate && $this->canAddSubtask)
+                                    <flux:button size="sm" icon="plus" wire:click="openSubtaskModal" data-test="new-subtask">{{ __('New subtask') }}</flux:button>
+                                @endif
+                            </div>
                         </div>
-                    </div>
 
-                    <flux:card class="flex flex-col divide-y divide-zinc-100 p-0 dark:divide-zinc-700">
-                        @forelse ($this->task->children as $child)
-                            <a
-                                href="{{ route('task.show', ['short_name' => $shortName, 'task_number' => $child->task_number]) }}"
-                                wire:navigate
-                                class="flex items-center justify-between gap-2 px-4 py-3 hover:bg-zinc-50 dark:hover:bg-zinc-800"
-                                data-test="subtask-{{ $child->id }}"
-                            >
-                                <div class="flex min-w-0 items-center gap-2">
-                                    <flux:text size="xs" class="font-mono text-zinc-400">{{ $shortName }}-{{ $child->task_number }}</flux:text>
-                                    <span @class(['text-sm', 'truncate text-zinc-400' => $child->isArchived()])>{{ $child->title }}</span>
-                                </div>
-                                <flux:badge size="sm" :color="$child->status->color()" :icon="$child->status->icon()">{{ $child->status->label() }}</flux:badge>
-                            </a>
-                        @empty
-                            <flux:text size="sm" class="px-4 py-3 text-zinc-400">{{ __('No subtasks yet.') }}</flux:text>
-                        @endforelse
-                    </flux:card>
-                </div>
+                        <flux:card class="flex flex-col divide-y divide-zinc-100 p-0 dark:divide-zinc-700">
+                            @forelse ($this->task->children as $child)
+                                <a
+                                    href="{{ route('task.show', ['short_name' => $shortName, 'task_number' => $child->task_number]) }}"
+                                    wire:navigate
+                                    class="flex items-center justify-between gap-2 px-4 py-3 hover:bg-zinc-50 dark:hover:bg-zinc-800"
+                                    data-test="subtask-{{ $child->id }}"
+                                >
+                                    <div class="flex min-w-0 items-center gap-2">
+                                        <flux:text size="xs" class="font-mono text-zinc-400">{{ $shortName }}-{{ $child->task_number }}</flux:text>
+                                        <span @class(['text-sm', 'truncate text-zinc-400' => $child->isArchived()])>{{ $child->title }}</span>
+                                    </div>
+                                    <flux:badge size="sm" :color="$child->status->color()" :icon="$child->status->icon()">{{ $child->status->label() }}</flux:badge>
+                                </a>
+                            @empty
+                                <flux:text size="sm" class="px-4 py-3 text-zinc-400">{{ __('No subtasks yet.') }}</flux:text>
+                            @endforelse
+                        </flux:card>
+                    </div>
+                @endif
 
                 <livewire:comments.comment-list :commentable="$this->task" :wire:key="'comments-task-'.$this->task->id" />
 
