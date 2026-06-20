@@ -14,6 +14,19 @@
         <livewire:subscriptions.subscription-toggle :subscribable="$this->task" :wire:key="'sub-task-'.$this->task->id" />
     </div>
 
+    @if ($parentBumpUndoStatus !== '')
+        <div
+            class="flex items-center justify-between gap-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-2 text-sm dark:border-amber-400/20 dark:bg-amber-400/10"
+            data-test="parent-bump-banner"
+        >
+            <flux:text size="sm">{{ __('The parent task was moved to In progress.') }}</flux:text>
+            <div class="flex items-center gap-2">
+                <flux:button size="xs" variant="ghost" wire:click="undoParentBump" data-test="undo-parent-bump">{{ __('Undo') }}</flux:button>
+                <flux:button size="xs" variant="subtle" icon="x-mark" :aria-label="__('Dismiss')" wire:click="dismissParentBump" />
+            </div>
+        </div>
+    @endif
+
     @php($canUpdate = auth()->user()->can('update', $this->task))
 
     @if ($editing)
@@ -123,4 +136,32 @@
             </aside>
         </div>
     @endif
+
+    <flux:modal wire:model.self="confirmingCascade" wire:close="abortCascade" class="md:w-96" data-test="cascade-modal">
+        @php($canceling = $this->pendingStatusEnum === \App\Enums\Status::Canceled)
+        <div class="flex flex-col gap-4">
+            <flux:heading size="lg">
+                {{ $canceling ? __('Cancel the subtasks too?') : __('Mark the subtasks done too?') }}
+            </flux:heading>
+            <flux:text>
+                {{ $canceling
+                    ? __('This task has :count open subtask(s). Cancel them as well, or cancel only this task?', ['count' => $this->openSubtaskCount])
+                    : __('This task has :count open subtask(s). Mark them done as well, or complete only this task?', ['count' => $this->openSubtaskCount]) }}
+            </flux:text>
+
+            <flux:checkbox wire:model="rememberCascadeChoice" :label="__('Remember my choice')" data-test="cascade-remember" />
+
+            <div class="flex justify-end gap-2">
+                <flux:button type="button" variant="ghost" wire:click="abortCascade">
+                    {{ $canceling ? __('Keep open') : __('Cancel') }}
+                </flux:button>
+                <flux:button type="button" variant="filled" wire:click="declineCascade" data-test="cascade-decline">{{ __('Only this task') }}</flux:button>
+                @if ($canceling)
+                    <flux:button type="button" variant="danger" wire:click="confirmCascade" data-test="cascade-confirm">{{ __('Cancel all') }}</flux:button>
+                @else
+                    <flux:button type="button" variant="primary" wire:click="confirmCascade" data-test="cascade-confirm">{{ __('Mark all done') }}</flux:button>
+                @endif
+            </div>
+        </div>
+    </flux:modal>
 </div>

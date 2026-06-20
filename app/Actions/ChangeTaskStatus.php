@@ -1,0 +1,181 @@
+<?php
+
+namespace App\Actions;
+
+use App\Enums\CascadePreference;
+use App\Enums\Status;
+use App\Models\Task;
+use App\Models\User;
+use App\Support\StatusCascadeResult;
+use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
+
+/**
+ * The single source of truth for changing a task's status, shared by the task
+ * page, both boards and the MCP tool. It applies the parent/child cascade from
+ * the RFC atomically and records every resulting change in the activity log:
+ *
+ * - Parent → terminal (Done/Canceled) with open subtasks: optionally apply the
+ *   same status to the open subtree ({@see resolveCascade()} decides from the
+ *   caller's choice or the actor's {@see CascadePreference}).
+ * - Child → In progress: pull a not-yet-started parent into progress, silently,
+ *   reporting enough state to undo just that bump.
+ * - Child → Canceled (or any close) that was the parent's last open child: report
+ *   it so the UI can prompt about the parent — never changed automatically.
+ */
+class ChangeTaskStatus
+{
+    /**
+     * The per-user preference key controlling the Done/Cancel children cascade.
+     */
+    public const string PREFERENCE_KEY = 'status_cascade';
+
+    /**
+     * Apply $new to $task and run the cascade in a single transaction.
+     *
+     * @param  bool|null  $cascadeToChildren  when $new is terminal and the task has open
+     *                                        descendants: true also applies $new to them, false leaves them, null resolves
+     *                                        from the actor's preference (under "ask", Done leaves and Cancel cascades).
+     */
+    public function handle(Task $task, Status $new, ?bool $cascadeToChildren = null): StatusCascadeResult
+    {
+        if ($task->status === $new) {
+            return new StatusCascadeResult;
+        }
+
+        /** @var array<int, array{id: int, status: string}> $undo */
+        $undo = [];
+        $cascaded = 0;
+        $parentBumped = false;
+        $parent = $task->parent;
+        $parentPreviousStatus = null;
+
+        DB::transaction(function () use ($task, $new, $cascadeToChildren, $parent, &$undo, &$cascaded, &$parentBumped, &$parentPreviousStatus): void {
+            $this->changeOne($task, $new, $undo);
+
+            if ($new->isTerminal() && $this->resolveCascade($new, $cascadeToChildren)) {
+                foreach ($this->openDescendants($task) as $descendant) {
+                    $this->changeOne($descendant, $new, $undo);
+                    $cascaded++;
+                }
+            }
+
+            if ($new === Status::InProgress
+                && $parent !== null
+                && ! $parent->status->isTerminal()
+                && $parent->status !== Status::InProgress
+            ) {
+                $parentPreviousStatus = $parent->status->value;
+                $this->changeOne($parent, Status::InProgress, $undo);
+                $parentBumped = true;
+            }
+        });
+
+        return new StatusCascadeResult(
+            undo: $undo,
+            cascadedChildren: $cascaded,
+            parentBumped: $parentBumped,
+            parentClosedOut: $new->isTerminal() && $parent !== null && $this->openChildCount($parent) === 0,
+            parentId: $parent?->getKey(),
+            parentPreviousStatus: $parentPreviousStatus,
+        );
+    }
+
+    /**
+     * Restore the given tasks to the statuses captured in an undo snapshot,
+     * atomically and without recording further activity — the undo neutralizes a
+     * change the user did not intend.
+     *
+     * @param  array<int, array{id: int, status: string}>  $undo
+     */
+    public function revert(array $undo): void
+    {
+        DB::transaction(function () use ($undo): void {
+            foreach ($undo as $entry) {
+                $task = Task::find($entry['id']);
+                $status = Status::tryFrom($entry['status']);
+
+                if ($task === null || $status === null || $task->status === $status) {
+                    continue;
+                }
+
+                $task->status = $status;
+                $task->save();
+            }
+        });
+    }
+
+    /**
+     * Apply a status to one task, capturing its prior status for undo and logging
+     * the change. Skips tasks already at the target status.
+     *
+     * @param  array<int, array{id: int, status: string}>  $undo
+     */
+    private function changeOne(Task $task, Status $new, array &$undo): void
+    {
+        if ($task->status === $new) {
+            return;
+        }
+
+        $old = $task->status;
+        $undo[] = ['id' => $task->id, 'status' => $old->value];
+
+        $task->status = $new;
+        $task->save();
+
+        $task->recordActivity('status_changed', 'status', $old->value, $new->value);
+    }
+
+    /**
+     * Whether the terminal cascade should reach the open subtree, from the
+     * caller's explicit choice or, failing that, the actor's preference.
+     */
+    private function resolveCascade(Status $new, ?bool $explicit): bool
+    {
+        if ($explicit !== null) {
+            return $explicit;
+        }
+
+        return match ($this->preference()) {
+            CascadePreference::Always => true,
+            CascadePreference::Never => false,
+            CascadePreference::Ask => $new === Status::Canceled,
+        };
+    }
+
+    /**
+     * The actor's cascade preference, defaulting to "ask".
+     */
+    private function preference(): CascadePreference
+    {
+        $user = Auth::user();
+        $value = $user instanceof User
+            ? $user->preference(self::PREFERENCE_KEY, CascadePreference::Ask->value)
+            : CascadePreference::Ask->value;
+
+        return CascadePreference::tryFrom((string) $value) ?? CascadePreference::Ask;
+    }
+
+    /**
+     * The task's open (non-terminal) descendants across the whole subtree.
+     *
+     * @return Collection<int, Task>
+     */
+    private function openDescendants(Task $task): Collection
+    {
+        return $task->descendants()->get()
+            ->reject(static fn (Task $descendant): bool => $descendant->status->isTerminal())
+            ->values();
+    }
+
+    /**
+     * How many of a task's direct children are still open.
+     */
+    private function openChildCount(Task $task): int
+    {
+        return $task->children()->get()
+            ->reject(static fn (Task $child): bool => $child->status->isTerminal())
+            ->count();
+    }
+}

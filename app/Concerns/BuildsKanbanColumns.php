@@ -2,6 +2,7 @@
 
 namespace App\Concerns;
 
+use App\Actions\ChangeTaskStatus;
 use App\Enums\Status;
 use App\Models\Task;
 use Illuminate\Support\Collection;
@@ -50,12 +51,10 @@ trait BuildsKanbanColumns
             return;
         }
 
-        $old = $task->status;
-        $task->status = $new;
+        // Position is set first; the status change (and its cascade) is persisted
+        // by the shared action, which saves the model — carrying the new position.
         $task->position = (Task::where('status', $new)->max('position') ?? 0) + 1;
-        $task->save();
-
-        $task->recordActivity('status_changed', 'status', $old->value, $new->value);
+        app(ChangeTaskStatus::class)->handle($task, $new);
     }
 
     /**
@@ -94,16 +93,17 @@ trait BuildsKanbanColumns
             return;
         }
 
-        $old = $task->status;
-        $statusChanged = $old !== $new;
-
-        $task->status = $new;
         $task->position = $this->positionBetween($beforeId, $afterId);
-        $task->save();
 
-        if ($statusChanged) {
-            $task->recordActivity('status_changed', 'status', $old->value, $new->value);
+        if ($task->status === $new) {
+            $task->save();
+
+            return;
         }
+
+        // A genuine status change goes through the shared action so the cascade
+        // and activity logging stay consistent with every other entry point.
+        app(ChangeTaskStatus::class)->handle($task, $new);
     }
 
     /**

@@ -2,6 +2,7 @@
 
 namespace App\Mcp\Tools;
 
+use App\Actions\ChangeTaskStatus;
 use App\Enums\Priority;
 use App\Enums\Status;
 use App\Mcp\Concerns\RecordsTagChanges;
@@ -89,11 +90,9 @@ class UpdateTaskTool extends Tool
             $new = Status::from($validated['status']);
 
             if ($task->status !== $new) {
-                $old = $task->status;
-                $task->status = $new;
-                $task->save();
-
-                $task->recordActivity('status_changed', 'status', $old->value, $new->value);
+                // Routed through the shared action so a status change made over MCP
+                // runs the same parent/child cascade as the UI.
+                app(ChangeTaskStatus::class)->handle($task, $new);
             }
         }
 

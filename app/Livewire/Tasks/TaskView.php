@@ -2,9 +2,11 @@
 
 namespace App\Livewire\Tasks;
 
+use App\Actions\ChangeTaskStatus;
 use App\Concerns\HandlesAttachments;
 use App\Concerns\ManagesDependencies;
 use App\Concerns\ManagesTags;
+use App\Enums\CascadePreference;
 use App\Enums\Priority;
 use App\Enums\Status;
 use App\Models\Project;
@@ -13,6 +15,7 @@ use App\Models\Task;
 use App\Models\User;
 use Flux\Flux;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Locked;
 use Livewire\Component;
@@ -43,6 +46,27 @@ class TaskView extends Component
 
     /** @var array<int, int> */
     public array $assigneeIds = [];
+
+    /**
+     * A terminal status change (Done/Canceled) is held here, awaiting the
+     * "also change the open subtasks?" confirmation, when the user prefers to
+     * be asked.
+     */
+    public bool $confirmingCascade = false;
+
+    public string $pendingStatus = '';
+
+    /**
+     * When set, the modal choice is remembered as the user's cascade preference
+     * ("always" when confirmed, "never" when declined) so future closes skip it.
+     */
+    public bool $rememberCascadeChoice = false;
+
+    /**
+     * The status the parent held before a silent child→parent bump, kept so the
+     * bump can be undone. Empty when there is nothing to undo.
+     */
+    public string $parentBumpUndoStatus = '';
 
     public function mount(string $short_name, int $task_number): void
     {
@@ -115,13 +139,148 @@ class TaskView extends Component
             return;
         }
 
-        $old = $task->status;
-        $task->status = $new;
-        $task->save();
-        $task->recordActivity('status_changed', 'status', $old->value, $new->value);
+        // Closing a parent with open subtasks under the "ask" preference: hold the
+        // change and let the modal decide whether to cascade.
+        if ($new->isTerminal()
+            && $this->cascadePreference() === CascadePreference::Ask
+            && $this->openSubtaskCount() > 0
+        ) {
+            $this->pendingStatus = $new->value;
+            $this->confirmingCascade = true;
+
+            return;
+        }
+
+        $this->applyStatusChange($task, $new, null);
+    }
+
+    /**
+     * Apply the held status change, also marking the open subtasks when confirmed.
+     */
+    public function confirmCascade(): void
+    {
+        $this->resolveCascade(true);
+    }
+
+    /**
+     * Apply the held status change to this task only, leaving the subtasks open.
+     */
+    public function declineCascade(): void
+    {
+        $this->resolveCascade(false);
+    }
+
+    /**
+     * Dismiss the prompt without changing anything, restoring the status control.
+     */
+    public function abortCascade(): void
+    {
+        $this->confirmingCascade = false;
+        $this->pendingStatus = '';
+        $this->rememberCascadeChoice = false;
+        $this->status = $this->task()->status->value;
+    }
+
+    /**
+     * Undo the silent bump that pulled the parent task into "In progress".
+     */
+    public function undoParentBump(): void
+    {
+        $previous = Status::tryFrom($this->parentBumpUndoStatus);
+        $parent = $this->task()->parent;
+        $this->parentBumpUndoStatus = '';
+
+        if ($previous === null || $parent === null) {
+            return;
+        }
+
+        $this->authorize('updateStatus', $parent);
+        app(ChangeTaskStatus::class)->revert([['id' => $parent->getKey(), 'status' => $previous->value]]);
+
+        Flux::toast(variant: 'success', text: __('Parent task change undone.'));
+    }
+
+    public function dismissParentBump(): void
+    {
+        $this->parentBumpUndoStatus = '';
+    }
+
+    /**
+     * The number of open (non-terminal) tasks anywhere under this task.
+     */
+    #[Computed]
+    public function openSubtaskCount(): int
+    {
+        return $this->task()->descendants()->get()
+            ->reject(static fn (Task $task): bool => $task->status->isTerminal())
+            ->count();
+    }
+
+    /**
+     * The status currently awaiting cascade confirmation, if any.
+     */
+    #[Computed]
+    public function pendingStatusEnum(): ?Status
+    {
+        return Status::tryFrom($this->pendingStatus);
+    }
+
+    /**
+     * Resolve the held cascade prompt and apply the change with the given choice.
+     */
+    private function resolveCascade(bool $cascadeToChildren): void
+    {
+        $new = Status::tryFrom($this->pendingStatus);
+        $remember = $this->rememberCascadeChoice;
+        $this->confirmingCascade = false;
+        $this->pendingStatus = '';
+        $this->rememberCascadeChoice = false;
+
+        if ($new === null) {
+            return;
+        }
+
+        $task = $this->task();
+        $this->authorize('updateStatus', $task);
+
+        if ($remember) {
+            Auth::user()?->setPreference(
+                ChangeTaskStatus::PREFERENCE_KEY,
+                ($cascadeToChildren ? CascadePreference::Always : CascadePreference::Never)->value,
+            );
+        }
+
+        $this->applyStatusChange($task, $new, $cascadeToChildren);
+    }
+
+    /**
+     * Run the status change through the shared cascade action and surface the
+     * outcome (a success toast, plus an undo affordance for a parent bump).
+     */
+    private function applyStatusChange(Task $task, Status $new, ?bool $cascadeToChildren): void
+    {
+        $result = app(ChangeTaskStatus::class)->handle($task, $new, $cascadeToChildren);
 
         unset($this->task);
-        Flux::toast(variant: 'success', text: __('Status updated.'));
+        $this->status = $new->value;
+        $this->parentBumpUndoStatus = $result->parentBumped ? (string) $result->parentPreviousStatus : '';
+
+        Flux::toast(
+            variant: 'success',
+            text: $result->parentBumped
+                ? __('Status updated. Parent task moved to In progress.')
+                : __('Status updated.'),
+        );
+    }
+
+    /**
+     * The viewer's parent→children cascade preference, defaulting to "ask".
+     */
+    private function cascadePreference(): CascadePreference
+    {
+        $value = Auth::user()?->preference(ChangeTaskStatus::PREFERENCE_KEY, CascadePreference::Ask->value);
+
+        return CascadePreference::tryFrom((string) $value) ?? CascadePreference::Ask;
     }
 
     public function updatedPriority(string|int $value): void
