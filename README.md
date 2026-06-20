@@ -64,8 +64,8 @@ Built on Laravel with Livewire and Flux UI. English and German out of the box.
   manage everything from a dedicated page, unread badge in the header.
 - **Markdown** descriptions and comments.
 - **Activity log** — polymorphic audit trail of creations, status changes, and
-  assignment changes. Collapsed by default; the open/closed state is remembered
-  per user.
+  assignment changes, naming the assignees added or removed. Collapsed by
+  default; the open/closed state is remembered per user.
 - **Invitation-only onboarding** via signed, expiring email links (public
   registration is disabled).
 - **User administration** — an admin-only area (gated by the `manage-users`

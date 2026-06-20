@@ -162,9 +162,7 @@ class TaskView extends Component
             $task->subscribers()->syncWithoutDetaching($changes['attached']);
         }
 
-        if ($changes['attached'] !== [] || $changes['detached'] !== []) {
-            $task->recordActivity('assignee_changed', 'assignees');
-        }
+        $task->recordAssigneeChange($changes['attached'], $changes['detached']);
 
         unset($this->task);
     }

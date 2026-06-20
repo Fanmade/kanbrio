@@ -67,6 +67,44 @@ it('applies the collapsed preference across all subject types', function () {
         ->assertSet('collapsed', false);
 });
 
+it('shows which assignees were added and removed', function () {
+    $this->member->setPreference('activities_collapsed', false);
+    $this->task->recordActivity('assignee_changed', 'assignees', json_encode(['Carol']), json_encode(['Alice', 'Bob']));
+
+    Livewire::actingAs($this->member)
+        ->test(ActivityFeed::class, ['subject' => $this->task])
+        ->assertSee('assigned Alice and Bob, unassigned Carol');
+});
+
+it('shows only added assignees when none were removed', function () {
+    $this->member->setPreference('activities_collapsed', false);
+    $this->task->recordActivity('assignee_changed', 'assignees', null, json_encode(['Alice']));
+
+    Livewire::actingAs($this->member)
+        ->test(ActivityFeed::class, ['subject' => $this->task])
+        ->assertSee('assigned Alice')
+        ->assertDontSee('unassigned');
+});
+
+it('localizes the assignee change in German', function () {
+    app()->setLocale('de');
+    $this->member->setPreference('activities_collapsed', false);
+    $this->task->recordActivity('assignee_changed', 'assignees', json_encode(['Carol']), json_encode(['Alice', 'Bob']));
+
+    Livewire::actingAs($this->member)
+        ->test(ActivityFeed::class, ['subject' => $this->task])
+        ->assertSee('wies Alice und Bob zu und entfernte Carol aus den Zuständigen');
+});
+
+it('falls back to a generic line for legacy assignee entries without detail', function () {
+    $this->member->setPreference('activities_collapsed', false);
+    $this->task->recordActivity('assignee_changed', 'assignees');
+
+    Livewire::actingAs($this->member)
+        ->test(ActivityFeed::class, ['subject' => $this->task])
+        ->assertSee('updated the assignees');
+});
+
 it('forbids non-members from viewing the feed', function () {
     Livewire::actingAs(User::factory()->create())
         ->test(ActivityFeed::class, ['subject' => $this->task])

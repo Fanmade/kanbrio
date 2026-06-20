@@ -41,3 +41,27 @@ it('logs assignee changes with the acting user', function () {
         ->and($activity)->not->toBeNull()
         ->and($activity->user_id)->toBe($member->id);
 });
+
+it('records the names of added and removed task assignees', function () {
+    $actor = User::factory()->create();
+    $alice = User::factory()->create(['name' => 'Alice']);
+    $bob = User::factory()->create(['name' => 'Bob']);
+    $project = Project::factory()->create(['short_name' => 'ABC']);
+    $project->members()->attach([$actor->id, $alice->id, $bob->id]);
+    $story = Story::factory()->for($project)->create();
+    $task = Task::factory()->for($story)->create();
+    $task->assignees()->attach($alice->id);
+
+    Livewire::actingAs($actor)
+        ->test(TaskView::class, [
+            'short_name' => 'ABC',
+            'story_number' => $story->story_number,
+            'task_number' => $task->task_number,
+        ])
+        ->set('assigneeIds', [$bob->id]);
+
+    $activity = $task->activities()->where('action', 'assignee_changed')->first();
+
+    expect(json_decode((string) $activity->new_value, true))->toBe(['Bob'])
+        ->and(json_decode((string) $activity->old_value, true))->toBe(['Alice']);
+});

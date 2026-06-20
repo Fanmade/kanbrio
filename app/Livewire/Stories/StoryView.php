@@ -148,9 +148,7 @@ class StoryView extends Component
             $story->subscribers()->syncWithoutDetaching($changes['attached']);
         }
 
-        if ($changes['attached'] !== [] || $changes['detached'] !== []) {
-            $story->recordActivity('assignee_changed', 'assignees');
-        }
+        $story->recordAssigneeChange($changes['attached'], $changes['detached']);
 
         unset($this->story);
     }

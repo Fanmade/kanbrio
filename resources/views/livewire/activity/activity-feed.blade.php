@@ -19,11 +19,22 @@
                     $new = \App\Enums\Status::tryFrom((string) $activity->new_value)?->label() ?? $activity->new_value;
                     $oldPriority = \App\Enums\Priority::tryFrom((int) $activity->old_value)?->label() ?? $activity->old_value;
                     $newPriority = \App\Enums\Priority::tryFrom((int) $activity->new_value)?->label() ?? $activity->new_value;
+                    $assigneesAdded = json_decode((string) $activity->new_value, true) ?: [];
+                    $assigneesRemoved = json_decode((string) $activity->old_value, true) ?: [];
+                    $conjunction = ' '.__('and').' ';
+                    $addedList = \Illuminate\Support\Arr::join($assigneesAdded, ', ', $conjunction);
+                    $removedList = \Illuminate\Support\Arr::join($assigneesRemoved, ', ', $conjunction);
+                    $assigneeDescription = match (true) {
+                        $assigneesAdded !== [] && $assigneesRemoved !== [] => __('assigned :added, unassigned :removed', ['added' => $addedList, 'removed' => $removedList]),
+                        $assigneesAdded !== [] => __('assigned :users', ['users' => $addedList]),
+                        $assigneesRemoved !== [] => __('unassigned :users', ['users' => $removedList]),
+                        default => __('updated the assignees'),
+                    };
                     $description = match ($activity->action) {
                         'created' => __('created this'),
                         'status_changed' => __('changed status from :old to :new', ['old' => $old, 'new' => $new]),
                         'priority_changed' => __('changed priority from :old to :new', ['old' => $oldPriority, 'new' => $newPriority]),
-                        'assignee_changed' => __('updated the assignees'),
+                        'assignee_changed' => $assigneeDescription,
                         'dependency_changed' => __('updated the dependencies'),
                         'tags_changed' => __('updated the tags'),
                         'archived' => __('archived this'),

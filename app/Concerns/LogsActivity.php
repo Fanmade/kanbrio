@@ -50,6 +50,42 @@ trait LogsActivity
     }
 
     /**
+     * Record an assignee change, capturing the names of the users added and
+     * removed as a JSON snapshot. Names are stored (rather than IDs) so the
+     * trail reflects who was assigned at the time, even after a later rename or
+     * deletion. Returns null when nothing actually changed.
+     *
+     * @param  array<int, int|string>  $attachedIds  user IDs newly assigned
+     * @param  array<int, int|string>  $detachedIds  user IDs unassigned
+     */
+    public function recordAssigneeChange(array $attachedIds, array $detachedIds): ?Activity
+    {
+        if ($attachedIds === [] && $detachedIds === []) {
+            return null;
+        }
+
+        $names = User::query()
+            ->whereIn('id', array_merge($attachedIds, $detachedIds))
+            ->pluck('name', 'id');
+
+        $resolve = static fn (array $ids): array => collect($ids)
+            ->map(static fn ($id) => $names[(int) $id] ?? null)
+            ->filter()
+            ->values()
+            ->all();
+
+        $added = $resolve($attachedIds);
+        $removed = $resolve($detachedIds);
+
+        return $this->recordActivity(
+            'assignee_changed',
+            'assignees',
+            $removed === [] ? null : json_encode($removed, JSON_THROW_ON_ERROR),
+            $added === [] ? null : json_encode($added, JSON_THROW_ON_ERROR),
+        );
+    }
+
+    /**
      * Notify the item's subscribers (excluding the actor) about an update.
      */
     protected function notifySubscribers(Activity $activity): void

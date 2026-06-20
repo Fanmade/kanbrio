@@ -119,6 +119,10 @@
     "changed status from :old to :new": "hat den Status von :old auf :new geändert",
     "changed priority from :old to :new": "hat die Priorität von :old auf :new geändert",
     "updated the assignees": "hat die Zuständigen aktualisiert",
+    "and": "und",
+    "assigned :users": "wies :users zu",
+    "unassigned :users": "entfernte :users aus den Zuständigen",
+    "assigned :added, unassigned :removed": "wies :added zu und entfernte :removed aus den Zuständigen",
 
     "Invite a user": "Benutzer einladen",
     "Invite user": "Benutzer einladen",

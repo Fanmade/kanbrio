@@ -142,11 +142,14 @@ it('assigns members to the story, auto-subscribes them, and logs the change', fu
     ($this->mountStory)()
         ->set('assigneeIds', [$this->member->id, $other->id]);
 
+    $activity = $this->story->activities()->where('action', 'assignee_changed')->first();
+
     expect($this->story->assignees()->pluck('users.id')->all())
         ->toEqualCanonicalizing([$this->member->id, $other->id])
         ->and($this->story->isSubscribedBy($this->member))->toBeTrue()
         ->and($this->story->isSubscribedBy($other))->toBeTrue()
-        ->and($this->story->activities()->where('action', 'assignee_changed')->count())->toBe(1);
+        ->and(json_decode((string) $activity->new_value, true))->toEqualCanonicalizing([$this->member->name, $other->name])
+        ->and($activity->old_value)->toBeNull();
 });
 
 it('logs an assignee change when an assignee is removed', function () {
@@ -155,6 +158,9 @@ it('logs an assignee change when an assignee is removed', function () {
     ($this->mountStory)()
         ->set('assigneeIds', []);
 
+    $activity = $this->story->activities()->where('action', 'assignee_changed')->first();
+
     expect($this->story->assignees()->count())->toBe(0)
-        ->and($this->story->activities()->where('action', 'assignee_changed')->count())->toBe(1);
+        ->and(json_decode((string) $activity->old_value, true))->toBe([$this->member->name])
+        ->and($activity->new_value)->toBeNull();
 });
