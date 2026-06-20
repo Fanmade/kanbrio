@@ -15,9 +15,12 @@
         >
             {{-- Platform-accurate shortcut hint: ⌘K on Apple, Ctrl K elsewhere. --}}
             <x-slot:kbd>
+                {{-- Inline the platform check in x-text so there is no x-data state to
+                     race against: x-text is always self-contained, never referencing an
+                     uninitialized scope (avoids the flaky "mac is not defined"). --}}
                 <span
-                    x-data="{ mac: (navigator.userAgentData?.platform || navigator.platform || '').toLowerCase().includes('mac') }"
-                    x-text="mac ? '⌘K' : 'Ctrl K'"
+                    data-test="command-palette-shortcut"
+                    x-text="(navigator.userAgentData?.platform || navigator.platform || '').toLowerCase().includes('mac') ? '⌘K' : 'Ctrl K'"
                 >⌘K</span>
             </x-slot:kbd>
         </flux:input>

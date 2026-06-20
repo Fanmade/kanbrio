@@ -38,6 +38,19 @@ it('jumps to a typed reference', function () {
         ->assertNoJavascriptErrors();
 });
 
+it('renders the keyboard-shortcut hint without a JS error', function () {
+    $this->actingAs($this->user);
+
+    $page = visit('/dashboard');
+
+    // The hint must resolve to a platform label (never blank / "mac is not
+    // defined") regardless of Alpine init timing — see KAN31. The test runs on a
+    // non-Apple headless browser, so the label is "Ctrl K".
+    $page->assertVisible('@command-palette-shortcut')
+        ->assertSeeIn('@command-palette-shortcut', 'Ctrl K')
+        ->assertNoJavascriptErrors();
+});
+
 it('opens the create-project form from the New project action', function () {
     $user = User::factory()->canCreateProjects()->create();
 
