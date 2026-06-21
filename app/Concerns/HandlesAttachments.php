@@ -67,9 +67,12 @@ trait HandlesAttachments
 
     /**
      * Persist a pasted or dropped image as an inline attachment and return its
-     * (relative, host-portable) URL so the editor can insert it at the cursor.
+     * (relative, host-portable) URLs so the editor can insert a thumbnail that
+     * links to the full-size original.
+     *
+     * @return array{src: string, href: string}|null
      */
-    public function addInlineImage(): ?string
+    public function addInlineImage(): ?array
     {
         if ($this->inlineImage === null) {
             return null;
@@ -89,9 +92,12 @@ trait HandlesAttachments
 
         $attachment->setRelation('attachable', $attachable);
 
-        return $attachment->hasThumbnail()
-            ? $attachment->thumbnailUrl(absolute: false)
-            : $attachment->viewUrl(absolute: false);
+        $full = $attachment->viewUrl(absolute: false);
+
+        return [
+            'src' => $attachment->hasThumbnail() ? $attachment->thumbnailUrl(absolute: false) : $full,
+            'href' => $full,
+        ];
     }
 
     public function deleteAttachment(int $attachmentId): void

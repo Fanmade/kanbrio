@@ -162,7 +162,7 @@ class UpdateTaskTool extends Tool
                 ->description('New title for the task.'),
 
             'description' => $schema->string()
-                ->description('New description for the task.'),
+                ->description('New description for the task, as HTML (sanitized to a small allow-list; unsupported tags are dropped).'),
 
             'priority' => $schema->string()
                 ->enum(Priority::names())
@@ -201,7 +201,7 @@ class UpdateTaskTool extends Tool
         return [
             'reference' => $schema->string()->description('The task reference, e.g. "PROJ-42".')->required(),
             'title' => $schema->string()->description('The updated task title.')->required(),
-            'description' => $schema->string()->description('The updated task description; may be null.'),
+            'description' => $schema->string()->description('The updated task description as HTML; may be null.'),
             'priority' => $schema->string()->description('The task priority: Lowest, Low, Medium, High or Highest.')->required(),
             'due_date' => $schema->string()->description('The task due date in "YYYY-MM-DD" format; may be null.'),
             'status' => $schema->string()->description('The task status.')->required(),

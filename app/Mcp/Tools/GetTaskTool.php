@@ -105,7 +105,7 @@ class GetTaskTool extends Tool
         return [
             'reference' => $schema->string()->description('The task reference, e.g. "PROJ-42".')->required(),
             'title' => $schema->string()->description('The task title.')->required(),
-            'description' => $schema->string()->description('The task description; may be null.'),
+            'description' => $schema->string()->description('The task description as HTML; may be null.'),
             'priority' => $schema->string()->description('The task priority: Lowest, Low, Medium, High or Highest.')->required(),
             'due_date' => $schema->string()->description('The task due date in "YYYY-MM-DD" format; may be null.'),
             'status' => $schema->string()->description('The task status.')->required(),

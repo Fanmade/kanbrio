@@ -33,9 +33,8 @@ Built on Laravel with Livewire and Flux UI. English and German out of the box.
 - **Create task dialog** — one dialog for creating tasks, opened from the board,
   a project, a parent task or the command palette. Pick the target project and an
   optional parent task (offered only where nesting stays within the depth limit) —
-  both preselected from the page you opened it on — set the title, a Markdown
-  description with live preview, priority, status and due date, and add tags and
-  assignees inline. A "Create another" option keeps the dialog open — retaining
+  both preselected from the page you opened it on — set the title, a rich-text
+  description, priority, status and due date, and add tags and assignees inline. A "Create another" option keeps the dialog open — retaining
   the project, parent, priority and status — to add several tasks in a row. After
   creating, a dismissible toast links straight to the new task.
 - **Kanban board** — drag-and-drop across the four statuses (Planned, ToDo,
@@ -84,7 +83,10 @@ Built on Laravel with Livewire and Flux UI. English and German out of the box.
   Self-links and cycles are rejected. Available in the UI and through the MCP tools.
 - **Notifications** — subscribe per project (assignment auto-subscribes you),
   manage everything from a dedicated page, unread badge in the header.
-- **Markdown** descriptions and comments.
+- **Rich-text descriptions** — task and project descriptions are edited with a
+  Flux/Tiptap WYSIWYG editor (stored as sanitized HTML) supporting headings,
+  lists, links, quotes, code and inline images pasted or dropped straight in.
+  Comments are Markdown.
 - **Activity log** — polymorphic audit trail of creations, status, priority,
   assignment, tag and dependency changes, plus cancellations and reopenings,
   naming what changed (which assignees, which tags, which dependency, the cancel
@@ -108,9 +110,10 @@ Built on Laravel with Livewire and Flux UI. English and German out of the box.
   dependencies (what blocks it, what it blocks, and whether it is currently
   blocked); write tools (create/update tasks, cancel or reopen tasks, create
   projects, add comments, link/unlink dependencies) require a token with write
-  access. Inspecting a project or task also returns its comment thread and any
-  cancellation reason, and agents can read attachments — including inline
-  description images — by their id.
+  access. Descriptions are exchanged as HTML (sanitized to an allow-list on write);
+  comment bodies are Markdown. Inspecting a project or task also returns its comment
+  thread and any cancellation reason, and agents can read attachments — including
+  inline description images — by their id.
 - **Localization** — English and German, defaulting to the browser language with
   a switcher in Appearance settings.
 

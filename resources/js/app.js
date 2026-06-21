@@ -1,5 +1,35 @@
+import { mergeAttributes } from '@tiptap/core';
 import Image from '@tiptap/extension-image';
 import Sortable from 'sortablejs';
+
+/**
+ * The Tiptap Image node, extended so an inline image can link to its full-size
+ * original: it carries an optional `href` and renders as
+ * `<a href target="_blank"><img></a>`. This keeps the "click the thumbnail to
+ * open the full image" behaviour and lets migrated `<a><img></a>` content
+ * round-trip through the editor without losing the link.
+ */
+const LinkedImage = Image.extend({
+    addAttributes() {
+        return {
+            ...this.parent?.(),
+            href: {
+                default: null,
+                parseHTML: (element) => element.closest('a')?.getAttribute('href') ?? null,
+                // The href belongs on the wrapping <a>, not the <img>.
+                renderHTML: () => ({}),
+            },
+        };
+    },
+
+    renderHTML({ node, HTMLAttributes }) {
+        const img = ['img', mergeAttributes(this.options.HTMLAttributes, HTMLAttributes)];
+
+        return node.attrs.href
+            ? ['a', { href: node.attrs.href, target: '_blank', rel: 'noopener noreferrer' }, img]
+            : img;
+    },
+});
 
 /**
  * Add inline image support to Flux's rich-text editor.
@@ -12,13 +42,18 @@ import Sortable from 'sortablejs';
  */
 document.addEventListener('flux:editor', (e) => {
     e.detail.registerExtensions([
-        Image.configure({ HTMLAttributes: { class: 'rounded-lg' } }),
+        LinkedImage.configure({ HTMLAttributes: { class: 'rounded-lg' } }),
     ]);
 
     e.detail.init(({ editor }) => {
-        const root = e.target instanceof Element ? e.target.closest('[data-flux-editor]') : null;
+        // Stash the Tiptap instance on the editor's root element so the upload
+        // wrapper can find it. editor.options.element is the mounted content
+        // node; its [data-flux-editor] ancestor is the element the wrapper sees.
+        const root = editor.options.element?.closest?.('[data-flux-editor]');
 
-        (root ?? e.target).__editor = editor;
+        if (root) {
+            root.__editor = editor;
+        }
     });
 });
 
@@ -234,9 +269,11 @@ document.addEventListener('alpine:init', () => {
                 this.$wire.upload(
                     'inlineImage',
                     file,
-                    () => this.$wire.addInlineImage().then((src) => {
-                        if (src) {
-                            this.editor()?.chain().focus().setImage({ src }).run();
+                    () => this.$wire.addInlineImage().then((image) => {
+                        if (image?.src) {
+                            this.editor()?.chain().focus()
+                                .setImage({ src: image.src, href: image.href ?? null })
+                                .run();
                         }
 
                         resolve();

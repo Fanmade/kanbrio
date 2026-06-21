@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Concerns\HasAttachments;
 use App\Concerns\HasComments;
+use App\Concerns\HasRichTextDescription;
 use App\Concerns\HasSubscribers;
 use App\Concerns\LogsActivity;
 use App\Contracts\Subscribable;
@@ -27,7 +28,7 @@ use Illuminate\Support\Carbon;
 class Project extends Model implements Subscribable
 {
     /** @use HasFactory<ProjectFactory> */
-    use HasAttachments, HasComments, HasFactory, HasSubscribers, LogsActivity;
+    use HasAttachments, HasComments, HasFactory, HasRichTextDescription, HasSubscribers, LogsActivity;
 
     public function getRouteKeyName(): string
     {

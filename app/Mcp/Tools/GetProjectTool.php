@@ -86,7 +86,7 @@ class GetProjectTool extends Tool
         return [
             'short_name' => $schema->string()->description('The project short name.')->required(),
             'title' => $schema->string()->description('The project title.')->required(),
-            'description' => $schema->string()->description('The project description; may be null.'),
+            'description' => $schema->string()->description('The project description as HTML; may be null.'),
             'tasks' => $schema->array()->items($schema->object([
                 'reference' => $schema->string()->description('The task reference, e.g. "PROJ-42".')->required(),
                 'title' => $schema->string()->description('The task title.')->required(),

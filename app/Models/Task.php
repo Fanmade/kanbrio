@@ -8,6 +8,7 @@ use App\Concerns\Cancellable;
 use App\Concerns\HasAttachments;
 use App\Concerns\HasComments;
 use App\Concerns\HasDependencies;
+use App\Concerns\HasRichTextDescription;
 use App\Concerns\HasScopedNumber;
 use App\Concerns\HasSubscribers;
 use App\Concerns\HasTags;
@@ -56,7 +57,7 @@ use Illuminate\Support\Collection;
 class Task extends Model implements Dependable, Subscribable
 {
     /** @use HasFactory<TaskFactory> */
-    use Archivable, Cancellable, HasAttachments, HasComments, HasDependencies, HasFactory, HasScopedNumber, HasSubscribers, HasTags, LogsActivity, Nestable;
+    use Archivable, Cancellable, HasAttachments, HasComments, HasDependencies, HasFactory, HasRichTextDescription, HasScopedNumber, HasSubscribers, HasTags, LogsActivity, Nestable;
 
     protected string $scopedNumberColumn = 'task_number';
 

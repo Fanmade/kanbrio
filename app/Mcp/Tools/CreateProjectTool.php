@@ -87,7 +87,7 @@ class CreateProjectTool extends Tool
                 ->required(),
 
             'description' => $schema->string()
-                ->description('Optional project description.'),
+                ->description('Optional project description, as HTML (sanitized to a small allow-list; unsupported tags are dropped).'),
         ];
     }
 
@@ -101,7 +101,7 @@ class CreateProjectTool extends Tool
         return [
             'short_name' => $schema->string()->description('The created project short name.')->required(),
             'title' => $schema->string()->description('The created project title.')->required(),
-            'description' => $schema->string()->description('The project description; may be null.'),
+            'description' => $schema->string()->description('The project description as HTML; may be null.'),
         ];
     }
 }

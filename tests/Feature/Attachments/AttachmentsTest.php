@@ -67,9 +67,13 @@ it('uploads a pasted image as an inline attachment and returns its url', functio
         ->and($attachment->is_inline)->toBeTrue()
         ->and($attachment->hasThumbnail())->toBeTrue();
 
-    // The editor inserts the returned (relative, project-scoped) thumbnail URL.
+    // The editor inserts the returned thumbnail (src) linking to the full image
+    // (href), both relative and project-scoped.
     $component
-        ->assertReturned($attachment->thumbnailUrl(absolute: false))
+        ->assertReturned([
+            'src' => $attachment->thumbnailUrl(absolute: false),
+            'href' => $attachment->viewUrl(absolute: false),
+        ])
         ->assertSet('inlineImage', null);
 
     expect($attachment->thumbnailUrl(absolute: false))

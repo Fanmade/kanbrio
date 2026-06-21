@@ -32,6 +32,24 @@ it('creates a task in a project the user can access', function () {
     assertDatabaseHas('tasks', ['project_id' => $project->id, 'title' => 'A task', 'status' => Status::ToDo->value]);
 });
 
+it('sanitizes an HTML description written through the tool', function () {
+    $user = User::factory()->create();
+    Sanctum::actingAs($user, ['read', 'write']);
+    $project = Project::factory()->withMembers([$user])->create(['short_name' => 'ABC']);
+
+    KanbrioServer::tool(CreateTaskTool::class, [
+        'reference' => $project->short_name,
+        'title' => 'A task',
+        'description' => '<p>Plan</p><script>alert(1)</script>',
+    ])->assertOk();
+
+    $task = $project->tasks()->where('title', 'A task')->first();
+
+    expect($task->description)
+        ->toContain('<p>Plan</p>')
+        ->not->toContain('<script');
+});
+
 it('defaults a new task to Planned status', function () {
     $user = User::factory()->create();
     Sanctum::actingAs($user, ['read', 'write']);
