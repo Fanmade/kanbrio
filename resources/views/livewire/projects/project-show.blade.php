@@ -71,7 +71,7 @@
         </div>
 
         @forelse ($this->openTasks as $task)
-            <x-root-task-card :task="$task" :short-name="$this->project->short_name" :can-archive="$canUpdate" />
+            <x-root-task-card :task="$task" :short-name="$this->project->short_name" :can-archive="$canUpdate" :show-archived="$showArchived" />
         @empty
             <flux:card>
                 <flux:text class="text-zinc-400">{{ __('No open tasks. Create one to get started.') }}</flux:text>
@@ -85,7 +85,7 @@
             <flux:heading size="lg" class="text-zinc-500 dark:text-zinc-400">{{ __('Completed tasks') }}</flux:heading>
 
             @foreach ($this->completedTasks as $task)
-                <x-root-task-card :task="$task" :short-name="$this->project->short_name" :can-archive="$canUpdate" />
+                <x-root-task-card :task="$task" :short-name="$this->project->short_name" :can-archive="$canUpdate" :show-archived="$showArchived" />
             @endforeach
         </div>
     @endif
@@ -96,7 +96,7 @@
             <flux:heading size="lg" class="text-zinc-500 dark:text-zinc-400">{{ __('Archived tasks') }}</flux:heading>
 
             @foreach ($this->archivedTasks as $task)
-                <x-root-task-card :task="$task" :short-name="$this->project->short_name" :can-archive="$canUpdate" />
+                <x-root-task-card :task="$task" :short-name="$this->project->short_name" :can-archive="$canUpdate" :show-archived="$showArchived" />
             @endforeach
         </div>
     @endif

@@ -34,6 +34,9 @@ Built on Laravel with Livewire and Flux UI. English and German out of the box.
   Dragging is smoothly animated with highlighted drop targets and works on touch;
   each card also has a keyboard-accessible "Move to" menu. Cards keep the order
   you arrange them in within each column.
+- **Project overview** — each project page lists its top-level tasks grouped into
+  open and completed, and shows every root task's direct subtasks as quick links to
+  drill straight into them.
 - **Completion progress bars** — any task with subtasks shows a progress rollup
   based on the share of its descendant tasks done, on the project overview (per
   root task) and on the task's detail page.

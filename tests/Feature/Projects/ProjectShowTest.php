@@ -88,6 +88,45 @@ it('creates a task from the overview with the default priority', function () {
         ->and($task->priority)->toBe(Priority::default());
 });
 
+it('lists a root task\'s direct subtasks with links to their detail pages', function () {
+    $root = Task::factory()->for($this->project)->status(Status::ToDo)->create(['title' => 'Root task']);
+    $child = Task::factory()->for($this->project)->childOf($root)->create(['title' => 'Child task']);
+
+    $childUrl = route('task.show', [
+        'short_name' => $this->project->short_name,
+        'task_number' => $child->task_number,
+    ]);
+
+    Livewire::actingAs($this->user)
+        ->test(ProjectShow::class, ['short_name' => $this->project->short_name])
+        ->assertSee('Child task')
+        ->assertSeeHtml('href="'.$childUrl.'"')
+        ->assertSeeHtml('data-test="root-task-subtask-'.$child->id.'"');
+});
+
+it('shows only direct children under a root card, not deeper descendants', function () {
+    $root = Task::factory()->for($this->project)->status(Status::ToDo)->create();
+    $child = Task::factory()->for($this->project)->childOf($root)->create(['title' => 'Direct child']);
+    Task::factory()->for($this->project)->childOf($child)->create(['title' => 'Deep grandchild']);
+
+    Livewire::actingAs($this->user)
+        ->test(ProjectShow::class, ['short_name' => $this->project->short_name])
+        ->assertSee('Direct child')
+        ->assertDontSee('Deep grandchild');
+});
+
+it('hides archived subtasks until the show-archived toggle is on', function () {
+    $root = Task::factory()->for($this->project)->status(Status::ToDo)->create();
+    $archivedChild = Task::factory()->for($this->project)->childOf($root)->create(['title' => 'Archived child']);
+    $archivedChild->archive();
+
+    Livewire::actingAs($this->user)
+        ->test(ProjectShow::class, ['short_name' => $this->project->short_name])
+        ->assertDontSee('Archived child')
+        ->set('showArchived', true)
+        ->assertSee('Archived child');
+});
+
 it('archives and restores a root task', function () {
     $task = Task::factory()->for($this->project)->status(Status::ToDo)->create(['title' => 'Archivable']);
 
