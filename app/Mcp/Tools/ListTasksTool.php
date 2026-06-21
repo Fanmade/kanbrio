@@ -15,7 +15,7 @@ use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Tool;
 use Laravel\Mcp\Server\Tools\Annotations\IsReadOnly;
 
-#[Description('Lists the tasks of a project, identified by its short_name (e.g. "PROJ"), optionally filtered by status. Only projects the authenticated user is a member of are accessible.')]
+#[Description('Lists the tasks of a project, identified by its short_name (e.g. "PROJ"), optionally filtered by status and/or restricted to the direct subtasks of a "parent" task (e.g. "PROJ-42"). Each task reports its own parent, so the nesting can be reconstructed. Only projects the authenticated user is a member of are accessible.')]
 #[IsReadOnly]
 class ListTasksTool extends Tool
 {
@@ -28,6 +28,7 @@ class ListTasksTool extends Tool
 
         $validated = $request->validate([
             'reference' => ['required', 'string'],
+            'parent' => ['nullable', 'string'],
             'status' => ['nullable', new Enum(Status::class)],
         ], [
             'reference.required' => 'You must provide the project short_name (e.g. "PROJ").',
@@ -40,6 +41,16 @@ class ListTasksTool extends Tool
             return Response::error('No project with short_name "'.$validated['reference'].'" exists, or you do not have access to it. References look like "PROJ".');
         }
 
+        $parent = null;
+
+        if (isset($validated['parent'])) {
+            $parent = ReferenceResolver::task($validated['parent']);
+
+            if ($parent === null || $parent->project_id !== $project->id || ! $request->user()->can('view', $parent)) {
+                return Response::error('No task with reference "'.$validated['parent'].'" exists in project "'.$project->short_name.'", or you do not have access to it.');
+            }
+        }
+
         $project->loadMissing([
             'tasks.tags',
             'tasks.project',
@@ -47,13 +58,23 @@ class ListTasksTool extends Tool
             'tasks.dependencyLinks.blocker',
         ]);
 
+        $shortName = $project->short_name;
+        $numbersById = $project->tasks->pluck('task_number', 'id');
+
         $tasks = $project->tasks
+            ->when(
+                $parent !== null,
+                static fn ($tasks) => $tasks->where('parent_id', $parent->id)
+            )
             ->when(
                 isset($validated['status']),
                 static fn ($tasks) => $tasks->where('status', Status::from($validated['status']))
             )
             ->map(static fn (Task $task): array => [
                 'reference' => $task->reference,
+                'parent' => $task->parent_id !== null && $numbersById->has($task->parent_id)
+                    ? $shortName.'-'.$numbersById[$task->parent_id]
+                    : null,
                 'title' => $task->title,
                 'priority' => $task->priority->name,
                 'due_date' => $task->due_date?->format('Y-m-d'),
@@ -80,6 +101,9 @@ class ListTasksTool extends Tool
                 ->description('The project short_name, 2-4 uppercase letters (e.g. "PROJ").')
                 ->required(),
 
+            'parent' => $schema->string()
+                ->description('Optional parent task reference (e.g. "PROJ-42"); when given, only that task\'s direct subtasks are returned.'),
+
             'status' => $schema->string()
                 ->enum(array_map(static fn (Status $status): string => $status->value, Status::cases()))
                 ->description('Optional status filter. One of the task statuses.'),
@@ -96,6 +120,7 @@ class ListTasksTool extends Tool
         return [
             'tasks' => $schema->array()->items($schema->object([
                 'reference' => $schema->string()->description('The task reference, e.g. "PROJ-42".')->required(),
+                'parent' => $schema->string()->description('The parent task reference (e.g. "PROJ-42"), or null when this is a top-level task.'),
                 'title' => $schema->string()->description('The task title.')->required(),
                 'priority' => $schema->string()->description('The task priority: Lowest, Low, Medium, High or Highest.')->required(),
                 'due_date' => $schema->string()->description('The task due date in "YYYY-MM-DD" format; may be null.'),

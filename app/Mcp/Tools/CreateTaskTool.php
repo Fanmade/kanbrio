@@ -11,13 +11,14 @@ use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Illuminate\JsonSchema\Types\Type;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Enum;
+use InvalidArgumentException;
 use Laravel\Mcp\Request;
 use Laravel\Mcp\Response;
 use Laravel\Mcp\ResponseFactory;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Tool;
 
-#[Description('Creates a new top-level task in a project, identified by its short_name (e.g. "PROJ"). Requires a write-access token; the user must be a member of the project.')]
+#[Description('Creates a task in a project, identified by its short_name (e.g. "PROJ"). The task is top-level by default, or nested under a parent task when a "parent" task reference (e.g. "PROJ-42") is given. Requires a write-access token; the user must be a member of the project.')]
 class CreateTaskTool extends Tool
 {
     use RequiresWriteAccess;
@@ -35,6 +36,7 @@ class CreateTaskTool extends Tool
 
         $validated = $request->validate([
             'reference' => ['required', 'string'],
+            'parent' => ['nullable', 'string'],
             'title' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string'],
             'priority' => ['nullable', Rule::in(Priority::names())],
@@ -56,14 +58,33 @@ class CreateTaskTool extends Tool
             return Response::error('No project with short_name "'.$validated['reference'].'" exists, or you do not have access to it. References look like "PROJ".');
         }
 
-        $task = app(CreateTask::class)->handle(
-            $project,
-            $validated['title'],
-            $validated['description'] ?? null,
-            isset($validated['priority']) ? Priority::fromName($validated['priority']) : null,
-            isset($validated['status']) ? Status::from($validated['status']) : null,
-            $validated['due_date'] ?? null,
-        );
+        $parent = null;
+
+        if (isset($validated['parent'])) {
+            $parent = ReferenceResolver::task($validated['parent']);
+
+            if ($parent === null || ! $request->user()->can('update', $parent)) {
+                return Response::error('No task with reference "'.$validated['parent'].'" exists, or you do not have access to it. References look like "PROJ-42".');
+            }
+
+            if ($parent->project_id !== $project->id) {
+                return Response::error('The parent task "'.$validated['parent'].'" is not in project "'.$project->short_name.'".');
+            }
+        }
+
+        try {
+            $task = app(CreateTask::class)->handle(
+                $project,
+                $validated['title'],
+                $validated['description'] ?? null,
+                isset($validated['priority']) ? Priority::fromName($validated['priority']) : null,
+                isset($validated['status']) ? Status::from($validated['status']) : null,
+                $validated['due_date'] ?? null,
+                $parent,
+            );
+        } catch (InvalidArgumentException) {
+            return Response::error('The task cannot be nested under "'.$validated['parent'].'": it would exceed the maximum nesting depth.');
+        }
 
         $task->setRelation('project', $project);
 
@@ -73,6 +94,7 @@ class CreateTaskTool extends Tool
 
         return Response::structured([
             'reference' => $task->reference,
+            'parent' => $parent?->reference,
             'title' => $task->title,
             'description' => $task->description,
             'priority' => $task->priority->name,
@@ -93,6 +115,9 @@ class CreateTaskTool extends Tool
             'reference' => $schema->string()
                 ->description('The short_name of the project to add the task to (e.g. "PROJ").')
                 ->required(),
+
+            'parent' => $schema->string()
+                ->description('Optional parent task reference (e.g. "PROJ-42") to nest the new task under, as a subtask. Must be a task in the same project, and the nesting must stay within the maximum depth. Omit for a top-level task.'),
 
             'title' => $schema->string()
                 ->description('The task title.')
@@ -127,6 +152,7 @@ class CreateTaskTool extends Tool
     {
         return [
             'reference' => $schema->string()->description('The created task reference, e.g. "PROJ-42".')->required(),
+            'parent' => $schema->string()->description('The parent task reference when the task was nested, otherwise null.'),
             'title' => $schema->string()->description('The created task title.')->required(),
             'description' => $schema->string()->description('The task description; may be null.'),
             'priority' => $schema->string()->description('The task priority: Lowest, Low, Medium, High or Highest.')->required(),

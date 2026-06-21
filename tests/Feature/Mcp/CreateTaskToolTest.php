@@ -5,11 +5,13 @@ use App\Enums\Status;
 use App\Mcp\Servers\KanbrioServer;
 use App\Mcp\Tools\CreateTaskTool;
 use App\Models\Project;
+use App\Models\Task;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Laravel\Sanctum\Sanctum;
 
 use function Pest\Laravel\assertDatabaseHas;
+use function Pest\Laravel\assertDatabaseMissing;
 
 uses(RefreshDatabase::class);
 
@@ -104,6 +106,55 @@ it('denies creating a task with a read-only token', function () {
         'reference' => $project->short_name,
         'title' => 'A task',
     ])->assertHasErrors();
+});
+
+it('nests a task under a parent when a parent reference is given', function () {
+    $user = User::factory()->create();
+    Sanctum::actingAs($user, ['read', 'write']);
+    $project = Project::factory()->withMembers([$user])->create(['short_name' => 'ABC']);
+    $parent = Task::factory()->for($project)->create();
+
+    KanbrioServer::tool(CreateTaskTool::class, [
+        'reference' => $project->short_name,
+        'parent' => $parent->reference,
+        'title' => 'A subtask',
+    ])
+        ->assertOk()
+        ->assertSee($parent->reference); // the output echoes the parent reference
+
+    assertDatabaseHas('tasks', ['title' => 'A subtask', 'parent_id' => $parent->id, 'project_id' => $project->id]);
+});
+
+it('rejects a parent task in a different project', function () {
+    $user = User::factory()->create();
+    Sanctum::actingAs($user, ['read', 'write']);
+    $project = Project::factory()->withMembers([$user])->create(['short_name' => 'ABC']);
+    $otherParent = Task::factory()->for(Project::factory()->withMembers([$user])->create(['short_name' => 'XYZ']))->create();
+
+    KanbrioServer::tool(CreateTaskTool::class, [
+        'reference' => $project->short_name,
+        'parent' => $otherParent->reference,
+        'title' => 'Mismatched',
+    ])->assertHasErrors();
+
+    assertDatabaseMissing('tasks', ['title' => 'Mismatched']);
+});
+
+it('refuses to nest a task beyond the maximum depth', function () {
+    config(['kanbrio.tasks.max_depth' => 2]);
+    $user = User::factory()->create();
+    Sanctum::actingAs($user, ['read', 'write']);
+    $project = Project::factory()->withMembers([$user])->create(['short_name' => 'ABC']);
+    $root = Task::factory()->for($project)->create();
+    $child = Task::factory()->for($project)->childOf($root)->create(); // depth 2 = max
+
+    KanbrioServer::tool(CreateTaskTool::class, [
+        'reference' => $project->short_name,
+        'parent' => $child->reference,
+        'title' => 'Too deep',
+    ])->assertHasErrors();
+
+    assertDatabaseMissing('tasks', ['title' => 'Too deep']);
 });
 
 it('applies tags when creating a task via MCP', function () {

@@ -37,10 +37,10 @@ use Laravel\Mcp\Server\Tool;
     is a member of; tasks inherit access from their project. If a project or task does not exist
     or the user cannot access it, the tool returns an error.
 
-    Projects and tasks can depend on each other: an item may be "blocked by" the items it depends
-    on (its blockers) and may itself "block" others. The get tools report an item's "blocked_by"
-    and "blocks" references plus an "is_blocked" flag (true while a blocker is not yet complete);
-    the list tools include the "is_blocked" flag. Use the add-dependency tool to link items
+    Tasks can depend on each other: a task may be "blocked by" the tasks it depends on (its
+    blockers) and may itself "block" others. The get-task tool reports a task's "blocked_by" and
+    "blocks" references plus an "is_blocked" flag (true while a blocker is not yet complete); the
+    list-tasks tool includes the "is_blocked" flag. Use the add-dependency tool to link tasks
     (direction "blocked_by": reference is blocked by related_reference; "blocks": reference blocks
     related_reference) and the remove-dependency tool to unlink them. Self-dependencies and cycles
     are rejected.

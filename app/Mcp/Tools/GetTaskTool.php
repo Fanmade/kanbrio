@@ -4,6 +4,7 @@ namespace App\Mcp\Tools;
 
 use App\Mcp\Concerns\ExposesDependencies;
 use App\Models\Attachment;
+use App\Models\Task;
 use App\Models\User;
 use App\Support\ReferenceResolver;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
@@ -38,7 +39,11 @@ class GetTaskTool extends Tool
             return Response::error('No task with reference "'.$validated['reference'].'" exists, or you do not have access to it. References look like "PROJ-42".');
         }
 
-        $task->loadMissing('attachments');
+        $task->loadMissing(['attachments', 'parent', 'children', 'ancestors', 'descendants']);
+
+        $shortName = $task->project->short_name;
+        $reference = static fn (Task $node): string => $shortName.'-'.$node->task_number;
+        $progress = $task->progress();
 
         return Response::structured([
             'reference' => $task->reference,
@@ -48,7 +53,15 @@ class GetTaskTool extends Tool
             'due_date' => $task->due_date?->format('Y-m-d'),
             'status' => $task->status->value,
             'tags' => $task->tags->pluck('name')->all(),
-            'project' => $task->project->short_name,
+            'project' => $shortName,
+            'parent' => $task->parent !== null ? $reference($task->parent) : null,
+            'ancestors' => $task->ancestors->sortBy($task->getDepthName())->map($reference)->values()->all(),
+            'children' => $task->children->map(static fn (Task $child): array => [
+                'reference' => $reference($child),
+                'title' => $child->title,
+                'status' => $child->status->value,
+            ])->values()->all(),
+            'progress' => ['done' => $progress->done, 'total' => $progress->total],
             ...$this->dependencyPayload($task),
             'assignees' => $task->assignees->map(static fn (User $user): array => [
                 'name' => $user->name,
@@ -93,6 +106,17 @@ class GetTaskTool extends Tool
             'status' => $schema->string()->description('The task status.')->required(),
             'tags' => $schema->array()->items($schema->string())->description('The tag names applied to the task.')->required(),
             'project' => $schema->string()->description('The short name of the project the task belongs to.')->required(),
+            'parent' => $schema->string()->description('The parent task reference (e.g. "PROJ-42"), or null when this is a top-level task.'),
+            'ancestors' => $schema->array()->items($schema->string())->description('The task references from the root ancestor down to the immediate parent (the breadcrumb), empty for a top-level task.')->required(),
+            'children' => $schema->array()->items($schema->object([
+                'reference' => $schema->string()->description('The subtask reference, e.g. "PROJ-42".')->required(),
+                'title' => $schema->string()->description('The subtask title.')->required(),
+                'status' => $schema->string()->description('The subtask status.')->required(),
+            ]))->description('The direct subtasks of this task.')->required(),
+            'progress' => $schema->object([
+                'done' => $schema->integer()->description('How many descendant tasks are done.')->required(),
+                'total' => $schema->integer()->description('The total number of descendant tasks (the whole subtree below this task).')->required(),
+            ])->description('Completion rolled up from this task\'s subtree.')->required(),
             'blocked_by' => $schema->array()->items($schema->string())->description('References of the tasks and projects that block this task; it should not be started until they are complete.')->required(),
             'blocks' => $schema->array()->items($schema->string())->description('References of the tasks and projects that this task blocks.')->required(),
             'is_blocked' => $schema->boolean()->description('Whether any of this task\'s blockers is not yet complete.')->required(),

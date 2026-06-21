@@ -44,6 +44,39 @@ it('denies listing tasks of a project the user cannot access', function () {
         ->assertHasErrors();
 });
 
+it('restricts the list to a parent task\'s direct subtasks', function () {
+    $user = User::factory()->create();
+    $project = Project::factory()->withMembers([$user])->create(['short_name' => 'ABC']);
+    $root = Task::factory()->for($project)->create();
+    $child = Task::factory()->for($project)->childOf($root)->create();
+    $grandchild = Task::factory()->for($project)->childOf($child)->create();
+
+    KanbrioServer::actingAs($user)->tool(ListTasksTool::class, [
+        'reference' => $project->short_name,
+        'parent' => $root->reference,
+    ])
+        ->assertOk()
+        ->assertSee($child->reference)        // a direct subtask
+        ->assertDontSee($grandchild->reference) // a grandchild, not direct
+        ->assertDontSee('"reference":"'.$root->reference.'"'); // the root itself is excluded
+});
+
+it('reports each task\'s parent so nesting can be reconstructed', function () {
+    $user = User::factory()->create();
+    $project = Project::factory()->withMembers([$user])->create(['short_name' => 'ABC']);
+    $root = Task::factory()->for($project)->create();
+    $child = Task::factory()->for($project)->childOf($root)->create();
+
+    KanbrioServer::actingAs($user)->tool(ListTasksTool::class, ['reference' => $project->short_name])
+        ->assertOk()
+        ->assertStructuredContent(function ($json) use ($root, $child) {
+            $tasks = collect($json->toArray()['tasks']);
+            expect($tasks->firstWhere('reference', $root->reference)['parent'])->toBeNull()
+                ->and($tasks->firstWhere('reference', $child->reference)['parent'])->toBe($root->reference);
+            $json->etc();
+        });
+});
+
 it('includes each task\'s tags', function () {
     $user = User::factory()->create();
     $project = Project::factory()->withMembers([$user])->create(['short_name' => 'ABC']);

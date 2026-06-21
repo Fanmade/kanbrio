@@ -1,5 +1,6 @@
 <?php
 
+use App\Enums\Status;
 use App\Mcp\Servers\KanbrioServer;
 use App\Mcp\Tools\GetTaskTool;
 use App\Models\Attachment;
@@ -46,6 +47,42 @@ it('includes the task tags', function () {
     KanbrioServer::actingAs($user)->tool(GetTaskTool::class, ['reference' => $task->reference])
         ->assertOk()
         ->assertSee('design');
+});
+
+it('exposes the task hierarchy: parent, ancestors, children and rolled-up progress', function () {
+    $user = User::factory()->create();
+    $project = Project::factory()->withMembers([$user])->create(['short_name' => 'ABC']);
+    $root = Task::factory()->for($project)->create();
+    $middle = Task::factory()->for($project)->childOf($root)->create();
+    $leaf = Task::factory()->for($project)->childOf($middle)->status(Status::Done)->create();
+
+    KanbrioServer::actingAs($user)->tool(GetTaskTool::class, ['reference' => $middle->reference])
+        ->assertOk()
+        ->assertStructuredContent(function ($json) use ($root, $middle, $leaf) {
+            $json->where('reference', $middle->reference)
+                ->where('parent', $root->reference)
+                ->where('ancestors', [$root->reference])
+                ->where('children.0.reference', $leaf->reference)
+                ->where('children.0.status', Status::Done->value)
+                ->where('progress.done', 1)   // the one Done descendant
+                ->where('progress.total', 1)  // the leaf is the only descendant
+                ->etc();
+        });
+});
+
+it('reports a top-level task as having no parent or ancestors', function () {
+    $user = User::factory()->create();
+    $project = Project::factory()->withMembers([$user])->create(['short_name' => 'ABC']);
+    $task = Task::factory()->for($project)->create();
+
+    KanbrioServer::actingAs($user)->tool(GetTaskTool::class, ['reference' => $task->reference])
+        ->assertOk()
+        ->assertStructuredContent(function ($json) {
+            $json->where('parent', null)
+                ->where('ancestors', [])
+                ->where('children', [])
+                ->etc();
+        });
 });
 
 it('lists the task attachments with their ids', function () {
