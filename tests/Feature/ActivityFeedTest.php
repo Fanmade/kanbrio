@@ -157,6 +157,44 @@ it('falls back to generic lines for legacy tag and dependency entries', function
         ->assertSee('updated the dependencies');
 });
 
+it('describes a cancellation with its reason and message', function () {
+    $this->member->setPreference('activities_collapsed', false);
+    $this->task->recordActivity('canceled', 'cancellation', null, json_encode(['reason' => 'duplicate', 'message' => 'Same as ABC-1']));
+
+    Livewire::actingAs($this->member)
+        ->test(ActivityFeed::class, ['subject' => $this->task])
+        ->assertSee('canceled this as Duplicate — Same as ABC-1');
+});
+
+it('describes a cancellation without a message', function () {
+    $this->member->setPreference('activities_collapsed', false);
+    $this->task->recordActivity('canceled', 'cancellation', null, json_encode(['reason' => 'wont_fix', 'message' => null]));
+
+    Livewire::actingAs($this->member)
+        ->test(ActivityFeed::class, ['subject' => $this->task])
+        ->assertSee('canceled this as Won\'t fix')
+        ->assertDontSee('—');
+});
+
+it('describes reopening a task', function () {
+    $this->member->setPreference('activities_collapsed', false);
+    $this->task->recordActivity('reopened', 'cancellation', 'duplicate', null);
+
+    Livewire::actingAs($this->member)
+        ->test(ActivityFeed::class, ['subject' => $this->task])
+        ->assertSee('reopened this');
+});
+
+it('localizes a cancellation in German', function () {
+    app()->setLocale('de');
+    $this->member->setPreference('activities_collapsed', false);
+    $this->task->recordActivity('canceled', 'cancellation', null, json_encode(['reason' => 'deprecated', 'message' => null]));
+
+    Livewire::actingAs($this->member)
+        ->test(ActivityFeed::class, ['subject' => $this->task])
+        ->assertSee('hat dies abgebrochen (Veraltet)');
+});
+
 it('shows the token attribution for a token-driven action', function () {
     $this->member->setPreference('activities_collapsed', false);
     $this->task->activities()->create([

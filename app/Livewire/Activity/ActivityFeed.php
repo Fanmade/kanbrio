@@ -3,6 +3,7 @@
 namespace App\Livewire\Activity;
 
 use App\Concerns\ResolvesMorphSubject;
+use App\Enums\CancelReason;
 use App\Enums\Priority;
 use App\Enums\Status;
 use App\Models\Activity;
@@ -102,6 +103,8 @@ class ActivityFeed extends Component
             'assignee_changed' => $this->assigneeDescription($newValues, $oldValues),
             'dependency_changed' => $this->dependencyDescription($newValues, $oldValues),
             'tags_changed' => $this->tagDescription($newValues, $oldValues),
+            'canceled' => $this->cancellationDescription($newValues),
+            'reopened' => __('reopened this'),
             'archived' => __('archived this'),
             'unarchived' => __('restored this from the archive'),
             'commented' => __('added a comment'),
@@ -162,6 +165,23 @@ class ActivityFeed extends Component
             $added !== [] => __('added the tags :tags', ['tags' => $addedList]),
             $removed !== [] => __('removed the tags :tags', ['tags' => $removedList]),
             default => __('updated the tags'),
+        };
+    }
+
+    /**
+     * Describe a cancellation from its reason and optional message snapshot.
+     *
+     * @param  array<string, string|null>  $payload
+     */
+    private function cancellationDescription(array $payload): string
+    {
+        $reason = CancelReason::tryFrom((string) ($payload['reason'] ?? ''))?->label();
+        $message = $payload['message'] ?? null;
+
+        return match (true) {
+            $reason !== null && $message => __('canceled this as :reason — :message', ['reason' => $reason, 'message' => $message]),
+            $reason !== null => __('canceled this as :reason', ['reason' => $reason]),
+            default => __('canceled this'),
         };
     }
 
