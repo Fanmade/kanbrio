@@ -53,6 +53,11 @@ class CreateTaskModal extends Component
 
     public bool $showPreview = false;
 
+    /**
+     * When on, the dialog stays open after saving so another task can be created.
+     */
+    public bool $createAnother = false;
+
     public int $priority;
 
     public string $status = '';
@@ -391,8 +396,15 @@ class CreateTaskModal extends Component
         $reference = $project->short_name.'-'.$task->task_number;
         $url = route('task.show', ['short_name' => $project->short_name, 'task_number' => $task->task_number]);
 
-        $this->resetForm();
-        $this->show = false;
+        // "Create another" keeps the dialog open with the project, parent, priority
+        // and status retained so a run of sibling tasks can be entered quickly.
+        if ($this->createAnother) {
+            $this->resetForNextTask();
+            $this->dispatch('create-task-focus-title');
+        } else {
+            $this->resetForm();
+            $this->show = false;
+        }
 
         $this->dispatch('task-created');
 
@@ -426,13 +438,27 @@ class CreateTaskModal extends Component
     protected function resetForm(): void
     {
         $this->reset(
-            'projectId', 'parentId', 'title', 'description', 'dueDate', 'showPreview',
+            'projectId', 'parentId', 'title', 'description', 'dueDate', 'showPreview', 'createAnother',
             'tagNames', 'tagColors', 'tagQuery', 'showTagColorModal', 'newTagName', 'assigneeIds',
         );
         $this->priority = Priority::default()->value;
         $this->status = Status::Planned->value;
         $this->newTagColor = 'zinc';
         unset($this->parentOptions, $this->members, $this->tagSuggestions);
+    }
+
+    /**
+     * Clear only the per-task content after a "create another" save, keeping the
+     * project, parent, priority and status as a template for the next one.
+     */
+    protected function resetForNextTask(): void
+    {
+        $this->reset(
+            'title', 'description', 'dueDate', 'showPreview',
+            'tagNames', 'tagColors', 'tagQuery', 'showTagColorModal', 'newTagName', 'assigneeIds',
+        );
+        $this->newTagColor = 'zinc';
+        unset($this->tagSuggestions);
     }
 
     /**
@@ -570,25 +596,24 @@ class CreateTaskModal extends Component
     }
 
     /**
-     * Build a memoized depth resolver over a keyed task collection, counting the
-     * root as level 1 by walking the in-memory parent chain (no extra queries).
+     * Build a depth resolver over a keyed task collection, counting the root as
+     * level 1 by walking the in-memory parent chain (no extra queries).
      *
      * @param  Collection<int, Task>  $byId
      * @return callable(int): int
      */
     protected function depthResolver(Collection $byId): callable
     {
-        $cache = [];
+        return static function (int $id) use ($byId): int {
+            $depth = 1;
+            $task = $byId->get($id);
 
-        return static function (int $id) use (&$resolve, &$cache, $byId): int {
-            if (isset($cache[$id])) {
-                return $cache[$id];
+            while ($task?->parent_id !== null) {
+                $task = $byId->get($task->parent_id);
+                $depth++;
             }
 
-            $task = $byId->get($id);
-            $parentId = $task?->parent_id;
-
-            return $cache[$id] = $parentId === null ? 1 : $resolve($parentId) + 1;
+            return $depth;
         };
     }
 }

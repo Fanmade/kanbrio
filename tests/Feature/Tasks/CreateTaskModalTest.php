@@ -1,5 +1,6 @@
 <?php
 
+use App\Enums\Priority;
 use App\Enums\Status;
 use App\Livewire\Tasks\CreateTaskModal;
 use App\Models\Project;
@@ -246,6 +247,35 @@ it('refreshes the page and shows a toast linking to the new task', function () {
 
     $component->assertDispatched('toast-show', fn (string $event, array $params): bool => ($params['link']['href'] ?? null) === $url
         && ($params['link']['text'] ?? null) === $task->reference);
+});
+
+it('stays open and keeps the context when create another is on', function () {
+    $parent = Task::factory()->for($this->project)->status(Status::ToDo)->create();
+
+    $component = Livewire::actingAs($this->member)
+        ->test(CreateTaskModal::class)
+        ->call('open', $this->project->id, $parent->id)
+        ->set('createAnother', true)
+        ->set('priority', Priority::High->value)
+        ->set('status', Status::ToDo->value)
+        ->set('title', 'First')
+        ->set('description', 'Some notes')
+        ->call('save')
+        ->assertSet('show', true)
+        ->assertSet('projectId', $this->project->id)
+        ->assertSet('parentId', $parent->id)
+        ->assertSet('priority', Priority::High->value)
+        ->assertSet('status', Status::ToDo->value)
+        ->assertSet('createAnother', true)
+        ->assertSet('title', '')
+        ->assertSet('description', '')
+        ->assertDispatched('create-task-focus-title');
+
+    // The next task can be entered straight away.
+    $component->set('title', 'Second')->call('save');
+
+    expect($this->project->tasks()->pluck('title')->all())->toContain('First', 'Second')
+        ->and($this->project->tasks()->where('title', 'Second')->first()->parent_id)->toBe($parent->id);
 });
 
 it('rejects a parent task at the maximum nesting depth', function () {

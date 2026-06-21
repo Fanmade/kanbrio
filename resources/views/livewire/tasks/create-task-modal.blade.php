@@ -31,7 +31,12 @@
                 @endif
             </div>
 
-            <flux:input wire:model="title" :label="__('Title')" data-test="create-task-title" />
+            <flux:input
+                wire:model="title"
+                :label="__('Title')"
+                data-test="create-task-title"
+                x-on:create-task-focus-title.window="$nextTick(() => (($el.matches('input') ? $el : $el.querySelector('input'))?.focus()))"
+            />
 
             <div>
                 <div class="mb-1 flex items-center justify-between">
@@ -169,11 +174,20 @@
                 </div>
             </div>
 
-            <div class="flex justify-end gap-2">
-                <flux:modal.close>
-                    <flux:button variant="ghost">{{ __('Cancel') }}</flux:button>
-                </flux:modal.close>
-                <flux:button type="submit" variant="primary" data-test="create-task-submit">{{ __('Create') }}</flux:button>
+            <div class="flex items-center justify-between gap-2">
+                <div class="flex items-center gap-1.5">
+                    <flux:checkbox wire:model="createAnother" :label="__('Create another')" data-test="create-task-another" />
+                    <flux:tooltip :content="__('Keeps the dialog open after saving so you can add more tasks in a row. The project, parent, priority and status carry over.')">
+                        <flux:icon.question-mark-circle variant="micro" class="cursor-help text-zinc-400" tabindex="0" data-test="create-task-another-hint" />
+                    </flux:tooltip>
+                </div>
+
+                <div class="flex gap-2">
+                    <flux:modal.close>
+                        <flux:button variant="ghost">{{ __('Cancel') }}</flux:button>
+                    </flux:modal.close>
+                    <flux:button type="submit" variant="primary" data-test="create-task-submit">{{ __('Create') }}</flux:button>
+                </div>
             </div>
         </form>
     </flux:modal>
