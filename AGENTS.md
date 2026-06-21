@@ -83,10 +83,17 @@ seconds — but a non-interactive runner (an agent's shell, CI) blocks on that o
 pipe until it times out, so the tests appear to "hang forever". Leaked servers also
 pile up and starve the machine, slowing *all* later runs.
 
-`composer test:browser` reaps the leftover server (`pkill -f 'playwright run-server'`)
-after the run while preserving the exit code, so the command always returns promptly.
-If browser tests ever do hang, the cause is almost always orphaned `playwright
-run-server` processes — `pkill -f 'playwright run-server'` clears them.
+`composer test:browser` reaps the leftover server after the run (preserving the test
+exit code), so the command always returns promptly. The reaper is deliberately
+`pgrep -f 'mode launchServer' | grep -vx "$$" | xargs -r kill`, **not** a plain
+`pkill -f 'playwright run-server'`: a bare `pkill` also matches composer's own
+`sh -c` script shell — whose argv contains the search pattern — and SIGTERMs it, so
+the script exits 143. Don't "simplify" it back to `pkill`.
+
+If browser tests ever do hang, the cause is almost always orphaned
+`playwright run-server` processes. Clear them with the same self-excluding command:
+`pgrep -f 'mode launchServer' | grep -vx "$$" | xargs -r kill`. Any cleanup command
+must not itself contain the search literal, or it kills its own shell.
 
 === .ai/feature-documentation rules ===
 
