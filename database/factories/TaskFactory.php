@@ -2,6 +2,7 @@
 
 namespace Database\Factories;
 
+use App\Enums\CancelReason;
 use App\Enums\Priority;
 use App\Enums\Status;
 use App\Models\Project;
@@ -53,6 +54,19 @@ class TaskFactory extends Factory
     public function archived(): static
     {
         return $this->state(fn () => ['archived_at' => now()]);
+    }
+
+    /**
+     * Mark the task as canceled with a reason and an optional message.
+     */
+    public function canceled(?CancelReason $reason = null, ?string $message = null): static
+    {
+        return $this->state(fn () => [
+            'status' => Status::Canceled,
+            'canceled_at' => now(),
+            'cancel_reason' => $reason ?? CancelReason::WontFix,
+            'cancel_message' => $message,
+        ]);
     }
 
     public function priority(Priority $priority): static

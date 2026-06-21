@@ -64,6 +64,9 @@
     "In progress": "In Bearbeitung",
     "Done": "Erledigt",
     "Canceled": "Abgebrochen",
+    "Won't fix": "Wird nicht behoben",
+    "Duplicate": "Duplikat",
+    "Deprecated": "Veraltet",
 
     "Undo": "Rückgängig",
     "Dismiss": "Schließen",

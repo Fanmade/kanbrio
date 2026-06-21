@@ -14,6 +14,7 @@ use App\Concerns\LogsActivity;
 use App\Concerns\Nestable;
 use App\Contracts\Dependable;
 use App\Contracts\Subscribable;
+use App\Enums\CancelReason;
 use App\Enums\Priority;
 use App\Enums\Status;
 use App\Support\TaskProgress;
@@ -40,6 +41,9 @@ use Illuminate\Support\Collection;
  * @property float $position
  * @property Carbon|null $due_date
  * @property Carbon|null $archived_at
+ * @property Carbon|null $canceled_at
+ * @property CancelReason|null $cancel_reason
+ * @property string|null $cancel_message
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property-read string $reference
@@ -89,7 +93,18 @@ class Task extends Model implements Dependable, Subscribable
             'position' => 'double',
             'due_date' => 'date',
             'archived_at' => 'datetime',
+            'canceled_at' => 'datetime',
+            'cancel_reason' => CancelReason::class,
         ];
+    }
+
+    /**
+     * Whether the task has been canceled (abandoned with a reason), as opposed to
+     * merely sitting in some other status.
+     */
+    public function isCanceled(): bool
+    {
+        return $this->canceled_at !== null;
     }
 
     /**
