@@ -52,11 +52,11 @@ use Laravel\Mcp\Server\Tool;
     related_reference) and the remove-dependency tool to unlink them. Self-dependencies and cycles
     are rejected.
 
-    Task and project descriptions are HTML, restricted to a small allow-list: headings,
-    bold/italic, lists, links, blockquotes, code, and inline images (rendered as a thumbnail
-    linking to the full-size image). The get tools return descriptions as HTML, and the
-    create/update tools expect description content as HTML — whatever you send is sanitized to
-    that allow-list, so unsupported tags are dropped. (Comment bodies, in contrast, are Markdown.)
+    Task and project descriptions and comment bodies are HTML, restricted to a small allow-list:
+    headings, bold/italic, lists, links, blockquotes, code, and inline images (rendered as a
+    thumbnail linking to the full-size image). The get tools return this content as HTML, and the
+    create/update/comment tools expect it as HTML — whatever you send is sanitized to that
+    allow-list, so unsupported tags are dropped.
 
     Projects and tasks may have file attachments, including images embedded inline in their
     descriptions. The get tools list each attachment's id; pass that id to the get-attachment

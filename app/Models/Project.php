@@ -4,9 +4,9 @@ namespace App\Models;
 
 use App\Concerns\HasAttachments;
 use App\Concerns\HasComments;
-use App\Concerns\HasRichTextDescription;
 use App\Concerns\HasSubscribers;
 use App\Concerns\LogsActivity;
+use App\Concerns\SanitizesRichText;
 use App\Contracts\Subscribable;
 use Database\Factories\ProjectFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -28,7 +28,7 @@ use Illuminate\Support\Carbon;
 class Project extends Model implements Subscribable
 {
     /** @use HasFactory<ProjectFactory> */
-    use HasAttachments, HasComments, HasFactory, HasRichTextDescription, HasSubscribers, LogsActivity;
+    use HasAttachments, HasComments, HasFactory, HasSubscribers, LogsActivity, SanitizesRichText;
 
     public function getRouteKeyName(): string
     {

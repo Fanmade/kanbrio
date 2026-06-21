@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Concerns\SanitizesRichText;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -25,6 +26,8 @@ use Illuminate\Support\Carbon;
 #[Fillable(['user_id', 'body', 'parent_id'])]
 class Comment extends Model
 {
+    use SanitizesRichText;
+
     /**
      * @return array<string, string>
      */

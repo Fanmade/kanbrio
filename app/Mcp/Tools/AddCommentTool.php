@@ -68,7 +68,7 @@ class AddCommentTool extends Tool
                 ->required(),
 
             'body' => $schema->string()
-                ->description('The comment text.')
+                ->description('The comment body, as HTML (sanitized to a small allow-list; unsupported tags are dropped).')
                 ->required(),
         ];
     }
@@ -83,7 +83,7 @@ class AddCommentTool extends Tool
         return [
             'id' => $schema->integer()->description('The created comment id.')->required(),
             'on' => $schema->string()->description('The reference of the item the comment was added to.')->required(),
-            'body' => $schema->string()->description('The comment text.')->required(),
+            'body' => $schema->string()->description('The comment body as HTML.')->required(),
         ];
     }
 }

@@ -2,6 +2,7 @@
 
 use App\Models\Project;
 use App\Models\Task;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
@@ -25,6 +26,18 @@ it('sanitizes a project description on save', function () {
 
     expect($project->fresh()->description)
         ->toContain('<p>Ok</p>')
+        ->not->toContain('<script');
+});
+
+it('sanitizes a comment body on save', function () {
+    $project = Project::factory()->create();
+    $comment = $project->comments()->create([
+        'user_id' => User::factory()->create()->id,
+        'body' => '<p>Hi</p><script>alert(1)</script>',
+    ]);
+
+    expect($comment->fresh()->body)
+        ->toContain('<p>Hi</p>')
         ->not->toContain('<script');
 });
 

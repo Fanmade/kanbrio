@@ -14,7 +14,7 @@
     @unless ($collapsed)
         <div id="comments-body-{{ $morphSubjectId }}" class="flex flex-col gap-3">
             <form wire:submit="addComment" class="flex flex-col gap-2">
-                <flux:textarea wire:model="body" rows="3" :placeholder="__('Write a comment…')" />
+                <flux:editor wire:model="body" toolbar="bold italic strike | bullet ordered | link" :placeholder="__('Write a comment…')" />
                 <div class="flex justify-end">
                     <flux:button type="submit" size="sm" variant="primary" icon="chat-bubble-left-right">
                         {{ __('Comment') }}
@@ -36,7 +36,7 @@
 
                         @if ($threadIds->contains($replyingTo))
                             <form wire:submit="addReply" class="ms-6 flex flex-col gap-2">
-                                <flux:textarea wire:model="replyBody" rows="2" :placeholder="__('Write a reply…')" />
+                                <flux:editor wire:model="replyBody" toolbar="bold italic strike | bullet ordered | link" :placeholder="__('Write a reply…')" />
                                 <div class="flex justify-end gap-2">
                                     <flux:button type="button" size="sm" variant="ghost" wire:click="cancelReply">{{ __('Cancel') }}</flux:button>
                                     <flux:button type="submit" size="sm" variant="primary">{{ __('Reply') }}</flux:button>

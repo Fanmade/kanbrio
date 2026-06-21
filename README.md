@@ -65,8 +65,9 @@ Built on Laravel with Livewire and Flux UI. English and German out of the box.
 - **Profile avatars** — upload a profile picture (cropped to a square) from
   profile settings; it shows wherever you appear — assignees, comment authors and
   member lists — with your initials as the fallback when you have none.
-- **Comments** with one-level replies, editing, and soft-delete tombstones. The
-  whole section can be collapsed, remembered per user.
+- **Comments** with one-level replies, editing, and soft-delete tombstones, written
+  with the same rich-text editor as descriptions. The whole section can be collapsed,
+  remembered per user.
 - **Attachments** — drag files onto a description to upload them, with inline
   image and PDF thumbnails. Files above the size limit are rejected with a
   clear message.
@@ -83,10 +84,9 @@ Built on Laravel with Livewire and Flux UI. English and German out of the box.
   Self-links and cycles are rejected. Available in the UI and through the MCP tools.
 - **Notifications** — subscribe per project (assignment auto-subscribes you),
   manage everything from a dedicated page, unread badge in the header.
-- **Rich-text descriptions** — task and project descriptions are edited with a
-  Flux/Tiptap WYSIWYG editor (stored as sanitized HTML) supporting headings,
-  lists, links, quotes, code and inline images pasted or dropped straight in.
-  Comments are Markdown.
+- **Rich-text descriptions & comments** — task/project descriptions and comments are
+  edited with a Flux/Tiptap WYSIWYG editor (stored as sanitized HTML) supporting
+  headings, lists, links, quotes, code and inline images pasted or dropped straight in.
 - **Activity log** — polymorphic audit trail of creations, status, priority,
   assignment, tag and dependency changes, plus cancellations and reopenings,
   naming what changed (which assignees, which tags, which dependency, the cancel
@@ -110,10 +110,10 @@ Built on Laravel with Livewire and Flux UI. English and German out of the box.
   dependencies (what blocks it, what it blocks, and whether it is currently
   blocked); write tools (create/update tasks, cancel or reopen tasks, create
   projects, add comments, link/unlink dependencies) require a token with write
-  access. Descriptions are exchanged as HTML (sanitized to an allow-list on write);
-  comment bodies are Markdown. Inspecting a project or task also returns its comment
-  thread and any cancellation reason, and agents can read attachments — including
-  inline description images — by their id.
+  access. Descriptions and comment bodies are exchanged as HTML (sanitized to an
+  allow-list on write). Inspecting a project or task also returns its comment thread
+  and any cancellation reason, and agents can read attachments — including inline
+  description images — by their id.
 - **Localization** — English and German, defaulting to the browser language with
   a switcher in Appearance settings.
 
