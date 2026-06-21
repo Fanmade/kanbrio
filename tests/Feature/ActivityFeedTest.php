@@ -61,6 +61,16 @@ it('applies the collapsed preference across all subject types', function () {
         ->assertSet('collapsed', false);
 });
 
+it('renders a priority change without crashing on its numeric values', function () {
+    $this->member->setPreference('activities_collapsed', false);
+    $this->task->recordActivity('priority_changed', 'priority', '2', '4');
+
+    Livewire::actingAs($this->member)
+        ->test(ActivityFeed::class, ['subject' => $this->task])
+        ->assertOk()
+        ->assertSee('changed priority from Low to High');
+});
+
 it('shows which assignees were added and removed', function () {
     $this->member->setPreference('activities_collapsed', false);
     $this->task->recordActivity('assignee_changed', 'assignees', json_encode(['Carol']), json_encode(['Alice', 'Bob']));

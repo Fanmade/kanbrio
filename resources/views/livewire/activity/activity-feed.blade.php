@@ -19,25 +19,21 @@
                     $new = \App\Enums\Status::tryFrom((string) $activity->new_value)?->label() ?? $activity->new_value;
                     $oldPriority = \App\Enums\Priority::tryFrom((int) $activity->old_value)?->label() ?? $activity->old_value;
                     $newPriority = \App\Enums\Priority::tryFrom((int) $activity->new_value)?->label() ?? $activity->new_value;
-                    $assigneesAdded = json_decode((string) $activity->new_value, true) ?: [];
-                    $assigneesRemoved = json_decode((string) $activity->old_value, true) ?: [];
+                    $newValues = (array) json_decode((string) $activity->new_value, true);
+                    $oldValues = (array) json_decode((string) $activity->old_value, true);
                     $conjunction = ' '.__('and').' ';
-                    $addedList = \Illuminate\Support\Arr::join($assigneesAdded, ', ', $conjunction);
-                    $removedList = \Illuminate\Support\Arr::join($assigneesRemoved, ', ', $conjunction);
+                    $addedList = \Illuminate\Support\Arr::join($newValues, ', ', $conjunction);
+                    $removedList = \Illuminate\Support\Arr::join($oldValues, ', ', $conjunction);
                     $assigneeDescription = match (true) {
-                        $assigneesAdded !== [] && $assigneesRemoved !== [] => __('assigned :added, unassigned :removed', ['added' => $addedList, 'removed' => $removedList]),
-                        $assigneesAdded !== [] => __('assigned :users', ['users' => $addedList]),
-                        $assigneesRemoved !== [] => __('unassigned :users', ['users' => $removedList]),
+                        $newValues !== [] && $oldValues !== [] => __('assigned :added, unassigned :removed', ['added' => $addedList, 'removed' => $removedList]),
+                        $newValues !== [] => __('assigned :users', ['users' => $addedList]),
+                        $oldValues !== [] => __('unassigned :users', ['users' => $removedList]),
                         default => __('updated the assignees'),
                     };
-                    $tagsAdded = json_decode((string) $activity->new_value, true) ?: [];
-                    $tagsRemoved = json_decode((string) $activity->old_value, true) ?: [];
-                    $tagsAddedList = \Illuminate\Support\Arr::join($tagsAdded, ', ', $conjunction);
-                    $tagsRemovedList = \Illuminate\Support\Arr::join($tagsRemoved, ', ', $conjunction);
                     $tagDescription = match (true) {
-                        $tagsAdded !== [] && $tagsRemoved !== [] => __('added the tags :added, removed :removed', ['added' => $tagsAddedList, 'removed' => $tagsRemovedList]),
-                        $tagsAdded !== [] => __('added the tags :tags', ['tags' => $tagsAddedList]),
-                        $tagsRemoved !== [] => __('removed the tags :tags', ['tags' => $tagsRemovedList]),
+                        $newValues !== [] && $oldValues !== [] => __('added the tags :added, removed :removed', ['added' => $addedList, 'removed' => $removedList]),
+                        $newValues !== [] => __('added the tags :tags', ['tags' => $addedList]),
+                        $oldValues !== [] => __('removed the tags :tags', ['tags' => $removedList]),
                         default => __('updated the tags'),
                     };
                     $depAdded = json_decode((string) $activity->new_value, true);
