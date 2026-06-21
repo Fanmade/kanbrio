@@ -6,11 +6,14 @@ use App\Actions\CreateTask;
 use App\Enums\Priority;
 use App\Enums\Status;
 use App\Models\Project;
+use App\Models\Tag;
 use App\Models\Task;
 use App\Models\User;
 use Flux\Flux;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Collection as BaseCollection;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rules\Enum;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Locked;
@@ -48,11 +51,29 @@ class CreateTaskModal extends Component
 
     public string $description = '';
 
+    public bool $showPreview = false;
+
     public int $priority;
 
     public string $status = '';
 
     public string $dueDate = '';
+
+    /**
+     * Tag names staged for the new task; created/attached after it is saved.
+     *
+     * @var array<int, string>
+     */
+    public array $tagNames = [];
+
+    public string $tagQuery = '';
+
+    /**
+     * Ids of project members to assign to the new task.
+     *
+     * @var array<int, int>
+     */
+    public array $assigneeIds = [];
 
     public function mount(): void
     {
@@ -128,6 +149,110 @@ class CreateTaskModal extends Component
             ->all();
     }
 
+    /**
+     * The members of the selected project, available for assignment.
+     *
+     * @return Collection<int, User>
+     */
+    #[Computed]
+    public function members(): Collection
+    {
+        $project = $this->selectedProject();
+
+        if ($project === null) {
+            /** @var Collection<int, User> $empty */
+            $empty = new Collection;
+
+            return $empty;
+        }
+
+        return $project->members()->orderBy('name')->get();
+    }
+
+    /**
+     * Up to eight most-used tags matching the current query and not already
+     * staged, offered as suggestions in the tag input.
+     *
+     * @return BaseCollection<int, array{name: string, color: string}>
+     */
+    #[Computed]
+    public function tagSuggestions(): BaseCollection
+    {
+        $query = trim($this->tagQuery);
+
+        if ($query === '') {
+            return new BaseCollection;
+        }
+
+        $applied = array_map(mb_strtolower(...), $this->tagNames);
+
+        return Tag::query()
+            ->select('tags.id', 'tags.name', 'tags.color')
+            ->selectSub(
+                DB::table('taggables')
+                    ->selectRaw('count(*)')
+                    ->whereColumn('taggables.tag_id', 'tags.id'),
+                'usage_count'
+            )
+            ->whereLike('tags.name', '%'.$query.'%')
+            ->orderByDesc('usage_count')
+            ->orderBy('tags.name')
+            ->limit(12)
+            ->get()
+            ->reject(static fn (Tag $tag): bool => in_array(mb_strtolower($tag->name), $applied, true))
+            ->take(8)
+            ->map(static fn (Tag $tag): array => ['name' => $tag->name, 'color' => $tag->color])
+            ->values();
+    }
+
+    /**
+     * Whether the typed query is a new tag name worth offering to create.
+     */
+    #[Computed]
+    public function canCreateTag(): bool
+    {
+        $query = mb_strtolower(trim($this->tagQuery));
+
+        if ($query === '') {
+            return false;
+        }
+
+        if (in_array($query, array_map(mb_strtolower(...), $this->tagNames), true)) {
+            return false;
+        }
+
+        return ! $this->tagSuggestions()->contains(static fn (array $tag): bool => mb_strtolower($tag['name']) === $query);
+    }
+
+    /**
+     * Stage a suggested tag by its position in the suggestion list.
+     */
+    public function addSuggestedTag(int $index): void
+    {
+        $name = $this->tagSuggestions()->get($index)['name'] ?? null;
+
+        if ($name !== null) {
+            $this->stageTag($name);
+        }
+    }
+
+    /**
+     * Stage the typed query as a new tag.
+     */
+    public function createDraftTag(): void
+    {
+        $this->stageTag($this->tagQuery);
+    }
+
+    /**
+     * Remove a staged tag by its position.
+     */
+    public function removeDraftTag(int $index): void
+    {
+        unset($this->tagNames[$index]);
+        $this->tagNames = array_values($this->tagNames);
+    }
+
     public function save(): void
     {
         $validated = $this->validate([
@@ -138,6 +263,10 @@ class CreateTaskModal extends Component
             'priority' => ['required', new Enum(Priority::class)],
             'status' => ['required', 'string', 'in:'.collect(Status::columns())->map->value->implode(',')],
             'dueDate' => ['nullable', 'date'],
+            'tagNames' => ['array'],
+            'tagNames.*' => ['string', 'max:255'],
+            'assigneeIds' => ['array'],
+            'assigneeIds.*' => ['integer'],
         ]);
 
         $project = $this->projects()->firstWhere('id', $validated['projectId']);
@@ -148,7 +277,7 @@ class CreateTaskModal extends Component
 
         $parent = $this->resolveParent($project, $validated['parentId'] ?? null);
 
-        app(CreateTask::class)->handle(
+        $task = app(CreateTask::class)->handle(
             $project,
             $validated['title'],
             $validated['description'] ?: null,
@@ -157,6 +286,9 @@ class CreateTaskModal extends Component
             $validated['dueDate'] ?: null,
             $parent,
         );
+
+        $this->applyTags($task);
+        $this->applyAssignees($task, $project);
 
         $this->resetForm();
         $this->show = false;
@@ -167,13 +299,14 @@ class CreateTaskModal extends Component
     }
 
     /**
-     * Re-scope the parent options whenever the chosen project changes, dropping a
-     * now-invalid parent selection.
+     * Re-scope the parent and member options whenever the chosen project changes,
+     * dropping selections that no longer belong to it.
      */
     public function updatedProjectId(): void
     {
-        unset($this->parentOptions);
+        unset($this->parentOptions, $this->members);
         $this->parentId = null;
+        $this->assigneeIds = [];
     }
 
     /**
@@ -181,10 +314,67 @@ class CreateTaskModal extends Component
      */
     protected function resetForm(): void
     {
-        $this->reset('projectId', 'parentId', 'title', 'description', 'dueDate');
+        $this->reset('projectId', 'parentId', 'title', 'description', 'dueDate', 'showPreview', 'tagNames', 'tagQuery', 'assigneeIds');
         $this->priority = Priority::default()->value;
         $this->status = Status::Planned->value;
-        unset($this->parentOptions);
+        unset($this->parentOptions, $this->members, $this->tagSuggestions);
+    }
+
+    /**
+     * Stage a tag name, ignoring blanks and case-insensitive duplicates.
+     */
+    protected function stageTag(string $name): void
+    {
+        $name = trim($name);
+
+        if ($name === '') {
+            return;
+        }
+
+        $exists = collect($this->tagNames)->contains(
+            static fn (string $staged): bool => mb_strtolower($staged) === mb_strtolower($name)
+        );
+
+        if (! $exists) {
+            $this->tagNames[] = $name;
+        }
+
+        $this->reset('tagQuery');
+        unset($this->tagSuggestions);
+    }
+
+    /**
+     * Create (or reuse) the staged tags and attach them to the new task.
+     */
+    protected function applyTags(Task $task): void
+    {
+        if ($this->tagNames === []) {
+            return;
+        }
+
+        $tagIds = collect($this->tagNames)
+            ->map(static fn (string $name): int => Tag::firstOrCreate(['name' => trim($name)])->getKey())
+            ->all();
+
+        $task->tags()->syncWithoutDetaching($tagIds);
+    }
+
+    /**
+     * Assign the chosen project members to the new task and subscribe them, the
+     * same way assignment works on the task page.
+     */
+    protected function applyAssignees(Task $task, Project $project): void
+    {
+        $memberIds = $project->members()->pluck('users.id')->all();
+        $assigneeIds = array_values(array_intersect($this->assigneeIds, $memberIds));
+
+        if ($assigneeIds === []) {
+            return;
+        }
+
+        $task->assignees()->sync($assigneeIds);
+        $task->subscribers()->syncWithoutDetaching($assigneeIds);
+        $task->recordAssigneeChange($assigneeIds, []);
     }
 
     /**
