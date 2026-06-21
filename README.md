@@ -28,7 +28,12 @@ Built on Laravel with Livewire and Flux UI. English and German out of the box.
 - **Readable scoped URLs** — `/{SHORT}` for a project, `/{SHORT}/board` for its
   board, and `/{SHORT}-{n}` for a task (e.g. `/ABC`, `/ABC/board`, `/ABC-42`).
 - **Command palette** (`⌘K` / `Ctrl+K`) — search projects and tasks by
-  title or tag, jump straight to a typed reference, and run quick actions.
+  title or tag, jump straight to a typed reference, and run quick actions
+  including creating a task from anywhere.
+- **Create task dialog** — one dialog for creating tasks, opened from the board,
+  a project, a parent task or the command palette. Pick the target project and an
+  optional parent task (offered only where nesting stays within the depth limit);
+  the project and parent are preselected from the page you opened it on.
 - **Kanban board** — drag-and-drop across the four statuses (Planned, ToDo,
   In progress, Done), per project or globally across every project you can see.
   Dragging is smoothly animated with highlighted drop targets and works on touch;

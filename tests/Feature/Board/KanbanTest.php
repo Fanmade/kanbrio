@@ -3,6 +3,7 @@
 use App\Enums\Priority;
 use App\Enums\Status;
 use App\Livewire\Projects\ProjectBoard;
+use App\Livewire\Tasks\CreateTaskModal;
 use App\Models\Project;
 use App\Models\Task;
 use App\Models\User;
@@ -222,12 +223,12 @@ it('filters the board by priority', function () {
         ->and($tasks->first()->priority)->toBe(Priority::Highest);
 });
 
-it('creates a root task from the board', function () {
+it('creates a root task from the create dialog', function () {
     Livewire::actingAs($this->member)
-        ->test(ProjectBoard::class, ['short_name' => 'ABC'])
-        ->call('openTaskModal')
-        ->set('taskTitle', 'New Task')
-        ->call('createTask');
+        ->test(CreateTaskModal::class)
+        ->call('open', $this->project->id)
+        ->set('title', 'New Task')
+        ->call('save');
 
     $task = $this->project->tasks()->where('title', 'New Task')->first();
 
@@ -235,13 +236,13 @@ it('creates a root task from the board', function () {
         ->and($task->parent_id)->toBeNull();
 });
 
-it('requires a title to create a task from the board', function () {
+it('requires a title to create a task', function () {
     Livewire::actingAs($this->member)
-        ->test(ProjectBoard::class, ['short_name' => 'ABC'])
-        ->call('openTaskModal')
-        ->set('taskTitle', '')
-        ->call('createTask')
-        ->assertHasErrors(['taskTitle' => 'required']);
+        ->test(CreateTaskModal::class)
+        ->call('open', $this->project->id)
+        ->set('title', '')
+        ->call('save')
+        ->assertHasErrors(['title' => 'required']);
 });
 
 it('keeps canceled tasks off the project board lanes', function () {

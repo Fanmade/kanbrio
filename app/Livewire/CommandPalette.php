@@ -48,6 +48,10 @@ class CommandPalette extends Component
             new SearchResult(type: 'action', title: __('Notifications'), url: route('notifications.index'), icon: 'bell'),
         ]);
 
+        if ($user->projects()->exists()) {
+            $actions->push(new SearchResult(type: 'action', title: __('New task'), icon: 'plus', event: 'open-create-task'));
+        }
+
         if ($user->hasPermission(Permission::CreateProjects)) {
             $actions->push(new SearchResult(type: 'action', title: __('New project'), url: route('projects.index', ['create' => 1]), icon: 'folder-plus'));
         }
@@ -73,6 +77,17 @@ class CommandPalette extends Component
     public function go(string $url): void
     {
         $this->redirect($url, navigate: true);
+    }
+
+    /**
+     * Run an action that opens an in-page dialog rather than navigating: dispatch
+     * its event and close the palette.
+     */
+    public function runAction(string $event): void
+    {
+        $this->dispatch($event);
+        $this->reset('query');
+        $this->dispatch('modal-close', name: 'command-palette');
     }
 
     /**

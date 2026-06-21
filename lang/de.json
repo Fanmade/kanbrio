@@ -49,6 +49,11 @@
     "No tasks yet.": "Noch keine Aufgaben.",
 
     "New task": "Neue Aufgabe",
+    "Project": "Projekt",
+    "Select a project": "Projekt auswählen",
+    "Parent task": "Übergeordnete Aufgabe",
+    "None (top-level task)": "Keine (Aufgabe der obersten Ebene)",
+    "The selected parent task is not valid.": "Die ausgewählte übergeordnete Aufgabe ist ungültig.",
     "Task created.": "Aufgabe erstellt.",
     "Task updated.": "Aufgabe aktualisiert.",
     "No tasks": "Keine Aufgaben",

@@ -2,18 +2,14 @@
 
 namespace App\Livewire\Projects;
 
-use App\Actions\CreateTask;
 use App\Concerns\BuildsKanbanColumns;
-use App\Enums\Priority;
-use App\Enums\Status;
 use App\Models\Project;
 use App\Models\Task;
 use App\Support\BlockedTasks;
-use Flux\Flux;
 use Illuminate\Database\Eloquent\Collection;
-use Illuminate\Validation\Rules\Enum;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Locked;
+use Livewire\Attributes\On;
 use Livewire\Component;
 
 class ProjectBoard extends Component
@@ -28,23 +24,9 @@ class ProjectBoard extends Component
 
     public bool $showArchived = false;
 
-    // Create-task modal state. A board card is a top-level task.
-    public bool $showTaskModal = false;
-
-    public string $taskTitle = '';
-
-    public string $taskDescription = '';
-
-    public string $taskDueDate = '';
-
-    public string $taskStatus = Status::Planned->value;
-
-    public int $taskPriority;
-
     public function mount(string $short_name): void
     {
         $this->shortName = $short_name;
-        $this->taskPriority = Priority::default()->value;
 
         $this->authorize('view', $this->project());
     }
@@ -146,39 +128,13 @@ class ProjectBoard extends Component
         unset($this->tasks, $this->columns, $this->blockedTaskIds);
     }
 
-    public function openTaskModal(?string $status = null): void
+    /**
+     * Refresh the board after a task is created through the shared create dialog.
+     */
+    #[On('task-created')]
+    public function refreshAfterCreate(): void
     {
-        $this->reset('taskTitle', 'taskDescription', 'taskDueDate');
-        $this->taskStatus = $status ?? Status::Planned->value;
-        $this->taskPriority = Priority::default()->value;
-        $this->showTaskModal = true;
-    }
-
-    public function createTask(): void
-    {
-        $this->authorize('update', $this->project());
-
-        $validated = $this->validate([
-            'taskTitle' => ['required', 'string', 'max:255'],
-            'taskDescription' => ['nullable', 'string'],
-            'taskPriority' => ['required', new Enum(Priority::class)],
-            'taskDueDate' => ['nullable', 'date'],
-            'taskStatus' => ['required', 'string', 'in:'.collect(Status::cases())->map->value->implode(',')],
-        ]);
-
-        app(CreateTask::class)->handle(
-            $this->project(),
-            $validated['taskTitle'],
-            $validated['taskDescription'] ?? null,
-            Priority::from($validated['taskPriority']),
-            Status::from($validated['taskStatus']),
-            $validated['taskDueDate'],
-        );
-
-        $this->reset('taskTitle', 'taskDescription', 'taskDueDate', 'showTaskModal');
-        unset($this->tasks, $this->columns);
-
-        Flux::toast(variant: 'success', text: __('Task created.'));
+        unset($this->tasks, $this->columns, $this->blockedTaskIds);
     }
 
     /**

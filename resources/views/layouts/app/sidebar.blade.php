@@ -72,6 +72,8 @@
 
         {{ $slot }}
 
+        <livewire:tasks.create-task-modal />
+
         @persist('toast')
             <flux:toast.group>
                 <flux:toast />

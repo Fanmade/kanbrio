@@ -118,6 +118,39 @@ it('deep-links the New project action to the open create form', function () {
     expect($action->url)->toContain('create=1');
 });
 
+it('offers the New task action to project members', function () {
+    $action = Livewire::actingAs($this->user)
+        ->test(CommandPalette::class)
+        ->instance()
+        ->actions()
+        ->firstWhere('title', 'New task');
+
+    expect($action)->not->toBeNull()
+        ->and($action->event)->toBe('open-create-task');
+});
+
+it('hides the New task action from users with no projects', function () {
+    $stranger = User::factory()->create();
+
+    $action = Livewire::actingAs($stranger)
+        ->test(CommandPalette::class)
+        ->instance()
+        ->actions()
+        ->firstWhere('title', 'New task');
+
+    expect($action)->toBeNull();
+});
+
+it('opens the create dialog and closes the palette when New task is run', function () {
+    Livewire::actingAs($this->user)
+        ->test(CommandPalette::class)
+        ->set('query', 'New')
+        ->call('runAction', 'open-create-task')
+        ->assertDispatched('open-create-task')
+        ->assertDispatched('modal-close', name: 'command-palette')
+        ->assertSet('query', '');
+});
+
 it('clears its query when closed', function () {
     Livewire::actingAs($this->user)
         ->test(CommandPalette::class)

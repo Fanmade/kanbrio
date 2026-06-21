@@ -1,7 +1,7 @@
 <?php
 
 use App\Enums\Priority;
-use App\Livewire\Projects\ProjectBoard;
+use App\Livewire\Tasks\CreateTaskModal;
 use App\Livewire\Tasks\TaskView;
 use App\Models\Project;
 use App\Models\Task;
@@ -19,25 +19,25 @@ beforeEach(function () {
     $this->project->members()->attach($this->member);
 });
 
-it('creates a task with a chosen priority from the board', function () {
+it('creates a task with a chosen priority from the create dialog', function () {
     Livewire::actingAs($this->member)
-        ->test(ProjectBoard::class, ['short_name' => 'ABC'])
-        ->call('openTaskModal')
-        ->set('taskTitle', 'Launch')
-        ->set('taskPriority', Priority::High->value)
-        ->call('createTask');
+        ->test(CreateTaskModal::class)
+        ->call('open', $this->project->id)
+        ->set('title', 'Launch')
+        ->set('priority', Priority::High->value)
+        ->call('save');
 
     expect($this->project->tasks()->where('title', 'Launch')->first()->priority)
         ->toBe(Priority::High);
 });
 
-it('defaults the new-task priority to the project default when the modal opens', function () {
+it('defaults the new-task priority to the project default when the dialog opens', function () {
     Livewire::actingAs($this->member)
-        ->test(ProjectBoard::class, ['short_name' => 'ABC'])
-        ->call('openTaskModal')
-        ->assertSet('taskPriority', Priority::default()->value)
-        ->set('taskTitle', 'Ship it')
-        ->call('createTask');
+        ->test(CreateTaskModal::class)
+        ->call('open', $this->project->id)
+        ->assertSet('priority', Priority::default()->value)
+        ->set('title', 'Ship it')
+        ->call('save');
 
     expect($this->project->tasks()->where('title', 'Ship it')->first()->priority)
         ->toBe(Priority::default());

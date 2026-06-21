@@ -1,6 +1,7 @@
 <?php
 
 use App\Livewire\Projects\ProjectBoard;
+use App\Livewire\Tasks\CreateTaskModal;
 use App\Livewire\Tasks\TaskView;
 use App\Models\Project;
 use App\Models\Task;
@@ -65,13 +66,13 @@ it('rejects an invalid due date in the task view', function () {
         ->assertHasErrors(['dueDate' => 'date']);
 });
 
-it('creates a task with a due date from the board', function () {
+it('creates a task with a due date from the create dialog', function () {
     Livewire::actingAs($this->member)
-        ->test(ProjectBoard::class, ['short_name' => 'ABC'])
-        ->call('openTaskModal')
-        ->set('taskTitle', 'Ship it')
-        ->set('taskDueDate', '2026-09-02')
-        ->call('createTask');
+        ->test(CreateTaskModal::class)
+        ->call('open', $this->project->id)
+        ->set('title', 'Ship it')
+        ->set('dueDate', '2026-09-02')
+        ->call('save');
 
     expect($this->project->tasks()->where('title', 'Ship it')->first()->due_date->format('Y-m-d'))
         ->toBe('2026-09-02');
