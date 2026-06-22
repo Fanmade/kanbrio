@@ -5,6 +5,7 @@ namespace App\Livewire\Tasks;
 use App\Actions\CancelTask;
 use App\Actions\ChangeTaskStatus;
 use App\Concerns\HandlesAttachments;
+use App\Concerns\HasLiveUpdates;
 use App\Concerns\ManagesDependencies;
 use App\Concerns\ManagesParent;
 use App\Concerns\ManagesTags;
@@ -28,6 +29,7 @@ use Livewire\Component;
 class TaskView extends Component
 {
     use HandlesAttachments;
+    use HasLiveUpdates;
     use ManagesDependencies;
     use ManagesParent;
     use ManagesTags;

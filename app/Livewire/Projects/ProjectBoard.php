@@ -3,6 +3,7 @@
 namespace App\Livewire\Projects;
 
 use App\Concerns\BuildsKanbanColumns;
+use App\Concerns\HasLiveUpdates;
 use App\Concerns\PromptsParentClose;
 use App\Enums\Status;
 use App\Models\Project;
@@ -17,6 +18,7 @@ use Livewire\Component;
 class ProjectBoard extends Component
 {
     use BuildsKanbanColumns;
+    use HasLiveUpdates;
     use PromptsParentClose;
 
     #[Locked]
