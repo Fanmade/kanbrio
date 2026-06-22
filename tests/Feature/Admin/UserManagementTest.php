@@ -163,6 +163,57 @@ it('revokes a pending invitation', function () {
     $this->assertDatabaseMissing('invitations', ['id' => $invitation->id]);
 });
 
+it('shows each user the count of pending invitations they have sent', function () {
+    $admin = User::factory()->canManageUsers()->create();
+
+    Invitation::create([
+        'email' => 'pending@example.com',
+        'token' => 'tok-pending',
+        'invited_by' => $admin->id,
+        'project_ids' => [],
+        'expires_at' => now()->addDay(),
+    ]);
+
+    // An accepted invitation is no longer pending and must not be counted.
+    $accepted = Invitation::create([
+        'email' => 'accepted@example.com',
+        'token' => 'tok-accepted',
+        'invited_by' => $admin->id,
+        'project_ids' => [],
+        'expires_at' => now()->addDay(),
+    ]);
+    $accepted->accepted_at = now();
+    $accepted->save();
+
+    // An expired invitation is no longer usable and must not be counted.
+    Invitation::create([
+        'email' => 'expired@example.com',
+        'token' => 'tok-expired',
+        'invited_by' => $admin->id,
+        'project_ids' => [],
+        'expires_at' => now()->subDay(),
+    ]);
+
+    $html = Livewire::actingAs($admin)
+        ->test(UserManagement::class)
+        ->html();
+
+    expect($html)
+        ->toContain('data-test="pending-invites-'.$admin->id.'"')
+        ->toContain('1 pending');
+});
+
+it('omits the pending-invitations badge for users who have sent none', function () {
+    $admin = User::factory()->canManageUsers()->create();
+    $member = User::factory()->create();
+
+    $html = Livewire::actingAs($admin)
+        ->test(UserManagement::class)
+        ->html();
+
+    expect($html)->not->toContain('data-test="pending-invites-'.$member->id.'"');
+});
+
 it('forbids a non-administrator from mounting the management component', function () {
     Livewire::actingAs(User::factory()->create())
         ->test(UserManagement::class)

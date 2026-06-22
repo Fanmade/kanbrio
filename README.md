@@ -112,8 +112,9 @@ Built on Laravel with Livewire and Flux UI. English and German out of the box.
 - **Invitation-only onboarding** via signed, expiring email links (public
   registration is disabled).
 - **User administration** — an admin-only area (gated by the `manage-users`
-  permission) to review every account, grant or revoke permissions, resend or
-  revoke pending invitations, and deactivate (reversible, blocks sign-in) or
+  permission) to review every account (including how many pending invitations
+  each has sent), grant or revoke permissions, resend or revoke pending
+  invitations, and deactivate (reversible, blocks sign-in) or
   remove accounts. Removed accounts are soft-deleted with their assignments
   dropped; comments they wrote are kept as the work of a "deleted user".
 - **Authorization** via native Gates (`create-projects`, `invite-users`,

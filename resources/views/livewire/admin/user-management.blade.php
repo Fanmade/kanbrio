@@ -30,6 +30,14 @@
                     </div>
 
                     <div class="flex items-center gap-3">
+                        @if ($user->pendingInvitations->isNotEmpty())
+                            <flux:tooltip :content="__('Pending invitations sent by this user')">
+                                <flux:badge size="sm" color="blue" data-test="pending-invites-{{ $user->id }}">
+                                    {{ __(':count pending', ['count' => $user->pendingInvitations->count()]) }}
+                                </flux:badge>
+                            </flux:tooltip>
+                        @endif
+
                         @if ($user->isDeactivated())
                             <flux:badge color="amber" data-test="status-{{ $user->id }}">{{ __('Deactivated') }}</flux:badge>
                         @else

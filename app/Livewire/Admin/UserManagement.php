@@ -48,7 +48,8 @@ class UserManagement extends Component
     }
 
     /**
-     * All user accounts with their granted permissions, optionally filtered.
+     * All user accounts with their granted permissions and the invitations they
+     * have sent that are still pending, optionally filtered.
      *
      * @return Collection<int, User>
      */
@@ -56,7 +57,7 @@ class UserManagement extends Component
     public function users(): Collection
     {
         return User::query()
-            ->with('permissions')
+            ->with(['permissions', 'pendingInvitations'])
             ->when($this->search !== '', function ($query): void {
                 $term = '%'.$this->search.'%';
                 $query->where(static function ($query) use ($term): void {

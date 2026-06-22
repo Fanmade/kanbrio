@@ -169,6 +169,19 @@ class User extends Authenticatable implements PasskeyUser
     }
 
     /**
+     * The invitations this user has sent that are still pending — unaccepted and
+     * unexpired. Mirrors the conditions of Invitation::scopeValid().
+     *
+     * @return HasMany<Invitation, $this>
+     */
+    public function pendingInvitations(): HasMany
+    {
+        return $this->invitations()
+            ->whereNull('accepted_at')
+            ->where('expires_at', '>', now());
+    }
+
+    /**
      * Determine whether the user has been granted the given permission.
      */
     public function hasPermission(Permission $permission): bool
