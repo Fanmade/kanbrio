@@ -99,7 +99,7 @@ class CommentList extends Component
      * that fires this already skips ticks while a comment editor is focused, so a
      * draft is never lost.
      */
-    #[On('task-page-refresh')]
+    #[On('live-refresh')]
     public function liveRefresh(): void
     {
         unset($this->comments, $this->commentCount);

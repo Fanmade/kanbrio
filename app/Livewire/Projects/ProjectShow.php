@@ -3,6 +3,7 @@
 namespace App\Livewire\Projects;
 
 use App\Concerns\HandlesAttachments;
+use App\Concerns\HasLiveUpdates;
 use App\Models\Project;
 use App\Models\Task;
 use Flux\Flux;
@@ -16,6 +17,7 @@ use Livewire\Component;
 class ProjectShow extends Component
 {
     use HandlesAttachments;
+    use HasLiveUpdates;
 
     #[Locked]
     public string $shortName;
@@ -176,6 +178,17 @@ class ProjectShow extends Component
      */
     #[On('task-created')]
     public function refreshAfterCreate(): void
+    {
+        unset($this->project);
+    }
+
+    /**
+     * Live-updates tick: pull in task changes made by others (the comment and
+     * activity feeds refresh themselves on the same event). The poll that fires
+     * this already skips ticks while the user is editing.
+     */
+    #[On('live-refresh')]
+    public function liveRefresh(): void
     {
         unset($this->project);
     }

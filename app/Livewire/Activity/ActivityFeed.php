@@ -35,7 +35,7 @@ class ActivityFeed extends Component
      * Live-updates tick: pull in activity recorded by others (read-only feed, so
      * always safe to refresh).
      */
-    #[On('task-page-refresh')]
+    #[On('live-refresh')]
     public function liveRefresh(): void
     {
         unset($this->activities, $this->activityCount, $this->descriptions);

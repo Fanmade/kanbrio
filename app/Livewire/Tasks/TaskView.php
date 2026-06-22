@@ -181,7 +181,7 @@ class TaskView extends Component
      * Live-updates tick: refresh the header from the latest data. Driven by the
      * task-page poll, which already skips ticks while the user is editing.
      */
-    #[On('task-page-refresh')]
+    #[On('live-refresh')]
     public function liveRefresh(): void
     {
         unset($this->task);

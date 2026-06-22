@@ -1,4 +1,6 @@
 <div class="mx-auto flex w-full max-w-4xl flex-col gap-6">
+    <x-live-refresh :interval-ms="$this->livePollIntervalMs()" />
+
     {{-- Header --}}
     <div class="flex items-start justify-between gap-4">
         <div class="flex items-center gap-3">
@@ -7,6 +9,7 @@
         </div>
 
         <div class="flex shrink-0 items-center gap-2">
+            <x-live-updates-toggle />
             <livewire:subscriptions.subscription-toggle :subscribable="$this->project" :wire:key="'sub-project-'.$this->project->id" />
             <flux:button size="sm" variant="primary" icon="view-columns" :href="route('project.board', $this->project)" wire:navigate>
                 {{ __('Board') }}

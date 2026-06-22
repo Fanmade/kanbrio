@@ -27,7 +27,7 @@ it('refreshes the task header on a live-updates tick', function () {
 
     $this->task->update(['title' => 'Renamed Externally']); // changed elsewhere
 
-    $component->dispatch('task-page-refresh')
+    $component->dispatch('live-refresh')
         ->assertSee('Renamed Externally');
 });
 
@@ -38,7 +38,7 @@ it('pulls in comments added elsewhere on a live-updates tick', function () {
 
     $this->task->comments()->create(['user_id' => $other->id, 'body' => '<p>Hello from elsewhere</p>']);
 
-    $component->dispatch('task-page-refresh')
+    $component->dispatch('live-refresh')
         ->assertSee('Hello from elsewhere');
 });
 
@@ -48,13 +48,13 @@ it('pulls in activity recorded elsewhere on a live-updates tick', function () {
 
     $this->task->recordActivity('status_changed', 'status', Status::ToDo->value, Status::Done->value);
 
-    $component->dispatch('task-page-refresh');
+    $component->dispatch('live-refresh');
 
     expect($component->instance()->activityCount)->toBeGreaterThan($before);
 });
 
 it('renders the poll driver and the live-updates toggle on the task page', function () {
     ($this->taskView)()
-        ->assertSeeHtml('data-test="task-page-refresh"')
+        ->assertSeeHtml('data-test="live-refresh"')
         ->assertSeeHtml('data-test="live-updates-toggle"');
 });

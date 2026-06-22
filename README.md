@@ -50,7 +50,8 @@ Built on Laravel with Livewire and Flux UI. English and German out of the box.
   never refreshes mid-drag.
 - **Project overview** — each project page lists its top-level tasks grouped into
   open and completed, and shows every root task's direct subtasks as quick links to
-  drill straight into them.
+  drill straight into them. The lists and comments update automatically as others
+  make changes (Live updates).
 - **Completion progress bars** — any task with subtasks shows a progress rollup
   based on the share of its descendant tasks done, on the project overview (per
   root task) and on the task's detail page.
