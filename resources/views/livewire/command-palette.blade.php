@@ -41,7 +41,10 @@
             <flux:command.items>
                 @php($items = $this->results->merge($this->actions))
 
-                @forelse ($items as $item)
+                {{-- The empty state ("No results found") is rendered by Flux's
+                     <flux:command.items>; we override that view (resources/views/
+                     flux/command/items.blade.php) so the string is translatable. --}}
+                @foreach ($items as $item)
                     <flux:command.item wire:click="{{ $item->event ? 'runAction' : 'go' }}('{{ $item->event ?? $item->url }}')" :icon="$item->icon" wire:key="{{ $item->type }}-{{ $loop->index }}" data-test="palette-item-{{ Str::slug($item->title) }}">
                         <span class="flex w-full items-center gap-2">
                             <span class="flex-1 truncate">{{ $item->title }}</span>
@@ -53,9 +56,7 @@
                             @endif
                         </span>
                     </flux:command.item>
-                @empty
-                    <flux:text class="px-3 py-2 text-sm text-zinc-500 dark:text-zinc-400">{{ __('No results') }}</flux:text>
-                @endforelse
+                @endforeach
             </flux:command.items>
         </flux:command>
     </flux:modal>
