@@ -176,6 +176,10 @@
 
                     <flux:separator variant="subtle" />
 
+                    @include('partials.parent')
+
+                    <flux:separator variant="subtle" />
+
                     @include('partials.dependencies')
 
                     <flux:separator variant="subtle" />
@@ -228,6 +232,26 @@
     </flux:modal>
 
     @include('partials.tasks.parent-close-modal')
+
+    <flux:modal wire:model.self="movingParent" wire:close="cancelMoveParent" class="md:w-96" data-test="move-task-modal">
+        <div class="flex flex-col gap-4">
+            <flux:heading size="lg">{{ __('Move task') }}</flux:heading>
+            <flux:text>{{ __('Choose a new parent task, or move it to the top level.') }}</flux:text>
+
+            <flux:select wire:model="newParentId" data-test="move-parent-select">
+                <flux:select.option value="">{{ __('Top-level task (no parent)') }}</flux:select.option>
+                @foreach ($this->parentMoveOptions as $id => $label)
+                    <flux:select.option :value="$id">{{ $label }}</flux:select.option>
+                @endforeach
+            </flux:select>
+            <flux:error name="newParentId" />
+
+            <div class="flex justify-end gap-2">
+                <flux:button type="button" variant="ghost" wire:click="cancelMoveParent">{{ __('Cancel') }}</flux:button>
+                <flux:button type="button" variant="primary" wire:click="moveParent" data-test="move-parent-confirm">{{ __('Move') }}</flux:button>
+            </div>
+        </div>
+    </flux:modal>
 
     <flux:modal wire:model.self="confirmingCancel" wire:close="abortCancel" class="md:w-96" data-test="cancel-modal">
         <form wire:submit="cancelTask" class="flex flex-col gap-4">

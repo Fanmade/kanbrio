@@ -32,6 +32,7 @@
                     'priority_changed' => __('changed the priority of'),
                     'assignee_changed' => __('updated the assignees of'),
                     'tags_changed' => __('updated the tags of'),
+                    'parent_changed' => __('moved'),
                     'commented' => __('commented on'),
                     default => __('updated'),
                 })

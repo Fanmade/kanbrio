@@ -6,6 +6,7 @@ use App\Actions\CancelTask;
 use App\Actions\ChangeTaskStatus;
 use App\Concerns\HandlesAttachments;
 use App\Concerns\ManagesDependencies;
+use App\Concerns\ManagesParent;
 use App\Concerns\ManagesTags;
 use App\Concerns\PromptsParentClose;
 use App\Enums\CancelReason;
@@ -28,6 +29,7 @@ class TaskView extends Component
 {
     use HandlesAttachments;
     use ManagesDependencies;
+    use ManagesParent;
     use ManagesTags;
     use PromptsParentClose;
 
@@ -102,7 +104,7 @@ class TaskView extends Component
         $project = Project::where('short_name', $this->shortName)->firstOrFail();
 
         $task = Task::query()
-            ->with(['assignees', 'tags', 'project', 'ancestors', 'children', 'descendants'])
+            ->with(['assignees', 'tags', 'project', 'parent', 'ancestors', 'children', 'descendants'])
             ->where('project_id', $project->id)
             ->where('task_number', $this->taskNumber)
             ->firstOrFail();
@@ -128,6 +130,16 @@ class TaskView extends Component
     }
 
     protected function forgetTaggable(): void
+    {
+        unset($this->task);
+    }
+
+    protected function reparentable(): Task
+    {
+        return $this->task();
+    }
+
+    protected function forgetReparentable(): void
     {
         unset($this->task);
     }

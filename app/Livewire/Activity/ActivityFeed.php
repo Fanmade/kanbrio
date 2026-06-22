@@ -103,12 +103,26 @@ class ActivityFeed extends Component
             'assignee_changed' => $this->assigneeDescription($newValues, $oldValues),
             'dependency_changed' => $this->dependencyDescription($newValues, $oldValues),
             'tags_changed' => $this->tagDescription($newValues, $oldValues),
+            'parent_changed' => $this->parentDescription($activity->old_value, $activity->new_value),
             'canceled' => $this->cancellationDescription($newValues),
             'reopened' => __('reopened this'),
             'archived' => __('archived this'),
             'unarchived' => __('restored this from the archive'),
             'commented' => __('added a comment'),
             default => $activity->action,
+        };
+    }
+
+    /**
+     * Describe a re-parent move from the old and new parent references (either
+     * may be null, meaning the top level).
+     */
+    private function parentDescription(?string $old, ?string $new): string
+    {
+        return match (true) {
+            $new !== null && $old !== null => __('moved this from :old to :new', ['old' => $old, 'new' => $new]),
+            $new !== null => __('moved this under :new', ['new' => $new]),
+            default => __('moved this to the top level'),
         };
     }
 

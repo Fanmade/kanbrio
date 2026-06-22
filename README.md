@@ -19,7 +19,8 @@ Built on Laravel with Livewire and Flux UI. English and German out of the box.
 - **Projects & nestable Tasks** — a project contains tasks, and tasks nest into
   subtasks (up to a configurable depth, default three) with flat per-project task
   numbers. A task page shows its place in the tree, its subtasks, and a progress
-  rollup over the whole subtree. Closing a parent can cascade to its open subtasks
+  rollup over the whole subtree. A task can be moved under a different parent or
+  detached to the top level. Closing a parent can cascade to its open subtasks
   (ask / always / never), starting a subtask pulls the parent into progress, and
   completing the last open subtask can prompt to close the parent (ask / always /
   never).
