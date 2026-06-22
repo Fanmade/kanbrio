@@ -239,6 +239,16 @@ class User extends Authenticatable implements PasskeyUser
     }
 
     /**
+     * The notes owned by this user.
+     *
+     * @return HasMany<Note, $this>
+     */
+    public function notes(): HasMany
+    {
+        return $this->hasMany(Note::class);
+    }
+
+    /**
      * @return MorphToMany<Project, $this>
      */
     public function subscribedProjects(): MorphToMany
