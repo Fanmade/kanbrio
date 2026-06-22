@@ -169,7 +169,7 @@ class TaskView extends Component
 
     /**
      * Refresh the subtask list and depth gate after a subtask is created through
-     * the shared create dialog.
+     * the shared creation dialog.
      */
     #[On('task-created')]
     public function refreshAfterCreate(): void
@@ -256,7 +256,7 @@ class TaskView extends Component
         $this->authorize('updateStatus', $parent);
         app(ChangeTaskStatus::class)->revert([['id' => $parent->getKey(), 'status' => $previous->value]]);
 
-        Flux::toast(variant: 'success', text: __('Parent task change undone.'));
+        Flux::toast(text: __('Parent task change undone.'), variant: 'success');
     }
 
     public function dismissParentBump(): void
@@ -307,9 +307,9 @@ class TaskView extends Component
         $this->reset('confirmingCancel', 'cancelReason', 'cancelMessage');
         unset($this->task);
 
-        Flux::toast(variant: 'success', text: $cascaded > 0
+        Flux::toast(text: $cascaded > 0
             ? __('Task and :count subtask(s) canceled.', ['count' => $cascaded])
-            : __('Task canceled.'));
+            : __('Task canceled.'), variant: 'success');
     }
 
     /**
@@ -324,7 +324,7 @@ class TaskView extends Component
 
         unset($this->task);
 
-        Flux::toast(variant: 'success', text: __('Task reopened.'));
+        Flux::toast(text: __('Task reopened.'), variant: 'success');
     }
 
     /**
@@ -424,7 +424,7 @@ class TaskView extends Component
         $task->recordActivity('priority_changed', 'priority', (string) $old->value, (string) $new->value);
 
         unset($this->task);
-        Flux::toast(variant: 'success', text: __('Priority updated.'));
+        Flux::toast(text: __('Priority updated.'), variant: 'success');
     }
 
     public function updatedAssigneeIds(): void
@@ -442,6 +442,22 @@ class TaskView extends Component
         $task->recordAssigneeChange($changes['attached'], $changes['detached']);
 
         unset($this->task);
+    }
+
+    /**
+     * One-click self-assignment: add the current user to the assignees and run
+     * the standard sync, so the auto-subscribe and activity logging still apply.
+     */
+    public function assignToMe(): void
+    {
+        $userId = Auth::id();
+
+        if (in_array($userId, $this->assigneeIds, true)) {
+            return;
+        }
+
+        $this->assigneeIds[] = $userId;
+        $this->updatedAssigneeIds();
     }
 
     public function edit(): void
@@ -475,6 +491,6 @@ class TaskView extends Component
         $this->editing = false;
         unset($this->task);
 
-        Flux::toast(variant: 'success', text: __('Task updated.'));
+        Flux::toast(text: __('Task updated.'), variant: 'success');
     }
 }

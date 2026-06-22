@@ -75,7 +75,8 @@ Built on Laravel with Livewire and Flux UI. English and German out of the box.
   only the owner edits, re-shares or deletes). Convert a note into a task in one step:
   the task takes the note's title and body, and the note keeps a "Converted → PROJ-N"
   link. Also available through the MCP tools. See [docs/quick-notes.md](docs/quick-notes.md).
-- **Multi-assignee** tasks for pairing and ensemble work.
+- **Multi-assignee** tasks for pairing and ensemble work, with a one-click "assign
+  to me" on the task page.
 - **Profile avatars** — upload a profile picture (cropped to a square) from
   profile settings; it shows wherever you appear — assignees, comment authors and
   member lists — with your initials as the fallback when you have none.

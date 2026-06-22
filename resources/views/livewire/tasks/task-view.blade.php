@@ -176,6 +176,19 @@
                     </x-rail-row>
 
                     <x-rail-row :label="__('Assignees')">
+                        @if ($canUpdate && ! $this->task->assignees->contains('id', auth()->id()))
+                            <flux:tooltip :content="__('Assign to me')">
+                                <flux:button
+                                    size="xs"
+                                    variant="subtle"
+                                    icon="user-plus"
+                                    wire:click="assignToMe"
+                                    :aria-label="__('Assign to me')"
+                                    data-test="assign-to-me"
+                                />
+                            </flux:tooltip>
+                        @endif
+
                         <x-assignee-picker
                             :members="$this->members"
                             :selected="$this->task->assignees"

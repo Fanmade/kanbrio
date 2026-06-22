@@ -55,6 +55,31 @@ it('ignores an invalid status without recording an activity', function () {
         ->and($this->task->activities()->where('action', 'status_changed')->count())->toBe(0);
 });
 
+it('assigns the current user with one click and auto-subscribes them', function () {
+    ($this->mountTask)()
+        ->assertSet('assigneeIds', [])
+        ->call('assignToMe')
+        ->assertSet('assigneeIds', [$this->member->id]);
+
+    expect($this->task->fresh()->assignees->pluck('id')->all())->toBe([$this->member->id])
+        ->and($this->task->isSubscribedBy($this->member))->toBeTrue();
+
+    assertDatabaseHas('activities', [
+        'subject_type' => $this->task->getMorphClass(),
+        'subject_id' => $this->task->id,
+        'action' => 'assignee_changed',
+    ]);
+});
+
+it('keeps a single assignment when assign-to-me is clicked twice', function () {
+    $component = ($this->mountTask)();
+
+    $component->call('assignToMe')->call('assignToMe')
+        ->assertSet('assigneeIds', [$this->member->id]);
+
+    expect($this->task->fresh()->assignees)->toHaveCount(1);
+});
+
 it('enters edit mode populating the form, then saves and exits', function () {
     $this->task->update(['title' => 'Old title']);
 

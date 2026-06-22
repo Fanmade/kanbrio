@@ -24,6 +24,25 @@ it('changes a task status from the badge dropdown', function () {
     expect($task->fresh()->status)->toBe(Status::Done);
 });
 
+it('assigns the current user with the one-click button, then hides it', function () {
+    $user = User::factory()->create(['name' => 'Casey Member']);
+    $project = Project::factory()->create(['short_name' => 'ABC']);
+    $project->members()->attach($user);
+    $task = Task::factory()->for($project)->create();
+
+    $this->actingAs($user);
+
+    $page = visit("/{$project->short_name}-{$task->task_number}");
+
+    // The button is offered while unassigned and disappears once the user is on.
+    $page->assertVisible('@assign-to-me')
+        ->click('@assign-to-me')
+        ->assertMissing('@assign-to-me')
+        ->assertNoJavascriptErrors();
+
+    expect($task->fresh()->assignees->pluck('id')->all())->toBe([$user->id]);
+});
+
 it('reveals the dependency form only when adding', function () {
     $user = User::factory()->create();
     $project = Project::factory()->create(['short_name' => 'ABC']);

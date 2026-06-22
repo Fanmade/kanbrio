@@ -43,6 +43,7 @@
   "Are you sure you want to remove the passkey \":name\"? You will no longer be able to use it to sign in.": "Möchtest du den Passkey „:name“ wirklich entfernen? Du kannst dich damit dann nicht mehr anmelden.",
   "Ask each time": "Jedes Mal fragen",
   "Assign members": "Mitglieder zuweisen",
+  "Assign to me": "Mir zuweisen",
   "assigned :added, unassigned :removed": "wies :added zu und entfernte :removed aus den Zuständigen",
   "assigned :users": "wies :users zu",
   "Assignees": "Zuständige",
