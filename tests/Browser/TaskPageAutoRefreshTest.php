@@ -24,7 +24,10 @@ it('auto-refreshes comments but pauses while the editor is focused', function ()
     $page->waitForText('Echo One');
 
     // While the comment editor is focused, polling pauses so a draft isn't lost.
-    $page->script("document.querySelector('.ProseMirror')?.focus()");
+    // The composer is collapsed by default, so expand it first (this also focuses
+    // the editor); the explicit focus keeps the intent clear and robust.
+    $page->click('@comment-composer-trigger')
+        ->script("document.querySelector('.ProseMirror')?.focus()");
     $task->comments()->create(['user_id' => $other->id, 'body' => '<p>Echo Two</p>']);
     $page->wait(2.5)->assertDontSee('Echo Two');
 

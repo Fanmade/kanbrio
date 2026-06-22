@@ -114,6 +114,9 @@ class CommentList extends Component
         $this->storeComment($validated['body']);
 
         $this->reset('body');
+
+        // Collapse the composer back to its input-styled trigger (see the blade).
+        $this->dispatch('comment-added');
     }
 
     public function startReply(int $commentId): void

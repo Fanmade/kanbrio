@@ -42,7 +42,8 @@ it('lets a member comment on a task and logs the activity', function () {
         ->test(CommentList::class, ['commentable' => $this->task])
         ->set('body', 'Looks good to me')
         ->call('addComment')
-        ->assertHasNoErrors();
+        ->assertHasNoErrors()
+        ->assertDispatched('comment-added');
 
     $comment = $this->task->comments()->first();
 

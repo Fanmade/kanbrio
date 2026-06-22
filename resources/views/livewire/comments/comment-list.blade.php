@@ -13,14 +13,43 @@
 
     @unless ($collapsed)
         <div id="comments-body-{{ $morphSubjectId }}" class="flex flex-col gap-3">
-            <form wire:submit="addComment" class="flex flex-col gap-2">
-                <x-attachments.rich-editor property="body" toolbar="bold italic strike | bullet ordered | link" :placeholder="__('Write a comment…')" />
-                <div class="flex justify-end">
-                    <flux:button type="submit" size="sm" variant="primary" icon="chat-bubble-left-right">
-                        {{ __('Comment') }}
-                    </flux:button>
-                </div>
-            </form>
+            {{-- The full editor is heavy (toolbar, min-height, helper text) and pushes
+                 existing comments below the fold, so it stays collapsed behind an
+                 input-styled trigger until the user clicks to compose. Posting a
+                 comment dispatches `comment-added`, which collapses it again. --}}
+            <div
+                x-data="{ expanded: false }"
+                x-on:comment-added.window="expanded = false"
+                class="flex flex-col gap-2"
+            >
+                <flux:input
+                    as="button"
+                    x-show="!expanded"
+                    x-on:click="expanded = true; $nextTick(() => $refs.composer?.querySelector('[contenteditable]')?.focus())"
+                    icon="chat-bubble-left-right"
+                    :placeholder="__('Write a comment…')"
+                    :aria-label="__('Write a comment…')"
+                    data-test="comment-composer-trigger"
+                />
+
+                <form
+                    x-ref="composer"
+                    x-show="expanded"
+                    x-cloak
+                    wire:submit="addComment"
+                    class="flex flex-col gap-2"
+                >
+                    <x-attachments.rich-editor property="body" toolbar="bold italic strike | bullet ordered | link" :placeholder="__('Write a comment…')" />
+                    <div class="flex justify-end gap-2">
+                        <flux:button type="button" size="sm" variant="ghost" x-on:click="expanded = false">
+                            {{ __('Cancel') }}
+                        </flux:button>
+                        <flux:button type="submit" size="sm" variant="primary" icon="chat-bubble-left-right" data-test="add-comment">
+                            {{ __('Comment') }}
+                        </flux:button>
+                    </div>
+                </form>
+            </div>
 
             <div class="flex flex-col gap-3">
                 @forelse ($this->comments as $comment)
