@@ -8,7 +8,9 @@
         </div>
     </div>
 
-    <x-kanban-board :columns="$this->columns" :blocked-ids="$this->blockedTaskIds" />
+    <x-board-auto-refresh :interval-ms="$this->livePollIntervalMs()">
+        <x-kanban-board :columns="$this->columns" :blocked-ids="$this->blockedTaskIds" />
+    </x-board-auto-refresh>
 
     @include('partials.tasks.parent-close-modal')
 </div>

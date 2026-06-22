@@ -42,11 +42,28 @@ it('persists the choice when the toggle is flipped', function () {
 it('exposes the poll interval only while enabled', function () {
     $component = Livewire::actingAs($this->user)->test(Board::class);
 
-    expect($component->instance()->livePollInterval())->toBe(Board::LIVE_UPDATES_INTERVAL);
+    expect($component->instance()->livePollInterval())->toBe('15s')
+        ->and($component->instance()->livePollIntervalMs())->toBe(15_000);
 
     $component->set('liveUpdates', false);
 
     expect($component->instance()->livePollInterval())->toBeNull();
+});
+
+it('honors the configured live-updates interval', function () {
+    config()->set('kanbrio.live_updates.interval_seconds', 5);
+
+    $component = Livewire::actingAs($this->user)->test(Board::class);
+
+    expect($component->instance()->livePollInterval())->toBe('5s')
+        ->and($component->instance()->livePollIntervalMs())->toBe(5_000);
+});
+
+it('renders the drag-guarded auto-refresh wrapper on the board', function () {
+    Livewire::actingAs($this->user)
+        ->test(Board::class)
+        ->assertSeeHtml('data-test="board-auto-refresh"')
+        ->assertSeeHtml('kanban-dragging');
 });
 
 it('renders the live-updates toggle on the board', function () {

@@ -18,4 +18,18 @@ return [
         'max_depth' => (int) env('KANBRIO_TASK_MAX_DEPTH', 3),
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Live updates
+    |--------------------------------------------------------------------------
+    |
+    | How often auto-refreshing views (the boards, the task page) poll for
+    | changes while the viewer has "Live updates" enabled, in seconds.
+    |
+    */
+
+    'live_updates' => [
+        'interval_seconds' => (int) env('KANBRIO_LIVE_UPDATES_INTERVAL', 15),
+    ],
+
 ];

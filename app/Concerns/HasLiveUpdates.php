@@ -19,11 +19,6 @@ trait HasLiveUpdates
     public const string LIVE_UPDATES_PREFERENCE_KEY = 'live_updates';
 
     /**
-     * How often a live view polls for changes while enabled.
-     */
-    public const string LIVE_UPDATES_INTERVAL = '15s';
-
-    /**
      * Whether this view auto-refreshes, mirroring the viewer's saved preference.
      */
     public bool $liveUpdates = true;
@@ -45,11 +40,29 @@ trait HasLiveUpdates
     }
 
     /**
-     * The `wire:poll` interval for this view, or null when live updates are off so
-     * the view can omit the poll entirely.
+     * How often a live view refreshes, in seconds (configurable).
+     */
+    public function livePollIntervalSeconds(): int
+    {
+        return max(1, (int) config('kanbrio.live_updates.interval_seconds', 15));
+    }
+
+    /**
+     * The `wire:poll` interval string (e.g. "15s") for this view, or null when
+     * live updates are off so the view can omit the poll entirely. Used by views
+     * that drive refresh through `wire:poll` (e.g. the task page).
      */
     public function livePollInterval(): ?string
     {
-        return $this->liveUpdates ? self::LIVE_UPDATES_INTERVAL : null;
+        return $this->liveUpdates ? $this->livePollIntervalSeconds().'s' : null;
+    }
+
+    /**
+     * The refresh interval in milliseconds, for views that drive their own timer
+     * (e.g. the boards, which gate refresh on an in-progress drag).
+     */
+    public function livePollIntervalMs(): int
+    {
+        return $this->livePollIntervalSeconds() * 1000;
     }
 }
