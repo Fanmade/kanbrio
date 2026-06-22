@@ -87,8 +87,8 @@
         <div class="flex flex-col gap-6 lg:flex-row lg:items-start lg:gap-8">
             {{-- Main column --}}
             <div class="flex min-w-0 flex-1 flex-col gap-6">
-                <div class="flex items-start justify-between gap-4">
-                    <flux:heading size="xl">{{ $this->task->title }}</flux:heading>
+                <div class="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
+                    <flux:heading size="xl" class="min-w-0">{{ $this->task->title }}</flux:heading>
                     @can('update', $this->task)
                         <div class="flex shrink-0 items-center gap-2">
                             @unless ($this->task->isCanceled())
