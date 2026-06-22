@@ -20,6 +20,7 @@ use App\Contracts\Subscribable;
 use App\Enums\CancelReason;
 use App\Enums\Priority;
 use App\Enums\Status;
+use App\Support\BoardCache;
 use App\Support\TaskProgress;
 use Database\Factories\TaskFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -83,6 +84,12 @@ class Task extends Model implements Dependable, Subscribable
                 $task->position = (static::max('position') ?? 0) + 1;
             }
         });
+
+        // Any task row change (status, position, title, archived, create, …)
+        // invalidates the cached boards showing its project. Pivot changes
+        // (tags/assignees/dependencies) bump via recordActivity() instead.
+        static::saved(static fn (Task $task) => BoardCache::touch($task->project_id));
+        static::deleted(static fn (Task $task) => BoardCache::touch($task->project_id));
     }
 
     public function inlineAttachmentOwner(): Project|Task

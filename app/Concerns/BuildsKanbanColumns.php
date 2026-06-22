@@ -29,8 +29,9 @@ trait BuildsKanbanColumns
 
         // Eager-load each visible card's breadcrumb ancestors in one batched pass
         // (the relation hydrates onto the same instances rendered below), so deep
-        // cards never trigger a per-card ancestor lookup.
-        EloquentCollection::make($tasks->all())->load('ancestors');
+        // cards never trigger a per-card ancestor lookup. loadMissing keeps a
+        // cached collection (which already carries ancestors) from re-querying.
+        EloquentCollection::make($tasks->all())->loadMissing('ancestors');
 
         $columns = [];
 

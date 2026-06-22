@@ -4,8 +4,10 @@ namespace App\Concerns;
 
 use App\Contracts\Subscribable;
 use App\Models\Activity;
+use App\Models\Task;
 use App\Models\User;
 use App\Notifications\ItemActivity;
+use App\Support\BoardCache;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Support\Facades\Auth;
@@ -45,6 +47,13 @@ trait LogsActivity
             'old_value' => $oldValue,
             'new_value' => $newValue,
         ]);
+
+        // Tag/assignee/dependency changes don't touch the task row (so the
+        // saved() board-cache hook doesn't fire) but do change how its card
+        // renders — invalidate here. Comments don't appear on the board.
+        if ($this instanceof Task && $action !== 'commented') {
+            BoardCache::touch($this->project_id);
+        }
 
         $this->notifySubscribers($activity);
 

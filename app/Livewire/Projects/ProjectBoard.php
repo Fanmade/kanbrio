@@ -9,6 +9,7 @@ use App\Enums\Status;
 use App\Models\Project;
 use App\Models\Task;
 use App\Support\BlockedTasks;
+use App\Support\BoardCache;
 use Illuminate\Database\Eloquent\Collection;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Locked;
@@ -56,8 +57,11 @@ class ProjectBoard extends Component
     {
         $project = $this->project();
 
-        return $project->tasks()->with(['assignees', 'tags'])->get()
-            ->each(static fn (Task $task) => $task->setRelation('project', $project));
+        return BoardCache::remember(
+            "board:proj:{$project->id}:tasks:v".BoardCache::version($project->id),
+            static fn (): Collection => $project->tasks()->with(['assignees', 'tags', 'ancestors'])->get()
+                ->each(static fn (Task $task) => $task->setRelation('project', $project)),
+        );
     }
 
     /**
@@ -90,7 +94,12 @@ class ProjectBoard extends Component
     #[Computed]
     public function blockedTaskIds(): array
     {
-        return BlockedTasks::ids($this->tasks()->pluck('id')->all());
+        $project = $this->project();
+
+        return BoardCache::remember(
+            "board:proj:{$project->id}:blocked:v".BoardCache::version($project->id),
+            fn (): array => BlockedTasks::ids($this->tasks()->pluck('id')->all()),
+        );
     }
 
     /**

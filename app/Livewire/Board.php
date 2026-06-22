@@ -8,6 +8,8 @@ use App\Concerns\PromptsParentClose;
 use App\Enums\Status;
 use App\Models\Task;
 use App\Support\BlockedTasks;
+use App\Support\BoardCache;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Title;
@@ -26,6 +28,35 @@ class Board extends Component
     public bool $showArchived = false;
 
     /**
+     * Every task across the user's accessible projects, ordered by project then
+     * task number, with the data the cards need. Cached per user under the
+     * combined project version, so an idle poll is a cheap version read + cache
+     * hit rather than a full cross-project scan. Shared by {@see columns()} and
+     * {@see blockedTaskIds()} so the board is fetched once, not twice.
+     *
+     * @return Collection<int, Task>
+     */
+    #[Computed]
+    public function tasks(): Collection
+    {
+        $projectIds = Auth::user()->projects()->pluck('projects.id')->all();
+
+        return BoardCache::remember(
+            'board:user:'.Auth::id().':tasks:'.BoardCache::versionFor($projectIds),
+            static fn (): Collection => Task::query()
+                ->whereIn('project_id', $projectIds)
+                ->with(['project', 'assignees', 'tags', 'ancestors'])
+                ->get()
+                ->sortBy(static fn (Task $task): string => sprintf(
+                    '%s-%05d',
+                    $task->project->short_name,
+                    $task->task_number,
+                ))
+                ->values(),
+        );
+    }
+
+    /**
      * Board columns for every task in the projects the user can access,
      * ordered by project then task so groups stay adjacent. Archived tasks are
      * hidden unless {@see $showArchived} is on.
@@ -35,19 +66,11 @@ class Board extends Component
     #[Computed]
     public function columns(): array
     {
-        $projectIds = Auth::user()->projects()->pluck('projects.id');
+        $tasks = $this->tasks();
 
-        $tasks = Task::query()
-            ->whereIn('project_id', $projectIds)
-            ->when(! $this->showArchived, static fn ($query) => $query->whereNull('archived_at'))
-            ->with(['project', 'assignees', 'tags'])
-            ->get()
-            ->sortBy(static fn (Task $task) => sprintf(
-                '%s-%05d',
-                $task->project->short_name,
-                $task->task_number,
-            ))
-            ->values();
+        if (! $this->showArchived) {
+            $tasks = $tasks->reject(static fn (Task $task): bool => $task->isArchived())->values();
+        }
 
         return $this->buildColumns($tasks);
     }
@@ -60,14 +83,12 @@ class Board extends Component
     #[Computed]
     public function blockedTaskIds(): array
     {
-        $projectIds = Auth::user()->projects()->pluck('projects.id');
+        $projectIds = Auth::user()->projects()->pluck('projects.id')->all();
 
-        $taskIds = Task::query()
-            ->whereIn('project_id', $projectIds)
-            ->pluck('id')
-            ->all();
-
-        return BlockedTasks::ids($taskIds);
+        return BoardCache::remember(
+            'board:user:'.Auth::id().':blocked:'.BoardCache::versionFor($projectIds),
+            fn (): array => BlockedTasks::ids($this->tasks()->pluck('id')->all()),
+        );
     }
 
     /**
