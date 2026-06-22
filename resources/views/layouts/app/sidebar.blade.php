@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}" class="dark">
+    <!--suppress HtmlRequiredTitleElement -->
     <head>
         @include('partials.head')
     </head>
