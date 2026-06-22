@@ -2,7 +2,7 @@
     @php($count = $this->unreadCount)
 
     <flux:dropdown position="bottom" align="end">
-        <button type="button" class="cursor-pointer" aria-label="{{ __('Notifications') }}">
+        <button type="button" class="cursor-pointer" aria-label="{{ __('Notifications') }}" data-test="notifications-trigger">
             <flux:avatar
                 size="sm"
                 :name="auth()->user()->name"
@@ -14,7 +14,7 @@
             />
         </button>
 
-        <flux:menu class="w-80">
+        <flux:menu class="w-80" data-test="notifications-panel">
             <div class="flex items-center justify-between gap-2 px-2 py-1.5">
                 <flux:heading size="sm">{{ __('Notifications') }}</flux:heading>
                 @if ($count > 0)

@@ -15,7 +15,7 @@
                     <flux:sidebar.item icon="home" :href="route('dashboard')" :current="request()->routeIs('dashboard')" wire:navigate>
                         {{ __('Dashboard') }}
                     </flux:sidebar.item>
-                    <flux:sidebar.item icon="rectangle-stack" :href="route('projects.index')" :current="request()->routeIs('projects.index')" wire:navigate>
+                    <flux:sidebar.item icon="rectangle-stack" :href="route('projects.index')" :current="request()->routeIs('projects.index')" wire:navigate data-test="nav-projects">
                         {{ __('Projects') }}
                     </flux:sidebar.item>
                     <flux:sidebar.item icon="view-columns" :href="route('board')" :current="request()->routeIs('board')" wire:navigate>
@@ -69,7 +69,12 @@
 
             <flux:spacer />
 
-            <livewire:notifications.notifications-menu />
+            {{-- Persist the notifications menu across wire:navigate transitions so its
+                 30s poll and unread state survive page changes instead of re-mounting
+                 (and re-querying) on every navigation. --}}
+            @persist('notifications-menu')
+                <livewire:notifications.notifications-menu />
+            @endpersist
         </flux:header>
 
         {{ $slot }}
