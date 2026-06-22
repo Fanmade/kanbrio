@@ -4,14 +4,19 @@ namespace App\Mcp\Servers;
 
 use App\Mcp\Tools\AddCommentTool;
 use App\Mcp\Tools\AddDependencyTool;
+use App\Mcp\Tools\ConvertNoteTool;
+use App\Mcp\Tools\CreateNoteTool;
 use App\Mcp\Tools\CreateProjectTool;
 use App\Mcp\Tools\CreateTaskTool;
 use App\Mcp\Tools\GetAttachmentTool;
+use App\Mcp\Tools\GetNoteTool;
 use App\Mcp\Tools\GetProjectTool;
 use App\Mcp\Tools\GetTaskTool;
+use App\Mcp\Tools\ListNotesTool;
 use App\Mcp\Tools\ListProjectsTool;
 use App\Mcp\Tools\ListTasksTool;
 use App\Mcp\Tools\RemoveDependencyTool;
+use App\Mcp\Tools\UpdateNoteTool;
 use App\Mcp\Tools\UpdateTaskTool;
 use Laravel\Mcp\Server;
 use Laravel\Mcp\Server\Attributes\Instructions;
@@ -68,9 +73,20 @@ use Laravel\Mcp\Server\Tool;
     comment). A deleted comment is kept as a tombstone with an empty body and "is_deleted": true
     when it still has replies. Use the add-comment tool to post a new comment.
 
+    You also have personal notes: quick captures owned by you, outside the "PROJ-N" namespace and
+    referenced by a plain numeric id. A note has a title and an optional HTML body, and may be
+    attached to a project; an attached note can be made public so that project's members can read
+    it (a note can only be public while it is attached to a project). Use create-note, list-notes
+    (your own notes plus public notes in projects you are a member of), get-note (returns the body),
+    and update-note (change the title/body, attach/detach a project, or set public — setting public
+    requires the note to be attached to a project). convert-note turns a note into a task in a
+    project you choose, keeping the note and linking it to the task it produced; the note then
+    reports that task under "converted_task".
+
     Read tools (list/get) are available to any token. Write tools (create/update/comment, link or
-    unlink dependencies) require a token with write access and return an error for read-only
-    tokens. Creating a project also requires the "create-projects" permission.
+    unlink dependencies, and the note create/update/convert tools) require a token with write
+    access and return an error for read-only tokens. Creating a project also requires the
+    "create-projects" permission.
     TEXT)]
 class KanbrioServer extends Server
 {
@@ -91,6 +107,11 @@ class KanbrioServer extends Server
         AddCommentTool::class,
         AddDependencyTool::class,
         RemoveDependencyTool::class,
+        ListNotesTool::class,
+        GetNoteTool::class,
+        CreateNoteTool::class,
+        UpdateNoteTool::class,
+        ConvertNoteTool::class,
     ];
 
     /**
