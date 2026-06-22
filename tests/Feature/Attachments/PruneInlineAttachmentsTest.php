@@ -59,7 +59,7 @@ it('keeps an aged inline attachment referenced only from a comment body', functi
 
     $this->project->comments()->create([
         'user_id' => User::factory()->create()->id,
-        'body' => '<p><img src="/'.$this->project->short_name.'/attachments/'.$attachment->id.'/thumbnail"></p>',
+        'body' => '<p><img src="/'.$this->project->short_name.'/attachments/'.$attachment->id.'/thumbnail" alt="test"></p>',
     ]);
 
     $this->artisan('attachments:prune-inline')->assertSuccessful();
