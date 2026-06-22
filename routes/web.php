@@ -4,6 +4,7 @@ use App\Http\Controllers\AttachmentDownloadController;
 use App\Http\Controllers\AttachmentThumbnailController;
 use App\Http\Controllers\AttachmentViewController;
 use App\Http\Controllers\AvatarController;
+use App\Http\Controllers\NoteAttachmentController;
 use App\Livewire\Admin\UserManagement;
 use App\Livewire\Board;
 use App\Livewire\Dashboard;
@@ -55,6 +56,15 @@ Route::middleware(['auth', 'verified'])->group(static function () {
     Route::get('{short_name}/attachments/{attachment}/view', AttachmentViewController::class)
         ->where('short_name', '[A-Z]{2,4}')
         ->name('attachments.view');
+
+    /*
+     * Note attachments are projectless, so they are served without a project
+     * short name. The same controllers handle both; authorization cascades to
+     * the note via the attachment policy.
+     */
+    Route::get('notes/attachments/{attachment}/download', [NoteAttachmentController::class, 'download'])->name('notes.attachments.download');
+    Route::get('notes/attachments/{attachment}/thumbnail', [NoteAttachmentController::class, 'thumbnail'])->name('notes.attachments.thumbnail');
+    Route::get('notes/attachments/{attachment}/view', [NoteAttachmentController::class, 'view'])->name('notes.attachments.view');
 
     /*
      * Scoped public references. Registered last and constrained to uppercase

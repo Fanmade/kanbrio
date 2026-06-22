@@ -89,25 +89,32 @@ class Attachment extends Model
 
     public function downloadUrl(bool $absolute = true): string
     {
-        return $this->scopedUrl('attachments.download', $absolute);
+        return $this->urlFor('download', $absolute);
     }
 
     public function thumbnailUrl(bool $absolute = true): string
     {
-        return $this->scopedUrl('attachments.thumbnail', $absolute);
+        return $this->urlFor('thumbnail', $absolute);
     }
 
     public function viewUrl(bool $absolute = true): string
     {
-        return $this->scopedUrl('attachments.view', $absolute);
+        return $this->urlFor('view', $absolute);
     }
 
     /**
-     * Build a project-scoped attachment route URL.
+     * Build the delivery URL for an attachment action (download/thumbnail/view).
+     * Project/Task attachments use the project-scoped route; Note attachments —
+     * which may be projectless — use the unscoped note route (access is gated by
+     * the policy regardless of the URL shape).
      */
-    private function scopedUrl(string $name, bool $absolute): string
+    private function urlFor(string $action, bool $absolute): string
     {
-        return route($name, [
+        if ($this->attachable instanceof Note) {
+            return route("notes.attachments.{$action}", ['attachment' => $this], $absolute);
+        }
+
+        return route("attachments.{$action}", [
             'short_name' => $this->ownerProject()?->short_name,
             'attachment' => $this,
         ], $absolute);

@@ -4,17 +4,61 @@ namespace App\Http\Controllers\Concerns;
 
 use App\Models\Attachment;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Storage;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 trait ServesScopedAttachments
 {
     /**
-     * Ensure the attachment is being requested under its owning project and the
-     * current user may view that project, otherwise abort.
+     * Authorize an attachment request. Project/Task attachments are served under
+     * their owning project's short name (a mismatch — or a projectless owner —
+     * 404s). Note attachments are projectless and served with a null short name;
+     * access is gated purely by the policy, which cascades to the note.
      */
-    protected function authorizeScopedAttachment(string $shortName, Attachment $attachment): void
+    protected function authorizeScopedAttachment(?string $shortName, Attachment $attachment): void
     {
-        abort_unless($attachment->ownerProject()?->short_name === $shortName, 404);
+        if ($shortName !== null) {
+            abort_unless($attachment->ownerProject()?->short_name === $shortName, 404);
+        }
 
         Gate::authorize('view', $attachment);
+    }
+
+    /**
+     * Stream the attachment inline (for embedded images, etc.).
+     */
+    protected function streamAttachment(Attachment $attachment): StreamedResponse
+    {
+        $disk = Storage::disk($attachment->disk);
+
+        abort_unless($disk->exists($attachment->path), 404);
+
+        return $disk->response($attachment->path, $attachment->name);
+    }
+
+    /**
+     * Stream the attachment as a download.
+     */
+    protected function downloadAttachment(Attachment $attachment): StreamedResponse
+    {
+        $disk = Storage::disk($attachment->disk);
+
+        abort_unless($disk->exists($attachment->path), 404);
+
+        return $disk->download($attachment->path, $attachment->name);
+    }
+
+    /**
+     * Stream the attachment's preview thumbnail.
+     */
+    protected function streamThumbnail(Attachment $attachment): StreamedResponse
+    {
+        abort_unless($attachment->thumbnail_path !== null, 404);
+
+        $disk = Storage::disk($attachment->disk);
+
+        abort_unless($disk->exists($attachment->thumbnail_path), 404);
+
+        return $disk->response($attachment->thumbnail_path);
     }
 }

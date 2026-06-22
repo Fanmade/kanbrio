@@ -82,6 +82,8 @@
 
         <livewire:tasks.create-task-modal />
 
+        <livewire:notes.create-note-modal />
+
         @persist('toast')
             <flux:toast.group>
                 <flux:toast />

@@ -3,6 +3,7 @@
 namespace App\Concerns;
 
 use App\Models\Attachment;
+use App\Models\Note;
 use App\Models\Project;
 use App\Models\Task;
 use App\Support\Thumbnail;
@@ -16,7 +17,7 @@ use Livewire\WithFileUploads;
 
 /**
  * Adds attachment uploading, listing, and removal to a page component that
- * renders a single Project or Task.
+ * renders a single Project, Task or Note.
  *
  * @property string $description
  */
@@ -32,7 +33,7 @@ trait HandlesAttachments
     /**
      * The model that uploaded files should be attached to.
      */
-    abstract protected function attachable(): Project|Task;
+    abstract protected function attachable(): Project|Task|Note;
 
     /**
      * Persist freshly dropped or selected files as soon as they finish uploading.
@@ -57,7 +58,10 @@ trait HandlesAttachments
             $this->storeAttachment($file, $attachable);
         }
 
-        $attachable->recordActivity('attachment_added', 'attachments');
+        // Notes don't keep an activity log; only Project/Task tile uploads do.
+        if (! $attachable instanceof Note) {
+            $attachable->recordActivity('attachment_added', 'attachments');
+        }
 
         $this->reset('newFiles');
         unset($this->attachments);
@@ -102,12 +106,15 @@ trait HandlesAttachments
 
     public function deleteAttachment(int $attachmentId): void
     {
-        $attachment = $this->attachable()->attachments()->findOrFail($attachmentId);
+        $attachable = $this->attachable();
+        $attachment = $attachable->attachments()->findOrFail($attachmentId);
         $this->authorize('delete', $attachment);
 
         $attachment->delete();
 
-        $this->attachable()->recordActivity('attachment_removed', 'attachments', $attachment->name);
+        if (! $attachable instanceof Note) {
+            $attachable->recordActivity('attachment_removed', 'attachments', $attachment->name);
+        }
 
         unset($this->attachments);
 
@@ -137,7 +144,7 @@ trait HandlesAttachments
      * Move an uploaded file onto the configured disk and create its attachment
      * record, generating a preview thumbnail when possible.
      */
-    private function storeAttachment(TemporaryUploadedFile $file, Project|Task $attachable, bool $isInline = false): Attachment
+    private function storeAttachment(TemporaryUploadedFile $file, Project|Task|Note $attachable, bool $isInline = false): Attachment
     {
         // Read metadata and contents before storing: when the temporary upload
         // and target disks match, store() moves the file, after which it can no
