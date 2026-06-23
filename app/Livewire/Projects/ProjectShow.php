@@ -41,6 +41,8 @@ class ProjectShow extends Component
 
     public bool $managingMembers = false;
 
+    public bool $managingRoles = false;
+
     public string $memberQuery = '';
 
     public function mount(string $short_name): void

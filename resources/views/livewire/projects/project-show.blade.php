@@ -22,6 +22,9 @@
                         @can('manageMembers', $this->project)
                             <flux:menu.item icon="users" wire:click="$set('managingMembers', true)" data-test="manage-members">{{ __('Manage members') }}</flux:menu.item>
                         @endcan
+                        @can('manage-roles', $this->project)
+                            <flux:menu.item icon="shield-check" wire:click="$set('managingRoles', true)" data-test="manage-roles">{{ __('Manage roles') }}</flux:menu.item>
+                        @endcan
                     </flux:menu>
                 </flux:dropdown>
             @endcan
@@ -215,6 +218,18 @@
                         </div>
                     @endforeach
                 </div>
+            </div>
+        </flux:modal>
+    @endcan
+
+    @can('manage-roles', $this->project)
+        <flux:modal wire:model="managingRoles" class="md:w-[32rem]" data-test="roles-modal">
+            <div class="flex flex-col gap-4">
+                <flux:heading size="lg">{{ __('Manage roles') }}</flux:heading>
+
+                @if ($this->managingRoles)
+                    <livewire:projects.project-roles :project="$this->project" :wire:key="'roles-'.$this->project->id" />
+                @endif
             </div>
         </flux:modal>
     @endcan
