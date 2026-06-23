@@ -2,13 +2,13 @@
     <x-live-refresh :interval-ms="$this->livePollIntervalMs()" />
 
     {{-- Header --}}
-    <div class="flex items-start justify-between gap-4">
-        <div class="flex items-center gap-3">
+    <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
+        <div class="flex min-w-0 items-center gap-3">
             <flux:badge color="indigo">{{ $this->project->short_name }}</flux:badge>
-            <flux:heading size="xl">{{ $this->project->title }}</flux:heading>
+            <flux:heading size="xl" class="min-w-0 truncate">{{ $this->project->title }}</flux:heading>
         </div>
 
-        <div class="flex shrink-0 items-center gap-2">
+        <div class="flex flex-wrap items-center gap-2 sm:shrink-0">
             <x-live-updates-toggle />
             <livewire:subscriptions.subscription-toggle :subscribable="$this->project" :wire:key="'sub-project-'.$this->project->id" />
             <flux:button size="sm" variant="primary" icon="view-columns" :href="route('project.board', $this->project)" wire:navigate>
