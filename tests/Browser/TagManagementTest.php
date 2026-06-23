@@ -11,8 +11,8 @@ it('adds an existing tag from the suggestion list', function () {
     $project->members()->attach($user);
     $task = Task::factory()->for($project)->create();
 
-    // An existing tag so it shows up as a suggestion.
-    Tag::factory()->color('sky')->create(['name' => 'frontend']);
+    // An existing tag in this project so it shows up as a suggestion.
+    Tag::factory()->for($project)->color('sky')->create(['name' => 'frontend']);
 
     $this->actingAs($user);
 

@@ -248,13 +248,14 @@ class CreateTaskModal extends Component
     {
         $query = trim($this->tagQuery);
 
-        if ($query === '') {
+        if ($query === '' || $this->projectId === null) {
             return new BaseCollection;
         }
 
         $applied = array_map(mb_strtolower(...), $this->tagNames);
 
         return Tag::query()
+            ->where('tags.project_id', $this->projectId)
             ->select('tags.id', 'tags.name', 'tags.color')
             ->selectSub(
                 DB::table('taggables')
@@ -326,7 +327,10 @@ class CreateTaskModal extends Component
             return;
         }
 
-        $existing = Tag::query()->whereRaw('lower(name) = ?', [mb_strtolower($name)])->first();
+        $existing = Tag::query()
+            ->where('project_id', $this->projectId)
+            ->whereRaw('lower(name) = ?', [mb_strtolower($name)])
+            ->first();
 
         if ($existing !== null) {
             $this->stageTag($existing->name, $existing->color);
@@ -544,7 +548,7 @@ class CreateTaskModal extends Component
 
         $tagIds = collect($this->tagNames)
             ->map(fn (string $name): int => Tag::firstOrCreate(
-                ['name' => trim($name)],
+                ['project_id' => $task->project_id, 'name' => trim($name)],
                 ['color' => $this->tagColors[$name] ?? Tag::colorForName($name)],
             )->getKey())
             ->all();

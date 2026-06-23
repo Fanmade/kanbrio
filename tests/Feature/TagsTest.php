@@ -46,9 +46,10 @@ it('attaches comma-separated tags, trimming and de-duplicating', function () {
         ->and(Tag::count())->toBe(2);
 });
 
-it('reuses the same tag across tasks', function () {
-    $task = Task::factory()->create();
-    $other = Task::factory()->create();
+it('reuses the same tag across tasks in the same project', function () {
+    $project = Project::factory()->create();
+    $task = Task::factory()->for($project)->create();
+    $other = Task::factory()->for($project)->create();
 
     $task->syncTags('shared');
     $other->syncTags('shared');
@@ -56,6 +57,22 @@ it('reuses the same tag across tasks', function () {
     expect(Tag::where('name', 'shared')->count())->toBe(1)
         ->and($task->tags()->count())->toBe(1)
         ->and($other->tags()->count())->toBe(1);
+});
+
+it('scopes tags per project, so the same name in two projects is two distinct tags', function () {
+    $taskA = Task::factory()->create(); // its own project
+    $taskB = Task::factory()->create(); // a different project
+
+    $taskA->syncTags('shared');
+    $taskB->syncTags('shared');
+
+    $tagA = $taskA->tags()->sole();
+    $tagB = $taskB->tags()->sole();
+
+    expect(Tag::where('name', 'shared')->count())->toBe(2)
+        ->and($tagA->is($tagB))->toBeFalse()
+        ->and($tagA->project_id)->toBe($taskA->project_id)
+        ->and($tagB->project_id)->toBe($taskB->project_id);
 });
 
 it('detaches tags removed from the list', function () {
@@ -122,7 +139,7 @@ it('does not duplicate an already-applied tag', function () {
 
 it('removes a tag from a task and logs the change', function () {
     [$member, $task] = memberAndTask();
-    $tag = Tag::factory()->create(['name' => 'stale']);
+    $tag = Tag::factory()->for($task->project)->create(['name' => 'stale']);
     $task->tags()->attach($tag);
 
     taskView($member, $task)->call('removeTag', $tag->id);
@@ -172,21 +189,33 @@ it('prefills the create-tag modal from the typed text', function () {
         ->assertSet('newTagColor', Tag::colorForName('Frontend'));
 });
 
-it('suggests the most-used tags and excludes applied ones', function () {
+it('suggests the most-used tags in the project and excludes applied ones', function () {
     [$member, $task] = memberAndTask();
+    $project = $task->project;
 
-    $popular = Tag::factory()->create(['name' => 'popular']);
-    Tag::factory()->create(['name' => 'rare']);
-    $applied = Tag::factory()->create(['name' => 'applied']);
+    $popular = Tag::factory()->for($project)->create(['name' => 'popular']);
+    Tag::factory()->for($project)->create(['name' => 'rare']);
+    $applied = Tag::factory()->for($project)->create(['name' => 'applied']);
 
-    // Drive up "popular" usage across other tasks.
-    Task::factory()->count(3)->create()->each(fn (Task $other) => $other->tags()->attach($popular));
+    // Drive up "popular" usage across other tasks in the same project.
+    Task::factory()->count(3)->for($project)->create()->each(fn (Task $other) => $other->tags()->attach($popular));
     $task->tags()->attach($applied);
 
     $names = collect(taskView($member, $task)->instance()->tagSuggestions)->pluck('name')->all();
 
     expect($names)->not->toContain('applied')
         ->and(array_search('popular', $names, true))->toBeLessThan(array_search('rare', $names, true));
+});
+
+it('does not suggest tags that belong to other projects', function () {
+    [$member, $task] = memberAndTask();
+
+    // A tag with the same usage but in a different project must not leak in.
+    Tag::factory()->create(['name' => 'foreign']);
+
+    $names = collect(taskView($member, $task)->instance()->tagSuggestions)->pluck('name')->all();
+
+    expect($names)->not->toContain('foreign');
 });
 
 it('adds a tag to a subtask too', function () {

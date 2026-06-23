@@ -6,17 +6,19 @@ use Database\Factories\TagFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Support\Carbon;
 
 /**
  * @property int $id
+ * @property int $project_id
  * @property string $name
  * @property string $color
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  */
-#[Fillable(['name', 'color'])]
+#[Fillable(['project_id', 'name', 'color'])]
 class Tag extends Model
 {
     /** @use HasFactory<TagFactory> */
@@ -54,6 +56,16 @@ class Tag extends Model
     public static function colorForName(string $name): string
     {
         return self::PALETTE[abs(crc32(mb_strtolower($name))) % count(self::PALETTE)];
+    }
+
+    /**
+     * The project this tag belongs to.
+     *
+     * @return BelongsTo<Project, $this>
+     */
+    public function project(): BelongsTo
+    {
+        return $this->belongsTo(Project::class);
     }
 
     /**

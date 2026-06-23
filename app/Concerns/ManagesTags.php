@@ -68,6 +68,7 @@ trait ManagesTags
         $appliedIds = $this->appliedTags()->pluck('id')->all();
 
         return Tag::query()
+            ->where('tags.project_id', $this->taggable()->project_id)
             ->select('tags.id', 'tags.name', 'tags.color')
             ->selectSub(
                 DB::table('taggables')
@@ -101,7 +102,7 @@ trait ManagesTags
             return;
         }
 
-        $tag = Tag::firstOrCreate(['name' => $name]);
+        $tag = Tag::firstOrCreate(['project_id' => $item->project_id, 'name' => $name]);
 
         if ($item->tags()->whereKey($tag->getKey())->exists()) {
             return;
@@ -161,7 +162,7 @@ trait ManagesTags
         ]);
 
         $tag = Tag::firstOrCreate(
-            ['name' => $validated['newTagName']],
+            ['project_id' => $item->project_id, 'name' => $validated['newTagName']],
             ['color' => $validated['newTagColor']],
         );
 

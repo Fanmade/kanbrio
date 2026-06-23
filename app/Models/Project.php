@@ -105,6 +105,16 @@ class Project extends Model implements Subscribable
     }
 
     /**
+     * The tags owned by this project.
+     *
+     * @return HasMany<Tag, $this>
+     */
+    public function tags(): HasMany
+    {
+        return $this->hasMany(Tag::class);
+    }
+
+    /**
      * The users granted access to this project.
      *
      * @return BelongsToMany<User, $this>
