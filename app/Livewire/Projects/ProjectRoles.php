@@ -51,10 +51,10 @@ class ProjectRoles extends Component
     /**
      * The project's roles, the seeded base first.
      *
-     * @return Collection<int, Role>
+     * @return \Illuminate\Support\Collection<int, Role>
      */
     #[Computed]
-    public function roles(): Collection
+    public function roles(): \Illuminate\Support\Collection
     {
         return Role::query()
             ->where('scope_type', $this->project()->getMorphClass())

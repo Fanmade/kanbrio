@@ -194,6 +194,13 @@ class User extends Authenticatable implements PasskeyUser
      */
     public function hasPermission(Permission $permission): bool
     {
+        // Account permissions live in the package's global catalog (KAN-242), so
+        // the system role grants them as a unified break-glass. Direct per-user
+        // grants are still stored in `user_permissions`.
+        if ($this->hasScopedPermission($permission->value)) {
+            return true;
+        }
+
         return $this->permissions->contains(
             static fn (UserPermission $userPermission): bool => $userPermission->permission === $permission
         );
