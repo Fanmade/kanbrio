@@ -13,7 +13,7 @@ class ProjectPolicy
      */
     public function view(User $user, Project $project): bool
     {
-        return $project->members()->whereKey($user->id)->exists();
+        return $project->roleFor($user) !== null;
     }
 
     /**

@@ -72,6 +72,7 @@ class User extends Authenticatable implements PasskeyUser
             }
 
             $user->projects()->detach();
+            $user->roles()->detach();
             $user->assignedTasks()->detach();
             $user->subscribedProjects()->detach();
             $user->subscribedTasks()->detach();

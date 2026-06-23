@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Projects;
 
+use App\Authorization\ProjectRoleProvisioner;
 use App\Concerns\HandlesAttachments;
 use App\Concerns\HasLiveUpdates;
 use App\Concerns\ManagesNotes;
@@ -239,6 +240,7 @@ class ProjectShow extends Component
         }
 
         $project->members()->updateExistingPivot($userId, ['role' => $validated['role']]);
+        app(ProjectRoleProvisioner::class)->syncMember($project, User::findOrFail($userId), $validated['role']);
 
         unset($this->members);
 
@@ -283,6 +285,7 @@ class ProjectShow extends Component
         }
 
         $project->members()->attach($userId, ['role' => ProjectRole::Member->value]);
+        app(ProjectRoleProvisioner::class)->syncMember($project, User::findOrFail($userId), ProjectRole::Member->value);
 
         $this->memberQuery = '';
         unset($this->members, $this->addableUsers);
@@ -304,6 +307,7 @@ class ProjectShow extends Component
         }
 
         $project->members()->detach($userId);
+        app(ProjectRoleProvisioner::class)->syncMember($project, User::findOrFail($userId), null);
 
         unset($this->members, $this->addableUsers);
 

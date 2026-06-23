@@ -71,8 +71,7 @@ class ProjectList extends Component
         $project = Project::create($validated);
         $project->members()->attach(Auth::id(), ['role' => ProjectRole::Owner->value]);
 
-        $owner = app(ProjectRoleProvisioner::class)->roleFor($project, 'owner');
-        User::findOrFail(Auth::id())->assignRole($owner);
+        app(ProjectRoleProvisioner::class)->syncMember($project, User::findOrFail(Auth::id()), ProjectRole::Owner->value);
 
         Flux::toast(text: __('Project created.'), variant: 'success');
 

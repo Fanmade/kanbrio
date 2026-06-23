@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Admin;
 
+use App\Authorization\ProjectRoleProvisioner;
 use App\Enums\Permission;
 use App\Enums\ProjectRole;
 use App\Mail\InvitationMail;
@@ -318,6 +319,7 @@ class UserManagement extends Component
         }
 
         $project->members()->attach($user->id, ['role' => ProjectRole::Member->value]);
+        app(ProjectRoleProvisioner::class)->syncMember($project, $user, ProjectRole::Member->value);
 
         unset($this->managedUser, $this->managedUserRoles, $this->users);
 
@@ -345,6 +347,7 @@ class UserManagement extends Component
         }
 
         $project->members()->updateExistingPivot($user->id, ['role' => $validated['role']]);
+        app(ProjectRoleProvisioner::class)->syncMember($project, $user, $validated['role']);
 
         unset($this->managedUser, $this->managedUserRoles);
 
@@ -366,6 +369,7 @@ class UserManagement extends Component
         }
 
         $project->members()->detach($user->id);
+        app(ProjectRoleProvisioner::class)->syncMember($project, $user, null);
 
         unset($this->managedUser, $this->managedUserRoles, $this->users);
 

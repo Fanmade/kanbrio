@@ -66,8 +66,7 @@ class CreateProjectTool extends Tool
 
         $project->members()->attach($user->getAuthIdentifier(), ['role' => ProjectRole::Owner->value]);
 
-        $owner = app(ProjectRoleProvisioner::class)->roleFor($project, 'owner');
-        User::findOrFail((int) $user->getAuthIdentifier())->assignRole($owner);
+        app(ProjectRoleProvisioner::class)->syncMember($project, User::findOrFail((int) $user->getAuthIdentifier()), ProjectRole::Owner->value);
 
         return Response::structured([
             'short_name' => $project->short_name,

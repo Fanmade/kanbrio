@@ -4,6 +4,7 @@ namespace App\Authorization;
 
 use App\Enums\ProjectRole;
 use App\Models\Project;
+use App\Models\User;
 use Fanmade\DelegatedPermissions\Models\Permission;
 use Fanmade\DelegatedPermissions\Models\Role;
 use Fanmade\DelegatedPermissions\RoleManager;
@@ -95,5 +96,25 @@ class ProjectRoleProvisioner
     public function roleFor(Project $project, string $name): Role
     {
         return $this->provision($project)[$name];
+    }
+
+    /**
+     * Sync a user's package role for a project to a single project role (owner|
+     * admin|member), or remove them from the project's tree when $roleName is null.
+     * Mirrors the legacy project_user.role pivot during the migration (KAN-232).
+     */
+    public function syncMember(Project $project, User $user, ?string $roleName): void
+    {
+        $roles = $this->provision($project);
+
+        $user->roles()
+            ->where('scope_type', $project->getMorphClass())
+            ->where('scope_id', $project->getKey())
+            ->get()
+            ->each(static fn (Role $role) => $user->removeRole($role));
+
+        if ($roleName !== null) {
+            $user->assignRole($roles[$roleName]);
+        }
     }
 }

@@ -130,6 +130,23 @@ class Project extends Model implements Subscribable
      */
     public function roleFor(User $user): ?ProjectRole
     {
+        // Package role assignments are authoritative once present (KAN-232).
+        $names = $user->roles()
+            ->where('scope_type', $this->getMorphClass())
+            ->where('scope_id', $this->getKey())
+            ->pluck('name');
+
+        $fromPackage = collect(ProjectRole::cases())
+            ->filter(static fn (ProjectRole $role): bool => $names->contains($role->value))
+            ->sortByDesc(static fn (ProjectRole $role): int => $role->rank())
+            ->first();
+
+        if ($fromPackage !== null) {
+            return $fromPackage;
+        }
+
+        // Bridge: fall back to the legacy pivot for memberships not yet synced
+        // to the package. Removed together with project_user.role in KAN-243.
         $member = $this->members()->whereKey($user->id)->first();
         $role = $member?->pivot->getAttribute('role');
 
