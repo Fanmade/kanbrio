@@ -3,13 +3,17 @@
 namespace App\Livewire\Admin;
 
 use App\Enums\Permission;
+use App\Enums\ProjectRole;
 use App\Mail\InvitationMail;
 use App\Models\Invitation;
+use App\Models\Project;
 use App\Models\User;
 use Flux\Flux;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Validation\Rule;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Title;
 use Livewire\Attributes\Url;
@@ -30,6 +34,13 @@ class UserManagement extends Component
      * The id of the user currently pending removal confirmation.
      */
     public ?int $confirmingRemovalId = null;
+
+    /**
+     * Whether the manage-projects modal is open, and for which user.
+     */
+    public bool $managingProjects = false;
+
+    public ?int $managingProjectsId = null;
 
     public function mount(): void
     {
@@ -238,5 +249,126 @@ class UserManagement extends Component
         unset($this->pendingInvitations);
 
         Flux::toast(text: __('Invitation revoked.'), variant: 'success');
+    }
+
+    /**
+     * Open the manage-projects modal for a user.
+     */
+    public function manageProjects(int $userId): void
+    {
+        $this->authorize('manage-users');
+
+        $this->managingProjectsId = $userId;
+        $this->managingProjects = true;
+    }
+
+    /**
+     * The user whose project memberships are being managed.
+     */
+    #[Computed]
+    public function managedUser(): ?User
+    {
+        return $this->managingProjectsId !== null ? User::find($this->managingProjectsId) : null;
+    }
+
+    /**
+     * Every project, for the manage-projects modal.
+     *
+     * @return Collection<int, Project>
+     */
+    #[Computed]
+    public function manageableProjects(): Collection
+    {
+        return Project::query()->orderBy('title')->get();
+    }
+
+    /**
+     * The managed user's role on each project they belong to, keyed by project id.
+     *
+     * @return array<int, string>
+     */
+    #[Computed]
+    public function managedUserRoles(): array
+    {
+        if ($this->managingProjectsId === null) {
+            return [];
+        }
+
+        $roles = [];
+
+        foreach (DB::table('project_user')->where('user_id', $this->managingProjectsId)->get(['project_id', 'role']) as $row) {
+            $roles[(int) $row->project_id] = (string) $row->role;
+        }
+
+        return $roles;
+    }
+
+    /**
+     * Add the managed user to a project as a member.
+     */
+    public function addUserToProject(int $projectId): void
+    {
+        $this->authorize('manage-users');
+
+        $user = User::findOrFail($this->managingProjectsId);
+        $project = Project::findOrFail($projectId);
+
+        if ($project->members()->whereKey($user->id)->exists()) {
+            return;
+        }
+
+        $project->members()->attach($user->id, ['role' => ProjectRole::Member->value]);
+
+        unset($this->managedUser, $this->managedUserRoles, $this->users);
+
+        Flux::toast(text: __('Member added.'), variant: 'success');
+    }
+
+    /**
+     * Change the managed user's role on a project. Limited to admin/member; the
+     * owner's role is not reassigned here.
+     */
+    public function setUserProjectRole(int $projectId, string $role): void
+    {
+        $this->authorize('manage-users');
+
+        $validated = validator(
+            ['role' => $role],
+            ['role' => ['required', Rule::in([ProjectRole::Admin->value, ProjectRole::Member->value])]],
+        )->validate();
+
+        $user = User::findOrFail($this->managingProjectsId);
+        $project = Project::findOrFail($projectId);
+
+        if (! $project->members()->whereKey($user->id)->exists() || $project->isOwner($user)) {
+            return;
+        }
+
+        $project->members()->updateExistingPivot($user->id, ['role' => $validated['role']]);
+
+        unset($this->managedUser, $this->managedUserRoles);
+
+        Flux::toast(text: __('Member role updated.'), variant: 'success');
+    }
+
+    /**
+     * Remove the managed user from a project. The project's owner cannot be removed.
+     */
+    public function removeUserFromProject(int $projectId): void
+    {
+        $this->authorize('manage-users');
+
+        $user = User::findOrFail($this->managingProjectsId);
+        $project = Project::findOrFail($projectId);
+
+        if (! $project->members()->whereKey($user->id)->exists() || $project->isOwner($user)) {
+            return;
+        }
+
+        $project->members()->detach($user->id);
+
+        unset($this->managedUser, $this->managedUserRoles, $this->users);
+
+        Flux::toast(text: __('Member removed.'), variant: 'success');
     }
 }

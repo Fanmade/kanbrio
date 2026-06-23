@@ -145,7 +145,7 @@ class User extends Authenticatable implements PasskeyUser
      */
     public function projects(): BelongsToMany
     {
-        return $this->belongsToMany(Project::class)->withTimestamps();
+        return $this->belongsToMany(Project::class)->withPivot('role')->withTimestamps();
     }
 
     /**

@@ -78,6 +78,50 @@ it('does not let ownership be handed out through the role control', function () 
     expect($project->roleFor($member))->toBe(ProjectRole::Member);
 });
 
+it('lets the owner add an existing user to the project as a member', function () {
+    [$owner, , $project] = ownerMemberProject();
+    $newcomer = User::factory()->create(['name' => 'Dana New']);
+
+    showAs($owner, $project)->call('addMember', $newcomer->id);
+
+    expect($project->roleFor($newcomer))->toBe(ProjectRole::Member);
+});
+
+it('forbids a non-owner from adding members', function () {
+    [, $member, $project] = ownerMemberProject();
+    $newcomer = User::factory()->create();
+
+    showAs($member, $project)
+        ->call('addMember', $newcomer->id)
+        ->assertForbidden();
+
+    expect($project->members()->whereKey($newcomer->id)->exists())->toBeFalse();
+});
+
+it('lets the owner remove a member but not themselves', function () {
+    [$owner, $member, $project] = ownerMemberProject();
+
+    showAs($owner, $project)->call('removeMember', $member->id);
+    expect($project->members()->whereKey($member->id)->exists())->toBeFalse();
+
+    showAs($owner, $project)->call('removeMember', $owner->id);
+    expect($project->isOwner($owner))->toBeTrue();
+});
+
+it('offers only matching non-members in the add picker', function () {
+    [$owner, $member, $project] = ownerMemberProject();
+    User::factory()->create(['name' => 'Alice Example']);
+    User::factory()->create(['name' => 'Bob Other']);
+
+    $names = showAs($owner, $project)
+        ->set('memberQuery', 'Alice')
+        ->instance()->addableUsers()->pluck('name')->all();
+
+    expect($names)->toContain('Alice Example')
+        ->and($names)->not->toContain('Bob Other')
+        ->and($names)->not->toContain($member->name);
+});
+
 it('shows the manage-members control only to the owner', function () {
     [$owner, $member, $project] = ownerMemberProject();
     $admin = User::factory()->create();

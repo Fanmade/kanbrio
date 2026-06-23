@@ -150,6 +150,37 @@
             <div class="flex flex-col gap-4">
                 <flux:heading size="lg">{{ __('Manage members') }}</flux:heading>
 
+                {{-- Add an existing user to the project. --}}
+                <div class="flex flex-col gap-1">
+                    <flux:input
+                        size="sm"
+                        wire:model.live.debounce.300ms="memberQuery"
+                        :placeholder="__('Add a user by name or email')"
+                        data-test="member-search"
+                    />
+
+                    @if ($this->addableUsers->isNotEmpty())
+                        <div class="flex max-h-48 flex-col gap-0.5 overflow-y-auto rounded-lg border border-zinc-200 p-1 dark:border-white/10" data-test="addable-users">
+                            @foreach ($this->addableUsers as $user)
+                                <flux:button
+                                    type="button"
+                                    size="xs"
+                                    variant="ghost"
+                                    class="justify-start!"
+                                    wire:click="addMember({{ $user->id }})"
+                                    data-test="add-user-{{ $user->id }}"
+                                >
+                                    <span class="truncate">{{ $user->name }} <span class="text-zinc-400">{{ $user->email }}</span></span>
+                                </flux:button>
+                            @endforeach
+                        </div>
+                    @elseif (trim($this->memberQuery) !== '')
+                        <flux:text size="xs" class="text-zinc-400">{{ __('No matching users.') }}</flux:text>
+                    @endif
+                </div>
+
+                <flux:separator />
+
                 <div class="flex flex-col gap-2" data-test="members-list">
                     @foreach ($this->members as $member)
                         @php($role = \App\Enums\ProjectRole::from($member->pivot->role))
@@ -159,15 +190,27 @@
                             @if ($role === \App\Enums\ProjectRole::Owner || $member->id === auth()->id())
                                 <flux:badge size="sm" data-test="member-role-{{ $member->id }}">{{ $role->label() }}</flux:badge>
                             @else
-                                <flux:select
-                                    size="sm"
-                                    class="max-w-32"
-                                    wire:change="setMemberRole({{ $member->id }}, $event.target.value)"
-                                    data-test="member-role-select-{{ $member->id }}"
-                                >
-                                    <flux:select.option value="member" :selected="$role === \App\Enums\ProjectRole::Member">{{ __('Member') }}</flux:select.option>
-                                    <flux:select.option value="admin" :selected="$role === \App\Enums\ProjectRole::Admin">{{ __('Admin') }}</flux:select.option>
-                                </flux:select>
+                                <div class="flex items-center gap-1.5">
+                                    <flux:select
+                                        size="sm"
+                                        class="max-w-28"
+                                        wire:change="setMemberRole({{ $member->id }}, $event.target.value)"
+                                        data-test="member-role-select-{{ $member->id }}"
+                                    >
+                                        <flux:select.option value="member" :selected="$role === \App\Enums\ProjectRole::Member">{{ __('Member') }}</flux:select.option>
+                                        <flux:select.option value="admin" :selected="$role === \App\Enums\ProjectRole::Admin">{{ __('Admin') }}</flux:select.option>
+                                    </flux:select>
+
+                                    <flux:button
+                                        type="button"
+                                        size="xs"
+                                        variant="ghost"
+                                        icon="x-mark"
+                                        :aria-label="__('Remove member')"
+                                        wire:click="removeMember({{ $member->id }})"
+                                        data-test="remove-member-{{ $member->id }}"
+                                    />
+                                </div>
                             @endif
                         </div>
                     @endforeach

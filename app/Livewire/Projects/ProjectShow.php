@@ -40,6 +40,8 @@ class ProjectShow extends Component
 
     public bool $managingMembers = false;
 
+    public string $memberQuery = '';
+
     public function mount(string $short_name): void
     {
         $this->shortName = $short_name;
@@ -241,6 +243,71 @@ class ProjectShow extends Component
         unset($this->members);
 
         Flux::toast(variant: 'success', text: __('Member role updated.'));
+    }
+
+    /**
+     * Existing users not yet on the project that match the search, offered in
+     * the add-member picker. Empty until the owner types a query.
+     *
+     * @return EloquentCollection<int, User>
+     */
+    #[Computed]
+    public function addableUsers(): EloquentCollection
+    {
+        $query = trim($this->memberQuery);
+
+        if ($query === '') {
+            return new EloquentCollection;
+        }
+
+        return User::query()
+            ->whereNotIn('id', $this->project()->members()->pluck('users.id'))
+            ->where(static fn ($builder) => $builder
+                ->whereLike('name', '%'.$query.'%')
+                ->orWhereLike('email', '%'.$query.'%'))
+            ->orderBy('name')
+            ->limit(8)
+            ->get();
+    }
+
+    /**
+     * Add an existing user to the project as a member. Owner-only.
+     */
+    public function addMember(int $userId): void
+    {
+        $project = $this->project();
+        $this->authorize('manageMembers', $project);
+
+        if (! User::whereKey($userId)->exists() || $project->members()->whereKey($userId)->exists()) {
+            return;
+        }
+
+        $project->members()->attach($userId, ['role' => ProjectRole::Member->value]);
+
+        $this->memberQuery = '';
+        unset($this->members, $this->addableUsers);
+
+        Flux::toast(variant: 'success', text: __('Member added.'));
+    }
+
+    /**
+     * Remove a member from the project. Owner-only; the owner cannot remove
+     * themselves (which would leave the project without an owner).
+     */
+    public function removeMember(int $userId): void
+    {
+        $project = $this->project();
+        $this->authorize('manageMembers', $project);
+
+        if ($userId === auth()->id() || ! $project->members()->whereKey($userId)->exists()) {
+            return;
+        }
+
+        $project->members()->detach($userId);
+
+        unset($this->members, $this->addableUsers);
+
+        Flux::toast(variant: 'success', text: __('Member removed.'));
     }
 
     /**

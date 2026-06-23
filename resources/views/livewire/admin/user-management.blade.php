@@ -44,6 +44,10 @@
                             <flux:badge color="green" data-test="status-{{ $user->id }}">{{ __('Active') }}</flux:badge>
                         @endif
 
+                        <flux:button size="sm" variant="ghost" icon="folder" wire:click="manageProjects({{ $user->id }})" data-test="manage-projects-{{ $user->id }}">
+                            {{ __('Projects') }}
+                        </flux:button>
+
                         @unless ($user->is(auth()->user()))
                             @if ($user->isDeactivated())
                                 <flux:button size="sm" variant="ghost" icon="lock-open" wire:click="reactivate({{ $user->id }})" data-test="reactivate-{{ $user->id }}">
@@ -138,6 +142,45 @@
             <div class="flex justify-end gap-2">
                 <flux:button type="button" variant="ghost" wire:click="cancelRemoval">{{ __('Cancel') }}</flux:button>
                 <flux:button type="button" variant="danger" wire:click="removeUser" data-test="confirm-remove">{{ __('Remove account') }}</flux:button>
+            </div>
+        </div>
+    </flux:modal>
+
+    {{-- Manage a user's project memberships --}}
+    <flux:modal wire:model.self="managingProjects" class="md:w-md" data-test="manage-projects-modal">
+        <div class="flex flex-col gap-4">
+            <flux:heading size="lg">
+                {{ $this->managedUser ? __('Projects for :name', ['name' => $this->managedUser->name]) : __('Projects') }}
+            </flux:heading>
+
+            <div class="flex max-h-96 flex-col gap-2 overflow-y-auto" data-test="manage-projects-list">
+                @foreach ($this->manageableProjects as $project)
+                    @php($roleValue = $this->managedUserRoles[$project->id] ?? null)
+                    @php($role = $roleValue ? \App\Enums\ProjectRole::from($roleValue) : null)
+                    <div class="flex items-center justify-between gap-3" wire:key="mp-{{ $project->id }}" data-test="manage-project-row-{{ $project->id }}">
+                        <flux:text class="min-w-0 truncate">{{ $project->title }} <span class="text-zinc-400">{{ $project->short_name }}</span></flux:text>
+
+                        @if ($role === \App\Enums\ProjectRole::Owner)
+                            <flux:badge size="sm" data-test="mp-role-{{ $project->id }}">{{ $role->label() }}</flux:badge>
+                        @elseif ($role !== null)
+                            <div class="flex items-center gap-1.5">
+                                <flux:select
+                                    size="sm"
+                                    class="max-w-28"
+                                    wire:change="setUserProjectRole({{ $project->id }}, $event.target.value)"
+                                    data-test="mp-role-select-{{ $project->id }}"
+                                >
+                                    <flux:select.option value="member" :selected="$role === \App\Enums\ProjectRole::Member">{{ __('Member') }}</flux:select.option>
+                                    <flux:select.option value="admin" :selected="$role === \App\Enums\ProjectRole::Admin">{{ __('Admin') }}</flux:select.option>
+                                </flux:select>
+
+                                <flux:button type="button" size="xs" variant="ghost" icon="x-mark" :aria-label="__('Remove member')" wire:click="removeUserFromProject({{ $project->id }})" data-test="mp-remove-{{ $project->id }}" />
+                            </div>
+                        @else
+                            <flux:button type="button" size="xs" variant="ghost" icon="plus" wire:click="addUserToProject({{ $project->id }})" data-test="mp-add-{{ $project->id }}">{{ __('Add') }}</flux:button>
+                        @endif
+                    </div>
+                @endforeach
             </div>
         </div>
     </flux:modal>
