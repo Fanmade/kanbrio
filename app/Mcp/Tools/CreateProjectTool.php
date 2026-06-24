@@ -6,6 +6,7 @@ use App\Authorization\ProjectRoleProvisioner;
 use App\Mcp\Concerns\NormalizesPlainText;
 use App\Mcp\Concerns\RequiresWriteAccess;
 use App\Models\Project;
+use App\Models\TaskType;
 use App\Models\User;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Illuminate\JsonSchema\Types\Type;
@@ -68,6 +69,8 @@ class CreateProjectTool extends Tool
         $project->members()->attach($user->getAuthIdentifier());
 
         app(ProjectRoleProvisioner::class)->syncMember($project, User::findOrFail((int) $user->getAuthIdentifier()), 'owner');
+
+        TaskType::provisionDefaults($project);
 
         return Response::structured([
             'short_name' => $project->short_name,

@@ -43,6 +43,7 @@ use Illuminate\Support\Collection;
  * @property string $title
  * @property string|null $description
  * @property Priority $priority
+ * @property int|null $task_type_id
  * @property Status $status
  * @property float $position
  * @property Carbon|null $due_date
@@ -54,6 +55,7 @@ use Illuminate\Support\Collection;
  * @property Carbon|null $updated_at
  * @property-read string $reference
  * @property-read Project $project
+ * @property-read TaskType|null $taskType
  * @property-read Task|null $parent
  * @property-read \Illuminate\Database\Eloquent\Collection<int, Task> $children
  */
@@ -139,6 +141,16 @@ class Task extends Model implements Dependable, Mentionable, Subscribable
     public function project(): BelongsTo
     {
         return $this->belongsTo(Project::class);
+    }
+
+    /**
+     * The task's optional type (e.g. Feature, Bug), or null when untyped.
+     *
+     * @return BelongsTo<TaskType, $this>
+     */
+    public function taskType(): BelongsTo
+    {
+        return $this->belongsTo(TaskType::class);
     }
 
     /**

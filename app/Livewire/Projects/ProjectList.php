@@ -4,6 +4,7 @@ namespace App\Livewire\Projects;
 
 use App\Authorization\ProjectRoleProvisioner;
 use App\Models\Project;
+use App\Models\TaskType;
 use App\Models\User;
 use Flux\Flux;
 use Illuminate\Database\Eloquent\Collection;
@@ -71,6 +72,8 @@ class ProjectList extends Component
         $project->members()->attach(Auth::id());
 
         app(ProjectRoleProvisioner::class)->syncMember($project, User::findOrFail(Auth::id()), 'owner');
+
+        TaskType::provisionDefaults($project);
 
         Flux::toast(text: __('Project created.'), variant: 'success');
 

@@ -136,6 +136,16 @@ class Project extends Model implements Mentionable, Subscribable
     }
 
     /**
+     * The task types configured for this project.
+     *
+     * @return HasMany<TaskType, $this>
+     */
+    public function taskTypes(): HasMany
+    {
+        return $this->hasMany(TaskType::class)->orderBy('position');
+    }
+
+    /**
      * The users granted access to this project.
      *
      * @return BelongsToMany<User, $this>
