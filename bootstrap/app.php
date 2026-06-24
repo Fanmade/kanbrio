@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Middleware\EnsureTokenCanWrite;
 use App\Http\Middleware\EnsureUserIsActive;
 use App\Http\Middleware\SetLocale;
 use Illuminate\Foundation\Application;
@@ -18,6 +19,10 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->web(append: [
             SetLocale::class,
             EnsureUserIsActive::class,
+        ]);
+
+        $middleware->alias([
+            'token.write' => EnsureTokenCanWrite::class,
         ]);
     })
     ->withExceptions(static function (Exceptions $exceptions): void {

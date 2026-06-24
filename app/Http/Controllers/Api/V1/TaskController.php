@@ -2,17 +2,36 @@
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\Actions\ChangeTaskStatus;
+use App\Actions\CreateTask;
+use App\Concerns\HasTags;
+use App\Enums\Priority;
 use App\Enums\Status;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\TaskResource;
+use App\Models\Project;
+use App\Models\Tag;
+use App\Models\Task;
+use App\Models\TaskType;
 use App\Support\ReferenceResolver;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Enum;
+use Illuminate\Validation\ValidationException;
+use InvalidArgumentException;
 
 class TaskController extends Controller
 {
+    /**
+     * The relations the task resource serializes.
+     *
+     * @var list<string>
+     */
+    private const RESOURCE_RELATIONS = ['tags', 'project', 'parent', 'taskType', 'dependencyLinks.blocker'];
+
     /**
      * List a project's tasks, paginated, optionally filtered by status and/or
      * restricted to the direct subtasks of a parent task.
@@ -52,6 +71,140 @@ class TaskController extends Controller
     }
 
     /**
+     * Create a task in a project. Optionally nest it under a parent task and set
+     * an initial priority, status, due date, type and tags. Requires write access.
+     */
+    public function store(Request $request, string $short_name): JsonResponse
+    {
+        $project = ReferenceResolver::project($short_name);
+
+        abort_if($project === null || Auth::user()->cannot('update', $project), 404);
+
+        $validated = $request->validate([
+            'title' => ['required', 'string', 'max:255'],
+            'description' => ['nullable', 'string'],
+            'priority' => ['nullable', Rule::in(Priority::names())],
+            'status' => ['nullable', new Enum(Status::class)],
+            'due_date' => ['nullable', 'date_format:Y-m-d'],
+            'parent' => ['nullable', 'string'],
+            'type' => ['nullable', 'string'],
+            'tags' => ['nullable', 'array'],
+            'tags.*' => ['string'],
+        ]);
+
+        $parent = null;
+
+        if (isset($validated['parent'])) {
+            $parent = ReferenceResolver::task($validated['parent']);
+
+            abort_if(
+                $parent === null || $parent->project_id !== $project->id || Auth::user()->cannot('update', $parent),
+                404,
+            );
+        }
+
+        $type = $this->resolveType($project, $validated['type'] ?? null);
+
+        try {
+            $task = app(CreateTask::class)->handle(
+                $project,
+                $validated['title'],
+                $validated['description'] ?? null,
+                isset($validated['priority']) ? Priority::fromName($validated['priority']) : null,
+                isset($validated['status']) ? Status::from($validated['status']) : null,
+                $validated['due_date'] ?? null,
+                $parent,
+                $type,
+            );
+        } catch (InvalidArgumentException) {
+            throw ValidationException::withMessages([
+                'parent' => __('The task cannot be nested there: it would exceed the maximum nesting depth.'),
+            ]);
+        }
+
+        if (isset($validated['tags'])) {
+            $task->syncTags($validated['tags']);
+        }
+
+        $task->loadMissing(self::RESOURCE_RELATIONS);
+
+        return TaskResource::make($task)->response()->setStatusCode(201);
+    }
+
+    /**
+     * Update a task's fields. Status changes route through the shared cascade
+     * action; tags are synced and logged. Requires write access.
+     */
+    public function update(Request $request, string $reference): TaskResource
+    {
+        $task = ReferenceResolver::task($reference);
+
+        abort_if($task === null || Auth::user()->cannot('update', $task), 404);
+
+        $workingStatuses = array_map(static fn (Status $status): string => $status->value, Status::columns());
+
+        $validated = $request->validate([
+            'title' => ['sometimes', 'required', 'string', 'max:255'],
+            'description' => ['nullable', 'string'],
+            'priority' => ['nullable', Rule::in(Priority::names())],
+            'due_date' => ['nullable', 'date_format:Y-m-d'],
+            'status' => ['nullable', Rule::in($workingStatuses)],
+            'type' => ['nullable', 'string'],
+            'tags' => ['nullable', 'array'],
+            'tags.*' => ['string'],
+        ]);
+
+        if ($task->isCanceled() && $request->has('status')) {
+            throw ValidationException::withMessages([
+                'status' => __('This task is canceled and cannot change status. Reopen it first.'),
+            ]);
+        }
+
+        $updates = [];
+
+        if ($request->has('title')) {
+            $updates['title'] = $validated['title'];
+        }
+
+        if ($request->has('description')) {
+            $updates['description'] = $validated['description'];
+        }
+
+        if ($request->has('priority') && isset($validated['priority'])) {
+            $updates['priority'] = Priority::fromName($validated['priority']);
+        }
+
+        if ($request->has('due_date')) {
+            $updates['due_date'] = $validated['due_date'];
+        }
+
+        if ($updates !== []) {
+            $task->update($updates);
+        }
+
+        if ($request->has('type')) {
+            $task->task_type_id = $this->resolveType($task->project, $validated['type'] ?? null)?->getKey();
+            $task->save();
+        }
+
+        if ($request->has('status') && isset($validated['status'])) {
+            $new = Status::from($validated['status']);
+
+            if ($task->status !== $new) {
+                app(ChangeTaskStatus::class)->handle($task, $new);
+            }
+        }
+
+        if ($request->has('tags')) {
+            $this->logTagChanges($task, $task->syncTags($validated['tags'] ?? []));
+        }
+
+        $task->refresh()->loadMissing(self::RESOURCE_RELATIONS);
+
+        return new TaskResource($task);
+    }
+
+    /**
      * Show a single task by its reference (e.g. "PROJ-42"). 404s when it does not
      * exist or belongs to a project the user cannot see.
      */
@@ -61,8 +214,52 @@ class TaskController extends Controller
 
         abort_if($task === null || Auth::user()->cannot('view', $task), 404);
 
-        $task->loadMissing(['tags', 'project', 'parent', 'taskType', 'dependencyLinks.blocker']);
+        $task->loadMissing(self::RESOURCE_RELATIONS);
 
         return new TaskResource($task);
+    }
+
+    /**
+     * Resolve a task-type name (case-insensitive) to one of the project's types,
+     * or null when no name is given. An unknown name is a validation error.
+     */
+    private function resolveType(Project $project, ?string $name): ?TaskType
+    {
+        if ($name === null || trim($name) === '') {
+            return null;
+        }
+
+        $type = $project->taskTypes()
+            ->whereRaw('lower(name) = ?', [mb_strtolower(trim($name))])
+            ->first();
+
+        if ($type === null) {
+            throw ValidationException::withMessages([
+                'type' => __('No task type named ":name" exists in this project.', ['name' => $name]),
+            ]);
+        }
+
+        return $type;
+    }
+
+    /**
+     * Record a tags_changed activity from a {@see HasTags::syncTags()}
+     * diff, resolving attached/detached ids to names so the trail reads naturally.
+     *
+     * @param  array{attached: array<int, mixed>, detached: array<int, mixed>, updated: array<int, mixed>}  $changes
+     */
+    private function logTagChanges(Task $task, array $changes): void
+    {
+        $names = Tag::query()
+            ->whereIn('id', array_merge($changes['attached'], $changes['detached']))
+            ->pluck('name', 'id');
+
+        $resolve = static fn (array $ids): array => collect($ids)
+            ->map(static fn ($id): ?string => $names[(int) $id] ?? null)
+            ->filter()
+            ->values()
+            ->all();
+
+        $task->recordTagChange($resolve($changes['attached']), $resolve($changes['detached']));
     }
 }
