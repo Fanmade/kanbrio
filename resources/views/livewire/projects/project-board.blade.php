@@ -25,6 +25,14 @@
                                 <flux:select.option :value="$priority->value">{{ $priority->label() }}</flux:select.option>
                             @endforeach
                         </flux:select>
+                        @if (count($this->taskTypes) > 0)
+                            <flux:select wire:model.live="typeFilter" size="sm" :label="__('Type')" data-test="type-filter">
+                                <flux:select.option value="">{{ __('All types') }}</flux:select.option>
+                                @foreach ($this->taskTypes as $type)
+                                    <flux:select.option :value="$type->id">{{ $type->name }}</flux:select.option>
+                                @endforeach
+                            </flux:select>
+                        @endif
                     </flux:popover>
                 </flux:dropdown>
 

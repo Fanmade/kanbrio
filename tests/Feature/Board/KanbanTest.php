@@ -327,6 +327,53 @@ it('renders a typed task\'s type badge on its card', function () {
         ->assertSee('Bugfix');
 });
 
+it('filters the board to a single task type', function () {
+    $bug = TaskType::factory()->for($this->project)->create(['name' => 'Bug']);
+    $feature = TaskType::factory()->for($this->project)->create(['name' => 'Feature']);
+
+    $bugTask = Task::factory()->for($this->project)->create(['title' => 'A bug']);
+    $bugTask->taskType()->associate($bug)->save();
+    $featureTask = Task::factory()->for($this->project)->create(['title' => 'A feature']);
+    $featureTask->taskType()->associate($feature)->save();
+
+    $component = Livewire::actingAs($this->member)
+        ->test(ProjectBoard::class, ['short_name' => 'ABC'])
+        ->set('typeFilter', $bug->id);
+
+    $ids = collect($component->instance()->columns())
+        ->flatMap(static fn (array $column) => $column['tasks']->pluck('id'))
+        ->all();
+
+    // Only the matching type's task remains; the other type and the untyped
+    // beforeEach task are filtered out.
+    expect($ids)->toContain($bugTask->id)
+        ->and($ids)->not->toContain($featureTask->id)
+        ->and($ids)->not->toContain($this->task->id);
+});
+
+it('counts the type filter as an active filter', function () {
+    $type = TaskType::factory()->for($this->project)->create();
+
+    $count = Livewire::actingAs($this->member)
+        ->test(ProjectBoard::class, ['short_name' => 'ABC'])
+        ->set('typeFilter', $type->id)
+        ->instance()->activeFilterCount();
+
+    expect($count)->toBe(1);
+});
+
+it('shows the type filter only when the project has types', function () {
+    Livewire::actingAs($this->member)
+        ->test(ProjectBoard::class, ['short_name' => 'ABC'])
+        ->assertDontSeeHtml('data-test="type-filter"');
+
+    TaskType::factory()->for($this->project)->create();
+
+    Livewire::actingAs($this->member)
+        ->test(ProjectBoard::class, ['short_name' => 'ABC'])
+        ->assertSeeHtml('data-test="type-filter"');
+});
+
 it('keeps canceled tasks off the project board lanes', function () {
     $canceled = Task::factory()->for($this->project)->canceled()->create(['title' => 'Abandoned work']);
 

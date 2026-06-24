@@ -8,6 +8,7 @@ use App\Concerns\PromptsParentClose;
 use App\Enums\Status;
 use App\Models\Project;
 use App\Models\Task;
+use App\Models\TaskType;
 use App\Support\BlockedTasks;
 use App\Support\BoardCache;
 use Illuminate\Database\Eloquent\Collection;
@@ -27,6 +28,8 @@ class ProjectBoard extends Component
 
     // Board filters.
     public ?int $priorityFilter = null;
+
+    public ?int $typeFilter = null;
 
     public bool $showArchived = false;
 
@@ -63,7 +66,19 @@ class ProjectBoard extends Component
     public function activeFilterCount(): int
     {
         return ($this->showArchived ? 1 : 0)
-            + ($this->priorityFilter ? 1 : 0);
+            + ($this->priorityFilter ? 1 : 0)
+            + ($this->typeFilter ? 1 : 0);
+    }
+
+    /**
+     * The project's configured task types, offered in the board's type filter.
+     *
+     * @return Collection<int, TaskType>
+     */
+    #[Computed]
+    public function taskTypes(): Collection
+    {
+        return $this->project()->taskTypes()->get();
     }
 
     /**
@@ -100,6 +115,10 @@ class ProjectBoard extends Component
 
         if ($this->priorityFilter) {
             $tasks = $tasks->filter(fn (Task $task): bool => $task->priority->value === $this->priorityFilter);
+        }
+
+        if ($this->typeFilter) {
+            $tasks = $tasks->filter(fn (Task $task): bool => $task->task_type_id === $this->typeFilter);
         }
 
         return $this->buildColumns($tasks, $this->columnSearch);
