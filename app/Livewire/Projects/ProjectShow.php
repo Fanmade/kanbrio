@@ -263,10 +263,10 @@ class ProjectShow extends Component
      * ownership cannot be handed out here. Includes the custom roles defined for
      * the project. The seeded roles sort first, custom roles after, by name.
      *
-     * @return EloquentCollection<int, Role>
+     * @return Collection<int, Role>
      */
     #[Computed]
-    public function assignableRoles(): EloquentCollection
+    public function assignableRoles(): Collection
     {
         $project = $this->project();
 

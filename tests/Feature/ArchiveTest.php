@@ -149,6 +149,7 @@ test('the project overview hides archived root tasks until the toggle is on', fu
 
     Livewire::actingAs($this->member)
         ->test(ProjectShow::class, ['short_name' => 'ABC'])
+        ->set('tasksCollapsed', false)
         ->assertDontSee('Archived root task')
         ->set('showArchived', true)
         ->assertSee('Archived root task');
