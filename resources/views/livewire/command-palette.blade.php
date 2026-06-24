@@ -1,15 +1,18 @@
-<div>
+<div class="max-sm:flex-1 max-sm:me-3">
     {{-- Custom shortcut: Flux's shortcut="cmd.k" maps to the Meta key only (Alpine's
          .cmd alias), so Ctrl+K never fires on Windows/Linux. Handle both modifiers. --}}
     <flux:modal.trigger
         name="command-palette"
+        class="max-sm:block max-sm:w-full"
         x-on:keydown.window="if (($event.ctrlKey || $event.metaKey) && $event.key.toLowerCase() === 'k') { $event.preventDefault(); $dispatch('modal-show', { name: 'command-palette' }) }"
     >
+        {{-- Full width on mobile (fills the header between the sidebar toggle and
+             account avatar); a fixed, comfortable width from `sm` up. --}}
         <flux:input
             as="button"
             icon="magnifying-glass"
             :placeholder="__('Search…')"
-            class="w-48 sm:w-64 md:w-80"
+            class="w-full sm:w-64 md:w-80"
             :aria-label="__('Search')"
             data-test="command-palette-trigger"
         >

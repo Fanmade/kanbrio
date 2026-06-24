@@ -70,7 +70,9 @@
 
             <livewire:command-palette />
 
-            <flux:spacer />
+            {{-- On mobile the search bar grows to fill the header, so the spacer
+                 would compete with it for the slack — only push from `sm` up. --}}
+            <flux:spacer class="max-sm:hidden" />
 
             {{-- Persist the notifications menu across wire:navigate transitions so its
                  30s poll and unread state survive page changes instead of re-mounting

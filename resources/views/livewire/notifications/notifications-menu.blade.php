@@ -2,7 +2,7 @@
     @php($count = $this->unreadCount)
 
     <flux:dropdown position="bottom" align="end">
-        <button type="button" class="cursor-pointer" aria-label="{{ __('Notifications') }}" data-test="notifications-trigger">
+        <button type="button" class="flex cursor-pointer items-center" aria-label="{{ __('Notifications') }}" data-test="notifications-trigger">
             <flux:avatar
                 size="sm"
                 :name="auth()->user()->name"

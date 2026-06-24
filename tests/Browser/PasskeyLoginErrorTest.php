@@ -11,6 +11,7 @@ it('shows a friendly message when a passkey endpoint returns HTML instead of JSO
 
     // Force the passkey button to render and make verification fail exactly the
     // way a non-JSON (HTML) response does inside the @laravel/passkeys client.
+    /** @noinspection JSConstantReassignment */
     $page->script(<<<'JS'
         window.Passkeys = {
             isSupported: () => true,
@@ -28,6 +29,7 @@ it('shows a friendly message when a passkey endpoint returns HTML instead of JSO
 it('still surfaces a genuine passkey error message', function () {
     $page = visit('/login');
 
+    /** @noinspection JSConstantReassignment */
     $page->script(<<<'JS'
         window.Passkeys = {
             isSupported: () => true,
