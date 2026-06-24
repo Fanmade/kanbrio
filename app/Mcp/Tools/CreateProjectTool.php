@@ -2,11 +2,10 @@
 
 namespace App\Mcp\Tools;
 
-use App\Authorization\ProjectRoleProvisioner;
+use App\Actions\CreateProject;
 use App\Mcp\Concerns\NormalizesPlainText;
 use App\Mcp\Concerns\RequiresWriteAccess;
 use App\Models\Project;
-use App\Models\TaskType;
 use App\Models\User;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Illuminate\JsonSchema\Types\Type;
@@ -60,17 +59,12 @@ class CreateProjectTool extends Tool
             'short_name.not_in' => 'That short_name is reserved. Choose another.',
         ]);
 
-        $project = Project::create([
-            'title' => $this->decodePlainText($validated['title']),
-            'short_name' => $validated['short_name'],
-            'description' => $validated['description'] ?? null,
-        ]);
-
-        $project->members()->attach($user->getAuthIdentifier());
-
-        app(ProjectRoleProvisioner::class)->syncMember($project, User::findOrFail((int) $user->getAuthIdentifier()), 'owner');
-
-        TaskType::provisionDefaults($project);
+        $project = app(CreateProject::class)->handle(
+            User::findOrFail((int) $user->getAuthIdentifier()),
+            $this->decodePlainText($validated['title']),
+            $validated['short_name'],
+            $validated['description'] ?? null,
+        );
 
         return Response::structured([
             'short_name' => $project->short_name,

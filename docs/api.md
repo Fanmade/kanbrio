@@ -35,17 +35,21 @@ Requests are rate-limited to 60/minute per token.
 All paths are relative to `/api/v1`. References use the same scheme as the app:
 a project short name (`PROJ`) and a flat task reference (`PROJ-42`).
 
-| Method  | Path                                | Ability | Description |
-| ------- | ----------------------------------- | ------- | ----------- |
-| `GET`   | `/user`                             | read    | The authenticated token's user. |
-| `GET`   | `/projects`                         | read    | Projects you belong to (paginated). |
-| `GET`   | `/projects/{short_name}`            | read    | A single project. |
-| `GET`   | `/projects/{short_name}/tasks`      | read    | A project's tasks (paginated). Filters: `status`, `parent`. |
-| `POST`  | `/projects/{short_name}/tasks`      | write   | Create a task. |
-| `GET`   | `/tasks/{reference}`                | read    | A single task. |
-| `PATCH` | `/tasks/{reference}`                | write   | Update a task's fields, status, type or tags. |
-| `POST`  | `/projects/{short_name}/comments`   | write   | Comment on a project. |
-| `POST`  | `/tasks/{reference}/comments`       | write   | Comment on a task. |
+| Method   | Path                                                  | Ability | Description |
+| -------- | ----------------------------------------------------- | ------- | ----------- |
+| `GET`    | `/user`                                               | read    | The authenticated token's user. |
+| `GET`    | `/projects`                                           | read    | Projects you belong to (paginated). |
+| `POST`   | `/projects`                                           | write   | Create a project (you become its owner). |
+| `GET`    | `/projects/{short_name}`                              | read    | A single project. |
+| `PATCH`  | `/projects/{short_name}`                              | write   | Update a project (admins/owner). |
+| `GET`    | `/projects/{short_name}/tasks`                        | read    | A project's tasks (paginated). Filters: `status`, `parent`. |
+| `POST`   | `/projects/{short_name}/tasks`                        | write   | Create a task. |
+| `GET`    | `/tasks/{reference}`                                  | read    | A single task. |
+| `PATCH`  | `/tasks/{reference}`                                  | write   | Update a task's fields, status, type or tags. |
+| `POST`   | `/tasks/{reference}/dependencies`                     | write   | Link a dependency (`direction`: `blocked_by` / `blocks`). |
+| `DELETE` | `/tasks/{reference}/dependencies/{related}`           | write   | Unlink a dependency. |
+| `POST`   | `/projects/{short_name}/comments`                     | write   | Comment on a project. |
+| `POST`   | `/tasks/{reference}/comments`                         | write   | Comment on a task. |
 
 Enum-valued fields follow the MCP conventions: `priority` and `cancel_reason` are
 sent and returned **by name** (`High`, `WontFix`), `status` by its value

@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\V1\CommentController;
+use App\Http\Controllers\Api\V1\DependencyController;
 use App\Http\Controllers\Api\V1\ProjectController;
 use App\Http\Controllers\Api\V1\TaskController;
 use App\Http\Controllers\Api\V1\UserController;
@@ -34,8 +35,14 @@ Route::middleware(['auth:sanctum', 'throttle:api'])
 
         // Mutations additionally require a token with the `write` ability.
         Route::middleware('token.write')->group(static function (): void {
+            Route::post('projects', [ProjectController::class, 'store'])->name('projects.store');
+            Route::patch('projects/{short_name}', [ProjectController::class, 'update'])->name('projects.update');
+
             Route::post('projects/{short_name}/tasks', [TaskController::class, 'store'])->name('projects.tasks.store');
             Route::patch('tasks/{reference}', [TaskController::class, 'update'])->name('tasks.update');
+
+            Route::post('tasks/{reference}/dependencies', [DependencyController::class, 'store'])->name('tasks.dependencies.store');
+            Route::delete('tasks/{reference}/dependencies/{related}', [DependencyController::class, 'destroy'])->name('tasks.dependencies.destroy');
 
             Route::post('projects/{short_name}/comments', [CommentController::class, 'storeOnProject'])->name('projects.comments.store');
             Route::post('tasks/{reference}/comments', [CommentController::class, 'storeOnTask'])->name('tasks.comments.store');
