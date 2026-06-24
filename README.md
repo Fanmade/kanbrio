@@ -90,6 +90,9 @@ Built on Laravel with Livewire and Flux UI. English and German out of the box.
 - **Tags** — label tasks with color-coded tags, scoped to their project and
   shown as badges with a colored dot. Add one from a searchable list of the
   project's most-used tags, or create a new tag on the spot and pick its color.
+  A per-project tag page lets members rename and recolor tags (renaming onto an
+  existing tag merges the two), while admins and owners can delete them; every
+  change is recorded in the activity log.
 - **Priorities** — five levels (Lowest, Low, Medium, High, Highest; Medium is the
   default) on tasks, with new subtasks inheriting their parent task's priority.
   Board columns are ordered by priority and can be filtered to a single level.

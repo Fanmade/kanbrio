@@ -158,4 +158,18 @@ class Tag extends Model
         $this->project->recordActivity('tag_deleted', 'tags', $this->name, null);
         $this->delete();
     }
+
+    /**
+     * Fold this tag into another of the same project: re-point every task tagged
+     * with this one onto the target (without creating duplicate pivot rows), then
+     * delete this tag. Used when a rename would collide with an existing tag —
+     * the two are merged rather than the rename rejected.
+     */
+    public function mergeInto(self $target): void
+    {
+        $taskIds = $this->tasks()->pluck('tasks.id')->all();
+        $target->tasks()->syncWithoutDetaching($taskIds);
+
+        $this->deleteWithActivity();
+    }
 }

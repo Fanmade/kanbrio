@@ -14,6 +14,7 @@ use App\Livewire\Notifications\ManageNotifications;
 use App\Livewire\Projects\ProjectBoard;
 use App\Livewire\Projects\ProjectList;
 use App\Livewire\Projects\ProjectShow;
+use App\Livewire\Projects\ProjectTags;
 use App\Livewire\Tasks\TaskView;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
@@ -74,6 +75,10 @@ Route::middleware(['auth', 'verified'])->group(static function () {
     Route::livewire('/{short_name}/board', ProjectBoard::class)
         ->where('short_name', '[A-Z]{2,4}')
         ->name('project.board');
+
+    Route::livewire('/{short_name}/tags', ProjectTags::class)
+        ->where('short_name', '[A-Z]{2,4}')
+        ->name('project.tags');
 
     Route::livewire('/{short_name}-{task_number}', TaskView::class)
         ->where(['short_name' => '[A-Z]{2,4}', 'task_number' => '\d+'])

@@ -14,11 +14,14 @@
             <flux:button size="sm" variant="primary" icon="view-columns" :href="route('project.board', $this->project)" wire:navigate>
                 {{ __('Board') }}
             </flux:button>
-            @can('manageSettings', $this->project)
+            @can('manage-tags', $this->project)
                 <flux:dropdown align="end">
                     <flux:button size="sm" variant="ghost" icon="ellipsis-horizontal" :aria-label="__('Actions')" data-test="project-actions" />
                     <flux:menu>
-                        <flux:menu.item icon="pencil-square" wire:click="edit" data-test="edit-project">{{ __('Edit') }}</flux:menu.item>
+                        <flux:menu.item icon="tag" :href="route('project.tags', $this->project)" wire:navigate data-test="manage-tags-link">{{ __('Manage tags') }}</flux:menu.item>
+                        @can('manageSettings', $this->project)
+                            <flux:menu.item icon="pencil-square" wire:click="edit" data-test="edit-project">{{ __('Edit') }}</flux:menu.item>
+                        @endcan
                         @can('manageMembers', $this->project)
                             <flux:menu.item icon="users" wire:click="$set('managingMembers', true)" data-test="manage-members">{{ __('Manage members') }}</flux:menu.item>
                         @endcan
