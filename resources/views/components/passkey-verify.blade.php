@@ -15,6 +15,8 @@
         supported: false,
         loading: false,
         error: null,
+        htmlError: @js(__('Passkey sign-in failed. Please reload the page and try again, or continue with your email and password.')),
+        genericError: @js(__('Passkey sign-in failed. Please try again.')),
         updateSupport() {
             this.supported = Boolean(window.Passkeys?.isSupported());
         },
@@ -35,14 +37,25 @@
                 });
                 Livewire.navigate(response.redirect || '/dashboard');
             } catch (e) {
-                if (e.constructor?.name !== 'UserCancelledError') {
-                    this.error = e.message;
+                const name = e?.constructor?.name;
+
+                if (name === 'UserCancelledError') {
+                    // The user dismissed the passkey prompt — nothing to report.
+                } else if (e instanceof SyntaxError || /is not valid JSON|DOCTYPE|Unexpected token/i.test(e?.message ?? '')) {
+                    // A passkey endpoint returned HTML (an expired session / 419 page
+                    // or a server error) instead of JSON, so the client could not
+                    // parse it. Show a friendly message rather than leaking the raw
+                    // JSON-parser error to the user.
+                    this.error = this.htmlError;
+                } else {
+                    this.error = e?.message || this.genericError;
                 }
             } finally {
                 this.loading = false;
             }
         },
     }"
+    data-test="passkey-verify-root"
 >
     <template x-if="supported">
         <div>

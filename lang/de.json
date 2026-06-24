@@ -315,6 +315,8 @@
   "Parent task change undone.": "Änderung der übergeordneten Aufgabe rückgängig gemacht.",
   "Parent task closed.": "Übergeordnete Aufgabe geschlossen.",
   "Passkey name": "Passkey-Name",
+  "Passkey sign-in failed. Please reload the page and try again, or continue with your email and password.": "Passkey-Anmeldung fehlgeschlagen. Bitte lade die Seite neu und versuche es erneut oder fahre mit E-Mail und Passwort fort.",
+  "Passkey sign-in failed. Please try again.": "Passkey-Anmeldung fehlgeschlagen. Bitte versuche es erneut.",
   "Passkeys": "Passkeys",
   "Passkeys are not supported in this browser.": "Passkeys werden in diesem Browser nicht unterstützt.",
   "Password": "Passwort",
