@@ -20,6 +20,7 @@
                     <flux:menu>
                         <flux:menu.item icon="tag" :href="route('project.tags', $this->project)" wire:navigate data-test="manage-tags-link">{{ __('Manage tags') }}</flux:menu.item>
                         @can('manageSettings', $this->project)
+                            <flux:menu.item icon="bookmark-square" :href="route('project.task-types', $this->project)" wire:navigate data-test="manage-task-types-link">{{ __('Manage types') }}</flux:menu.item>
                             <flux:menu.item icon="pencil-square" wire:click="edit" data-test="edit-project">{{ __('Edit') }}</flux:menu.item>
                         @endcan
                         @can('manageMembers', $this->project)

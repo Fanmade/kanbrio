@@ -17,6 +17,7 @@ use App\Livewire\Projects\ProjectBoard;
 use App\Livewire\Projects\ProjectList;
 use App\Livewire\Projects\ProjectShow;
 use App\Livewire\Projects\ProjectTags;
+use App\Livewire\Projects\ProjectTaskTypes;
 use App\Livewire\Tasks\TaskView;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
@@ -81,6 +82,10 @@ Route::middleware(['auth', 'verified'])->group(static function () {
     Route::livewire('/{short_name}/tags', ProjectTags::class)
         ->where('short_name', '[A-Z]{2,4}')
         ->name('project.tags');
+
+    Route::livewire('/{short_name}/task-types', ProjectTaskTypes::class)
+        ->where('short_name', '[A-Z]{2,4}')
+        ->name('project.task-types');
 
     Route::get('/{short_name}/mentionables', MentionSuggestionsController::class)
         ->where('short_name', '[A-Z]{2,4}')

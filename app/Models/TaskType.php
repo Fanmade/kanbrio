@@ -37,6 +37,18 @@ class TaskType extends Model
     use HasFactory;
 
     /**
+     * The Heroicons offered when picking a type's icon — a curated set relevant to
+     * classifying work, rather than the full Heroicon catalog.
+     *
+     * @var list<string>
+     */
+    public const array ICONS = [
+        'tag', 'sparkles', 'bug-ant', 'wrench-screwdriver', 'wrench', 'bolt',
+        'beaker', 'book-open', 'shield-check', 'rocket-launch', 'paint-brush',
+        'cog-6-tooth', 'flag', 'star', 'exclamation-triangle',
+    ];
+
+    /**
      * The default types seeded into every new project — a sensible starting set
      * users can rename, recolor or extend. Order here is the seeded position.
      *
