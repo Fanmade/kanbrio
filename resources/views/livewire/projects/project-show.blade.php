@@ -68,50 +68,72 @@
         <x-attachments.list :attachments="$this->attachments" />
     @endif
 
-    {{-- Open tasks --}}
+    {{-- Tasks (collapsible, collapsed by default) --}}
     <div class="flex flex-col gap-3">
-        <div class="flex items-center justify-between">
-            <flux:heading size="lg">{{ __('Open tasks') }}</flux:heading>
-            <div class="flex items-center gap-3">
-                @if ($this->archivedTasks->isNotEmpty())
-                    <flux:switch wire:model.live="showArchived" :label="__('Show archived')" align="left" data-test="show-archived" />
+        <div class="flex items-center justify-between gap-3">
+            <button
+                type="button"
+                wire:click="toggleTasksCollapsed"
+                class="flex items-center gap-2 text-start"
+                aria-expanded="{{ $tasksCollapsed ? 'false' : 'true' }}"
+                aria-controls="project-tasks-body"
+                data-test="toggle-tasks"
+            >
+                <flux:icon :name="$tasksCollapsed ? 'chevron-right' : 'chevron-down'" variant="micro" class="text-zinc-400" />
+                <flux:heading size="lg">{{ __('Tasks') }}</flux:heading>
+                <flux:badge size="sm" color="zinc" data-test="open-task-count">{{ $this->openTasks->count() }}</flux:badge>
+            </button>
+
+            @can('update', $this->project)
+                <flux:button size="sm" icon="plus" wire:click="$dispatch('open-create-task', { projectId: {{ $this->project->id }} })" data-test="new-task">{{ __('New task') }}</flux:button>
+            @endcan
+        </div>
+
+        @unless ($tasksCollapsed)
+            <div id="project-tasks-body" class="flex flex-col gap-4" data-test="project-tasks-body">
+                {{-- Filters: closed and archived tasks are hidden until opted in. --}}
+                <div class="flex flex-wrap items-center gap-4">
+                    <flux:switch wire:model.live="showClosed" :label="__('Show closed')" align="left" data-test="show-closed" />
+                    @if ($this->archivedTasks->isNotEmpty())
+                        <flux:switch wire:model.live="showArchived" :label="__('Show archived')" align="left" data-test="show-archived" />
+                    @endif
+                </div>
+
+                {{-- Open tasks --}}
+                <div class="flex flex-col gap-3">
+                    @forelse ($this->openTasks as $task)
+                        <x-root-task-card :task="$task" :short-name="$this->project->short_name" :can-archive="$canUpdate" :show-archived="$showArchived" />
+                    @empty
+                        <flux:card>
+                            <flux:text class="text-zinc-400">{{ __('No open tasks. Create one to get started.') }}</flux:text>
+                        </flux:card>
+                    @endforelse
+                </div>
+
+                {{-- Closed tasks (Done & Canceled) --}}
+                @if ($showClosed && $this->completedTasks->isNotEmpty())
+                    <div class="flex flex-col gap-3" data-test="closed-tasks">
+                        <flux:heading size="sm" class="text-zinc-500 dark:text-zinc-400">{{ __('Closed tasks') }}</flux:heading>
+
+                        @foreach ($this->completedTasks as $task)
+                            <x-root-task-card :task="$task" :short-name="$this->project->short_name" :can-archive="$canUpdate" :show-archived="$showArchived" />
+                        @endforeach
+                    </div>
                 @endif
-                @can('update', $this->project)
-                    <flux:button size="sm" icon="plus" wire:click="$dispatch('open-create-task', { projectId: {{ $this->project->id }} })" data-test="new-task">{{ __('New task') }}</flux:button>
-                @endcan
+
+                {{-- Archived tasks --}}
+                @if ($showArchived && $this->archivedTasks->isNotEmpty())
+                    <div class="flex flex-col gap-3" data-test="archived-tasks">
+                        <flux:heading size="sm" class="text-zinc-500 dark:text-zinc-400">{{ __('Archived tasks') }}</flux:heading>
+
+                        @foreach ($this->archivedTasks as $task)
+                            <x-root-task-card :task="$task" :short-name="$this->project->short_name" :can-archive="$canUpdate" :show-archived="$showArchived" />
+                        @endforeach
+                    </div>
+                @endif
             </div>
-        </div>
-
-        @forelse ($this->openTasks as $task)
-            <x-root-task-card :task="$task" :short-name="$this->project->short_name" :can-archive="$canUpdate" :show-archived="$showArchived" />
-        @empty
-            <flux:card>
-                <flux:text class="text-zinc-400">{{ __('No open tasks. Create one to get started.') }}</flux:text>
-            </flux:card>
-        @endforelse
+        @endunless
     </div>
-
-    {{-- Completed tasks --}}
-    @if ($this->completedTasks->isNotEmpty())
-        <div class="flex flex-col gap-3">
-            <flux:heading size="lg" class="text-zinc-500 dark:text-zinc-400">{{ __('Completed tasks') }}</flux:heading>
-
-            @foreach ($this->completedTasks as $task)
-                <x-root-task-card :task="$task" :short-name="$this->project->short_name" :can-archive="$canUpdate" :show-archived="$showArchived" />
-            @endforeach
-        </div>
-    @endif
-
-    {{-- Archived tasks --}}
-    @if ($showArchived && $this->archivedTasks->isNotEmpty())
-        <div class="flex flex-col gap-3" data-test="archived-tasks">
-            <flux:heading size="lg" class="text-zinc-500 dark:text-zinc-400">{{ __('Archived tasks') }}</flux:heading>
-
-            @foreach ($this->archivedTasks as $task)
-                <x-root-task-card :task="$task" :short-name="$this->project->short_name" :can-archive="$canUpdate" :show-archived="$showArchived" />
-            @endforeach
-        </div>
-    @endif
 
     {{-- Notes shared with the project (public notes, read-only for members). --}}
     @if ($this->publicNotes->isNotEmpty())

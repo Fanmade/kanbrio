@@ -22,7 +22,7 @@ beforeEach(function () {
 it('refreshes the task lists on a live-updates tick', function () {
     $task = Task::factory()->for($this->project)->status(Status::ToDo)->create(['title' => 'Original']);
 
-    $component = ($this->view)()->assertSee('Original');
+    $component = ($this->view)()->set('tasksCollapsed', false)->assertSee('Original');
 
     $task->update(['title' => 'Renamed Externally']); // changed elsewhere
 

@@ -27,6 +27,12 @@ class ProjectShow extends Component
     use HasLiveUpdates;
     use ManagesNotes;
 
+    /**
+     * The per-user preference key controlling whether the task list section starts
+     * collapsed on the project overview.
+     */
+    public const string TASKS_COLLAPSED_PREFERENCE_KEY = 'project_tasks_collapsed';
+
     #[Locked]
     public string $shortName;
 
@@ -40,6 +46,19 @@ class ProjectShow extends Component
 
     public bool $showArchived = false;
 
+    /**
+     * Whether the task list section is collapsed. Collapsed by default (mirroring
+     * the saved preference) so the overview leads with the description, not a long
+     * task list.
+     */
+    public bool $tasksCollapsed = true;
+
+    /**
+     * Whether closed tasks (Done & Canceled) are included in the task list. Hidden
+     * by default so the list focuses on active work.
+     */
+    public bool $showClosed = false;
+
     public bool $managingMembers = false;
 
     public bool $managingRoles = false;
@@ -51,6 +70,18 @@ class ProjectShow extends Component
         $this->shortName = $short_name;
 
         $this->authorize('view', $this->project());
+
+        $this->tasksCollapsed = (bool) auth()->user()?->preference(self::TASKS_COLLAPSED_PREFERENCE_KEY, true);
+    }
+
+    /**
+     * Toggle the task list section and persist the state as a user preference.
+     */
+    public function toggleTasksCollapsed(): void
+    {
+        $this->tasksCollapsed = ! $this->tasksCollapsed;
+
+        auth()->user()?->setPreference(self::TASKS_COLLAPSED_PREFERENCE_KEY, $this->tasksCollapsed);
     }
 
     #[Computed]

@@ -29,6 +29,7 @@ it('shows the description and open root tasks', function () {
 
     Livewire::actingAs($this->user)
         ->test(ProjectShow::class, ['short_name' => $this->project->short_name])
+        ->set('tasksCollapsed', false)
         ->assertOk()
         ->assertSee('Project blurb')
         ->assertSee('Open task');
@@ -76,7 +77,8 @@ it('shows a freshly created task on the overview', function () {
 
 it('refreshes the overview when a task is created through the dialog', function () {
     $component = Livewire::actingAs($this->user)
-        ->test(ProjectShow::class, ['short_name' => $this->project->short_name]);
+        ->test(ProjectShow::class, ['short_name' => $this->project->short_name])
+        ->set('tasksCollapsed', false);
 
     Task::factory()->for($this->project)->status(Status::ToDo)->create(['title' => 'Late arrival']);
 
@@ -95,6 +97,7 @@ it('lists a root task\'s direct subtasks with links to their detail pages', func
 
     Livewire::actingAs($this->user)
         ->test(ProjectShow::class, ['short_name' => $this->project->short_name])
+        ->set('tasksCollapsed', false)
         ->assertSee('Child task')
         ->assertSeeHtml('href="'.$childUrl.'"')
         ->assertSeeHtml('data-test="root-task-subtask-'.$child->id.'"');
@@ -107,6 +110,7 @@ it('shows only direct children under a root card, not deeper descendants', funct
 
     Livewire::actingAs($this->user)
         ->test(ProjectShow::class, ['short_name' => $this->project->short_name])
+        ->set('tasksCollapsed', false)
         ->assertSee('Direct child')
         ->assertDontSee('Deep grandchild');
 });
@@ -118,6 +122,7 @@ it('hides archived subtasks until the show-archived toggle is on', function () {
 
     Livewire::actingAs($this->user)
         ->test(ProjectShow::class, ['short_name' => $this->project->short_name])
+        ->set('tasksCollapsed', false)
         ->assertDontSee('Archived child')
         ->set('showArchived', true)
         ->assertSee('Archived child');
@@ -162,6 +167,52 @@ it('rejects a short name already taken by another project', function () {
         ->assertHasErrors('short_name');
 
     expect($this->project->fresh()->short_name)->toBe('MINE');
+});
+
+it('collapses the task list by default', function () {
+    Task::factory()->for($this->project)->status(Status::ToDo)->create(['title' => 'Hidden task']);
+
+    Livewire::actingAs($this->user)
+        ->test(ProjectShow::class, ['short_name' => $this->project->short_name])
+        ->assertSet('tasksCollapsed', true)
+        ->assertSeeHtml('data-test="toggle-tasks"')
+        ->assertDontSeeHtml('data-test="project-tasks-body"')
+        ->assertDontSee('Hidden task');
+});
+
+it('expands the task list and persists the preference when toggled', function () {
+    Task::factory()->for($this->project)->status(Status::ToDo)->create(['title' => 'Revealed task']);
+
+    Livewire::actingAs($this->user)
+        ->test(ProjectShow::class, ['short_name' => $this->project->short_name])
+        ->call('toggleTasksCollapsed')
+        ->assertSet('tasksCollapsed', false)
+        ->assertSeeHtml('data-test="project-tasks-body"')
+        ->assertSee('Revealed task');
+
+    expect($this->user->fresh()->preference('project_tasks_collapsed'))->toBeFalse();
+});
+
+it('reflects the saved expanded preference on mount', function () {
+    $this->user->setPreference('project_tasks_collapsed', false);
+
+    Livewire::actingAs($this->user)
+        ->test(ProjectShow::class, ['short_name' => $this->project->short_name])
+        ->assertSet('tasksCollapsed', false)
+        ->assertSeeHtml('data-test="project-tasks-body"');
+});
+
+it('hides closed tasks by default and reveals them via the filter', function () {
+    Task::factory()->for($this->project)->status(Status::Done)->create(['title' => 'Done thing']);
+
+    Livewire::actingAs($this->user)
+        ->test(ProjectShow::class, ['short_name' => $this->project->short_name])
+        ->set('tasksCollapsed', false)
+        ->assertDontSeeHtml('data-test="closed-tasks"')
+        ->assertDontSee('Done thing')
+        ->set('showClosed', true)
+        ->assertSeeHtml('data-test="closed-tasks"')
+        ->assertSee('Done thing');
 });
 
 it('forbids non-members', function () {
