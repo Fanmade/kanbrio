@@ -43,13 +43,34 @@ a project short name (`PROJ`) and a flat task reference (`PROJ-42`).
 | `GET`    | `/projects/{short_name}`                              | read    | A single project. |
 | `PATCH`  | `/projects/{short_name}`                              | write   | Update a project (admins/owner). |
 | `GET`    | `/projects/{short_name}/tasks`                        | read    | A project's tasks (paginated). Filters: `status`, `parent`. |
+| `GET`    | `/projects/{short_name}/task-types`                   | read    | A project's configured task types. |
+| `GET`    | `/projects/{short_name}/tags`                         | read    | A project's tags (with usage counts). |
 | `POST`   | `/projects/{short_name}/tasks`                        | write   | Create a task. |
 | `GET`    | `/tasks/{reference}`                                  | read    | A single task. |
 | `PATCH`  | `/tasks/{reference}`                                  | write   | Update a task's fields, status, type or tags. |
+| `POST`   | `/tasks/{reference}/cancel`                           | write   | Cancel a task (`cancel_reason` + optional `cancel_message`). |
+| `POST`   | `/tasks/{reference}/reopen`                           | write   | Reopen a canceled task. |
+| `PUT`    | `/tasks/{reference}/assignees`                        | write   | Replace a task's assignees (`assignee_ids`). |
 | `POST`   | `/tasks/{reference}/dependencies`                     | write   | Link a dependency (`direction`: `blocked_by` / `blocks`). |
 | `DELETE` | `/tasks/{reference}/dependencies/{related}`           | write   | Unlink a dependency. |
-| `POST`   | `/projects/{short_name}/comments`                     | write   | Comment on a project. |
-| `POST`   | `/tasks/{reference}/comments`                         | write   | Comment on a task. |
+| `GET`    | `/projects/{short_name}/comments`                     | read    | A project's comments (paginated, threaded). |
+| `POST`   | `/projects/{short_name}/comments`                     | write   | Comment on a project (`parent_id` to reply). |
+| `GET`    | `/tasks/{reference}/comments`                         | read    | A task's comments (paginated, threaded). |
+| `POST`   | `/tasks/{reference}/comments`                         | write   | Comment on a task (`parent_id` to reply). |
+| `PATCH`  | `/comments/{id}`                                      | write   | Edit your own comment. |
+| `DELETE` | `/comments/{id}`                                      | write   | Delete your own comment (tombstoned if it has replies). |
+| `GET`    | `/notes`                                              | read    | Your notes (paginated). |
+| `POST`   | `/notes`                                              | write   | Capture a note (optionally attach/publish to a project). |
+| `GET`    | `/notes/{id}`                                         | read    | A single note (yours, or a public project note). |
+| `PATCH`  | `/notes/{id}`                                         | write   | Update your own note. |
+| `DELETE` | `/notes/{id}`                                         | write   | Delete your own note. |
+| `POST`   | `/notes/{id}/convert`                                 | write   | Convert a note into a task (`project`, optional `parent`). |
+| `GET`    | `/projects/{short_name}/attachments`                  | read    | A project's file attachments. |
+| `POST`   | `/projects/{short_name}/attachments`                  | write   | Upload a file to a project (`file`). |
+| `GET`    | `/tasks/{reference}/attachments`                      | read    | A task's file attachments. |
+| `POST`   | `/tasks/{reference}/attachments`                      | write   | Upload a file to a task (`file`). |
+| `GET`    | `/attachments/{id}`                                   | read    | Download an attachment's file. |
+| `DELETE` | `/attachments/{id}`                                   | write   | Delete an attachment. |
 
 Enum-valued fields follow the MCP conventions: `priority` and `cancel_reason` are
 sent and returned **by name** (`High`, `WontFix`), `status` by its value

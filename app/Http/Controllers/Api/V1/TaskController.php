@@ -2,18 +2,22 @@
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\Actions\CancelTask;
 use App\Actions\ChangeTaskStatus;
 use App\Actions\CreateTask;
 use App\Concerns\HasTags;
+use App\Enums\CancelReason;
 use App\Enums\Priority;
 use App\Enums\Status;
 use App\Http\Controllers\Controller;
+use App\Http\Resources\TaskDetailResource;
 use App\Http\Resources\TaskResource;
 use App\Models\Project;
 use App\Models\Tag;
 use App\Models\Task;
 use App\Models\TaskType;
 use App\Support\ReferenceResolver;
+use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -205,18 +209,112 @@ class TaskController extends Controller
     }
 
     /**
-     * Show a single task by its reference (e.g. "PROJ-42"). 404s when it does not
+     * Show a single task by its reference (e.g. "PROJ-42"), with its full detail —
+     * assignees, dependencies, subtasks and attachments. 404s when it does not
      * exist or belongs to a project the user cannot see.
      */
-    public function show(string $reference): TaskResource
+    public function show(string $reference): TaskDetailResource
     {
         $task = ReferenceResolver::task($reference);
 
         abort_if($task === null || Auth::user()->cannot('view', $task), 404);
 
-        $task->loadMissing(self::RESOURCE_RELATIONS);
+        return $this->detail($task);
+    }
 
-        return new TaskResource($task);
+    /**
+     * Cancel a task (and its open subtree) with a reason and optional message.
+     */
+    public function cancel(Request $request, string $reference): TaskDetailResource
+    {
+        $task = $this->resolveForUpdate($reference);
+
+        if ($task->isCanceled()) {
+            throw ValidationException::withMessages(['cancel_reason' => __('This task is already canceled.')]);
+        }
+
+        $validated = $request->validate([
+            'cancel_reason' => ['required', Rule::in(CancelReason::names())],
+            'cancel_message' => ['nullable', 'string', 'max:1000'],
+        ]);
+
+        app(CancelTask::class)->cancel(
+            $task,
+            CancelReason::fromName($validated['cancel_reason']),
+            $validated['cancel_message'] ?? null,
+        );
+
+        return $this->detail($task->fresh());
+    }
+
+    /**
+     * Reopen a canceled task, returning it to Planned.
+     */
+    public function reopen(string $reference): TaskDetailResource
+    {
+        $task = $this->resolveForUpdate($reference);
+
+        if (! $task->isCanceled()) {
+            throw ValidationException::withMessages(['status' => __('This task is not canceled.')]);
+        }
+
+        app(CancelTask::class)->reopen($task);
+
+        return $this->detail($task->fresh());
+    }
+
+    /**
+     * Replace a task's assignees with the given project members. Mirrors the web/
+     * MCP behaviour: assigning a user auto-subscribes them, and the change is
+     * logged. Ids that are not project members are ignored.
+     */
+    public function setAssignees(Request $request, string $reference): TaskDetailResource
+    {
+        $task = $this->resolveForUpdate($reference);
+
+        $validated = $request->validate([
+            'assignee_ids' => ['present', 'array'],
+            'assignee_ids.*' => ['integer'],
+        ]);
+
+        $memberIds = $task->project->members()->pluck('users.id')->all();
+        $assigneeIds = array_values(array_intersect($validated['assignee_ids'], $memberIds));
+
+        $changes = $task->assignees()->sync($assigneeIds);
+
+        if ($changes['attached'] !== []) {
+            $task->subscribers()->syncWithoutDetaching($changes['attached']);
+        }
+
+        $task->recordAssigneeChange($changes['attached'], $changes['detached']);
+
+        return $this->detail($task->fresh());
+    }
+
+    /**
+     * Resolve a task the caller may update (404 when missing or inaccessible).
+     */
+    private function resolveForUpdate(string $reference): Task
+    {
+        $task = ReferenceResolver::task($reference);
+
+        abort_if($task === null || Auth::user()->cannot('update', $task), 404);
+
+        return $task;
+    }
+
+    /**
+     * Eager-load a task's full detail relations and wrap it in the detail resource.
+     */
+    private function detail(Task $task): TaskDetailResource
+    {
+        $task->loadMissing([
+            'tags', 'project', 'parent', 'taskType', 'children', 'assignees', 'attachments',
+            'dependencyLinks.blocker' => static fn (MorphTo $morphTo) => $morphTo->morphWith([Task::class => ['project']]),
+            'dependentLinks.dependent' => static fn (MorphTo $morphTo) => $morphTo->morphWith([Task::class => ['project']]),
+        ]);
+
+        return new TaskDetailResource($task);
     }
 
     /**

@@ -22,6 +22,8 @@ class ProjectResource extends JsonResource
             'description' => $this->description,
             // Top-level task count, included only when the controller loaded it.
             'task_count' => $this->whenCounted('rootTasks'),
+            // Comment count, included only on the detail endpoint that loads it.
+            'comment_count' => $this->whenCounted('comments'),
             'created_at' => $this->created_at?->toIso8601String(),
             'updated_at' => $this->updated_at?->toIso8601String(),
         ];

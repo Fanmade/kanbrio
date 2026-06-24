@@ -2,15 +2,13 @@
 
 namespace App\Concerns;
 
+use App\Actions\StoreAttachment;
 use App\Models\Attachment;
 use App\Models\Note;
 use App\Models\Project;
 use App\Models\Task;
-use App\Support\Thumbnail;
 use Flux\Flux;
 use Illuminate\Database\Eloquent\Collection;
-use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\Computed;
 use Livewire\Features\SupportFileUploads\TemporaryUploadedFile;
@@ -157,51 +155,10 @@ trait HandlesAttachments
 
     /**
      * Move an uploaded file onto the configured disk and create its attachment
-     * record, generating a preview thumbnail when possible.
+     * record via the shared {@see StoreAttachment} action.
      */
     private function storeAttachment(TemporaryUploadedFile $file, Project|Task|Note $attachable, bool $isInline = false): Attachment
     {
-        // Read metadata and contents before storing: when the temporary upload
-        // and target disks match, store() moves the file, after which it can no
-        // longer be inspected at its temporary location.
-        $name = $file->getClientOriginalName();
-        $mimeType = $file->getMimeType();
-        $size = $file->getSize();
-        $contents = $file->get();
-
-        $disk = (string) config('attachments.disk');
-        $directory = trim((string) config('attachments.directory'), '/');
-
-        $path = $file->store($directory, $disk);
-
-        return $attachable->attachments()->create([
-            'disk' => $disk,
-            'path' => $path,
-            'thumbnail_path' => $this->storeThumbnail((string) $contents, $mimeType, $disk, $directory),
-            'name' => $name,
-            'mime_type' => $mimeType,
-            'size' => $size,
-            'is_inline' => $isInline,
-            'uploaded_by' => auth()->id(),
-        ]);
-    }
-
-    /**
-     * Generate and store a preview thumbnail, returning its path, or null when
-     * no thumbnail can be created for the file.
-     */
-    private function storeThumbnail(string $contents, ?string $mimeType, string $disk, string $directory): ?string
-    {
-        $thumbnail = Thumbnail::generate($contents, $mimeType);
-
-        if ($thumbnail === null) {
-            return null;
-        }
-
-        $path = trim($directory.'/thumbnails/'.Str::uuid()->toString().'.png', '/');
-
-        Storage::disk($disk)->put($path, $thumbnail);
-
-        return $path;
+        return app(StoreAttachment::class)->handle($file, $attachable, $isInline);
     }
 }

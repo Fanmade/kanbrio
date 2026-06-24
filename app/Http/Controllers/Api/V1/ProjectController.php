@@ -71,7 +71,7 @@ class ProjectController extends Controller
 
         abort_if($project === null || Auth::user()->cannot('view', $project), 404);
 
-        $project->loadCount('rootTasks');
+        $project->loadCount(['rootTasks', 'comments']);
 
         return new ProjectResource($project);
     }

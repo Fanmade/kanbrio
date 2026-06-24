@@ -2,14 +2,14 @@
 
 namespace App\Http\Resources;
 
-use App\Models\Comment;
+use App\Models\Note;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 /**
- * @mixin Comment
+ * @mixin Note
  */
-class CommentResource extends JsonResource
+class NoteResource extends JsonResource
 {
     /**
      * @return array<string, mixed>
@@ -18,14 +18,14 @@ class CommentResource extends JsonResource
     {
         return [
             'id' => $this->id,
-            'parent_id' => $this->parent_id,
+            'title' => $this->title,
             'body' => $this->body,
-            'is_deleted' => $this->is_deleted,
-            'author' => $this->whenLoaded('user', fn (): ?string => $this->user?->name),
+            'project' => $this->project?->short_name,
+            'is_public' => $this->is_public,
+            'owned' => $this->user_id === (int) $request->user()?->getAuthIdentifier(),
+            'converted_task' => $this->convertedTask?->reference,
             'created_at' => $this->created_at?->toIso8601String(),
             'updated_at' => $this->updated_at?->toIso8601String(),
-            // Threaded replies (one level deep), included when eager-loaded.
-            'replies' => CommentResource::collection($this->whenLoaded('replies')),
         ];
     }
 }
