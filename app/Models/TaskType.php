@@ -46,6 +46,14 @@ class TaskType extends Model
         'tag', 'sparkles', 'bug-ant', 'wrench-screwdriver', 'wrench', 'bolt',
         'beaker', 'book-open', 'shield-check', 'rocket-launch', 'paint-brush',
         'cog-6-tooth', 'flag', 'star', 'exclamation-triangle',
+        'arrows-right-left', 'magnifying-glass', 'light-bulb', 'circle-stack',
+        'chat-bubble-left-right', 'server-stack', 'fire', 'link', 'document-text',
+        'arrow-trending-up', 'bell', 'command-line', 'credit-card', 'computer-desktop',
+        'device-phone-mobile', 'device-tablet', 'finger-print', 'information-circle',
+        'key', 'language', 'lifebuoy', 'lock-closed', 'map-pin', 'moon',
+        'paper-airplane', 'scale', 'scissors', 'share', 'shopping-bag', 'shopping-cart',
+        'signal', 'speaker-wave', 'truck', 'user-group', 'user-circle', 'view-columns',
+        'x-mark',
     ];
 
     /**
