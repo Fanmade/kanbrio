@@ -93,14 +93,27 @@ class CreateTaskModal extends Component
      */
     public array $tagColors = [];
 
+    /**
+     * Optional Heroicon per staged tag name (null = none).
+     *
+     * @var array<string, string|null>
+     */
+    public array $tagIcons = [];
+
     public string $tagQuery = '';
 
-    // Create-tag (color picker) sub-dialog state.
+    // Create-tag (color/icon picker) sub-dialog state.
     public bool $showTagColorModal = false;
 
     public string $newTagName = '';
 
     public string $newTagColor = 'zinc';
+
+    /**
+     * The icon chosen for a brand-new tag, or null for none. Declared null (not a
+     * non-null default) so clearing it survives Livewire's omit-null hydration.
+     */
+    public ?string $newTagIcon = null;
 
     /**
      * Ids of project members to assign to the new task.
@@ -361,7 +374,7 @@ class CreateTaskModal extends Component
             ->first();
 
         if ($existing !== null) {
-            $this->stageTag($existing->name, $existing->color);
+            $this->stageTag($existing->name, $existing->color, $existing->icon);
             $this->reset('tagQuery');
             unset($this->tagSuggestions);
 
@@ -371,7 +384,16 @@ class CreateTaskModal extends Component
         $this->resetErrorBag('newTagName');
         $this->newTagName = $name;
         $this->newTagColor = Tag::colorForName($name);
+        $this->newTagIcon = null;
         $this->showTagColorModal = true;
+    }
+
+    /**
+     * Clear the icon chosen for the new tag, so it is identified by colour alone.
+     */
+    public function clearNewTagIcon(): void
+    {
+        $this->newTagIcon = null;
     }
 
     /**
@@ -382,12 +404,14 @@ class CreateTaskModal extends Component
         $validated = $this->validate([
             'newTagName' => ['required', 'string', 'max:255'],
             'newTagColor' => ['required', 'string', 'in:'.implode(',', Tag::PALETTE)],
+            'newTagIcon' => ['nullable', 'string', 'in:'.implode(',', TaskType::ICONS)],
         ]);
 
-        $this->stageTag($validated['newTagName'], $validated['newTagColor']);
+        $this->stageTag($validated['newTagName'], $validated['newTagColor'], $this->newTagIcon);
 
         $this->reset('newTagName', 'tagQuery', 'showTagColorModal');
         $this->newTagColor = 'zinc';
+        $this->newTagIcon = null;
         unset($this->tagSuggestions);
     }
 
@@ -402,7 +426,7 @@ class CreateTaskModal extends Component
         $this->tagNames = array_values($this->tagNames);
 
         if ($name !== null) {
-            unset($this->tagColors[$name]);
+            unset($this->tagColors[$name], $this->tagIcons[$name]);
         }
     }
 
@@ -523,7 +547,7 @@ class CreateTaskModal extends Component
     {
         $this->reset(
             'projectId', 'parentId', 'fromNoteId', 'title', 'description', 'dueDate', 'createAnother',
-            'typeId', 'tagNames', 'tagColors', 'tagQuery', 'showTagColorModal', 'newTagName', 'assigneeIds',
+            'typeId', 'tagNames', 'tagColors', 'tagIcons', 'tagQuery', 'showTagColorModal', 'newTagName', 'newTagIcon', 'assigneeIds',
         );
         $this->priority = Priority::default()->value;
         $this->status = Status::Planned->value;
@@ -539,7 +563,7 @@ class CreateTaskModal extends Component
     {
         $this->reset(
             'fromNoteId', 'title', 'description', 'dueDate',
-            'typeId', 'tagNames', 'tagColors', 'tagQuery', 'showTagColorModal', 'newTagName', 'assigneeIds',
+            'typeId', 'tagNames', 'tagColors', 'tagIcons', 'tagQuery', 'showTagColorModal', 'newTagName', 'newTagIcon', 'assigneeIds',
         );
         $this->newTagColor = 'zinc';
         unset($this->tagSuggestions);
@@ -549,7 +573,7 @@ class CreateTaskModal extends Component
      * Stage a tag name with its color, ignoring blanks and case-insensitive
      * duplicates.
      */
-    protected function stageTag(string $name, string $color): void
+    protected function stageTag(string $name, string $color, ?string $icon = null): void
     {
         $name = trim($name);
 
@@ -566,6 +590,7 @@ class CreateTaskModal extends Component
         }
 
         $this->tagColors[$name] = $color;
+        $this->tagIcons[$name] = $icon;
 
         $this->reset('tagQuery');
         unset($this->tagSuggestions);
@@ -586,6 +611,7 @@ class CreateTaskModal extends Component
                 $task->project_id,
                 $name,
                 $this->tagColors[$name] ?? Tag::colorForName($name),
+                $this->tagIcons[$name] ?? null,
             )->getKey())
             ->all();
 

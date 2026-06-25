@@ -15,10 +15,11 @@ use Illuminate\Support\Carbon;
  * @property int $project_id
  * @property string $name
  * @property string $color
+ * @property string|null $icon
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  */
-#[Fillable(['project_id', 'name', 'color'])]
+#[Fillable(['project_id', 'name', 'color', 'icon'])]
 class Tag extends Model
 {
     /** @use HasFactory<TagFactory> */
@@ -66,7 +67,7 @@ class Tag extends Model
      * point (create dialog, task rail, MCP tools) goes through here so they all
      * dedupe identically.
      */
-    public static function findOrCreateForProject(int $projectId, string $name, ?string $color = null): self
+    public static function findOrCreateForProject(int $projectId, string $name, ?string $color = null, ?string $icon = null): self
     {
         $name = trim($name);
 
@@ -84,6 +85,8 @@ class Tag extends Model
         if ($color !== null) {
             $tag->color = $color;
         }
+
+        $tag->icon = $icon;
 
         $tag->save();
 

@@ -154,6 +154,21 @@ it('creates a brand-new tag with the chosen color', function () {
     expect(Tag::where('name', 'backend')->first()->color)->toBe('indigo');
 });
 
+it('stages and creates a new tag with the chosen icon', function () {
+    Livewire::actingAs($this->member)
+        ->test(CreateTaskModal::class)
+        ->call('open', $this->project->id)
+        ->set('title', 'Iconned')
+        ->set('tagQuery', 'backend')
+        ->call('openTagColorModal')
+        ->set('newTagIcon', 'beaker')
+        ->call('confirmNewTag')
+        ->assertSet('tagNames', ['backend'])
+        ->call('save');
+
+    expect(Tag::where('name', 'backend')->first()->icon)->toBe('beaker');
+});
+
 it('stages an existing tag directly on enter, skipping the color picker', function () {
     Tag::firstOrCreate(['project_id' => $this->project->id, 'name' => 'backend'], ['color' => 'sky']);
 

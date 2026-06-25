@@ -32,7 +32,7 @@
                 <div class="flex items-center justify-between gap-3 p-3" wire:key="tag-{{ $tag->id }}" data-test="tag-row-{{ $tag->id }}">
                     <div class="flex min-w-0 items-center gap-3">
                         <flux:badge size="sm" color="zinc" variant="pill">
-                            <x-tag-dot :color="$tag->color" class="me-1.5 size-2" />{{ $tag->name }}
+                            <x-tag-dot :color="$tag->color" :icon="$tag->icon" class="me-1.5" />{{ $tag->name }}
                         </flux:badge>
                         <flux:text size="sm" class="text-zinc-400" data-test="tag-usage-{{ $tag->id }}">
                             {{ trans_choice('{0}Unused|{1}:count task|[2,*]:count tasks', $tag->tasks_count, ['count' => $tag->tasks_count]) }}
@@ -99,10 +99,46 @@
                 <flux:error name="editColor" />
             </div>
 
+            <div class="flex flex-col gap-1.5">
+                <flux:label>{{ __('Icon') }}</flux:label>
+                <div class="flex max-h-44 flex-wrap gap-2 overflow-y-auto rounded-lg border border-zinc-200 p-2 dark:border-white/10" data-test="edit-tag-icon-picker">
+                    <button
+                        type="button"
+                        wire:click="clearIcon"
+                        @class([
+                            'flex size-8 cursor-pointer items-center justify-center rounded-lg border',
+                            'border-zinc-900 dark:border-white' => $editIcon === null,
+                            'border-zinc-200 dark:border-white/10' => $editIcon !== null,
+                        ])
+                        aria-label="{{ __('No icon') }}"
+                        data-test="edit-tag-icon-none"
+                    >
+                        <flux:icon icon="no-symbol" variant="micro" class="text-zinc-400" />
+                    </button>
+                    @foreach ($this->icons as $iconName)
+                        <button
+                            type="button"
+                            wire:click="$set('editIcon', '{{ $iconName }}')"
+                            @class([
+                                'flex size-8 cursor-pointer items-center justify-center rounded-lg border',
+                                'border-zinc-900 dark:border-white' => $editIcon === $iconName,
+                                'border-zinc-200 dark:border-white/10' => $editIcon !== $iconName,
+                            ])
+                            aria-label="{{ $iconName }}"
+                            data-test="edit-tag-icon-{{ $iconName }}"
+                        >
+                            <flux:icon :icon="$iconName" variant="micro" class="text-zinc-600 dark:text-zinc-300" />
+                        </button>
+                    @endforeach
+                </div>
+                <flux:error name="editIcon" />
+            </div>
+
+            @php($previewIcon = in_array($editIcon, \App\Models\TaskType::ICONS, true) ? $editIcon : null)
             <div class="flex items-center gap-2">
                 <flux:text size="sm" class="text-zinc-400">{{ __('Preview') }}</flux:text>
                 <flux:badge size="sm" color="zinc" variant="pill">
-                    <x-tag-dot :color="$editColor" class="me-1.5 size-2" />{{ $editName !== '' ? $editName : __('tag') }}
+                    <x-tag-dot :color="$editColor" :icon="$previewIcon" class="me-1.5" />{{ $editName !== '' ? $editName : __('tag') }}
                 </flux:badge>
             </div>
 

@@ -162,6 +162,17 @@ class ProjectShow extends Component
     }
 
     /**
+     * The system-wide default number of days before Done tasks auto-archive,
+     * surfaced on the per-project field so a member can see what leaving it blank
+     * inherits (0 means auto-archiving is off by default).
+     */
+    #[Computed]
+    public function defaultAutoArchiveDays(): int
+    {
+        return (int) config('kanvigo.tasks.auto_archive_days', 0);
+    }
+
+    /**
      * The endpoint the editor fetches @mention / #reference suggestions from.
      */
     #[Computed]

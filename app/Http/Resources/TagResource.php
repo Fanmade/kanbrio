@@ -19,6 +19,7 @@ class TagResource extends JsonResource
         return [
             'name' => $this->name,
             'color' => $this->color,
+            'icon' => $this->icon,
             // Number of tasks carrying the tag, included only when loaded.
             'task_count' => $this->whenCounted('tasks'),
         ];

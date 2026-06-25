@@ -300,6 +300,15 @@ it('renders the task filters control when expanded', function () {
         ->assertSeeHtml('data-test="priority-filter"');
 });
 
+it('shows the configured system default on the auto-archive field', function () {
+    config()->set('kanvigo.tasks.auto_archive_days', 42);
+
+    Livewire::actingAs($this->user)
+        ->test(ProjectShow::class, ['short_name' => $this->project->short_name])
+        ->call('edit')
+        ->assertSee('42');
+});
+
 it('forbids non-members', function () {
     Livewire::actingAs(User::factory()->create())
         ->test(ProjectShow::class, ['short_name' => $this->project->short_name])

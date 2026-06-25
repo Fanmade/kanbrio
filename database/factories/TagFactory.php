@@ -34,4 +34,12 @@ class TagFactory extends Factory
     {
         return $this->state(fn () => ['color' => $color]);
     }
+
+    /**
+     * Give the tag a specific icon (or null for none).
+     */
+    public function icon(?string $icon): static
+    {
+        return $this->state(fn () => ['icon' => $icon]);
+    }
 }

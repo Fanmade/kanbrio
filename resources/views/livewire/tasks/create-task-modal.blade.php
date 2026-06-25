@@ -76,7 +76,7 @@
                     <div class="flex min-h-8 flex-wrap items-center gap-1" data-test="create-task-tags">
                         @foreach ($tagNames as $index => $name)
                             <flux:badge size="sm" color="zinc" variant="pill" wire:key="draft-tag-{{ $index }}">
-                                <x-tag-dot :color="$tagColors[$name] ?? 'zinc'" class="me-1.5 size-2"/>{{ $name }}
+                                <x-tag-dot :color="$tagColors[$name] ?? 'zinc'" :icon="$tagIcons[$name] ?? null" class="me-1.5"/>{{ $name }}
                                 <flux:badge.close wire:click="removeDraftTag({{ $index }})"
                                                   :aria-label="__('Remove tag')"
                                                   data-test="create-task-remove-tag-{{ $index }}"/>
@@ -239,11 +239,47 @@
                 </div>
             </div>
 
+            <div class="flex flex-col gap-1.5">
+                <flux:label>{{ __('Icon') }}</flux:label>
+                <div class="flex max-h-44 flex-wrap gap-2 overflow-y-auto rounded-lg border border-zinc-200 p-2 dark:border-white/10" data-test="create-task-tag-icon-picker">
+                    <button
+                        type="button"
+                        wire:click="clearNewTagIcon"
+                        @class([
+                            'flex size-8 cursor-pointer items-center justify-center rounded-lg border',
+                            'border-zinc-900 dark:border-white' => $newTagIcon === null,
+                            'border-zinc-200 dark:border-white/10' => $newTagIcon !== null,
+                        ])
+                        aria-label="{{ __('No icon') }}"
+                        data-test="create-task-tag-icon-none"
+                    >
+                        <flux:icon icon="no-symbol" variant="micro" class="text-zinc-400"/>
+                    </button>
+                    @foreach (\App\Models\TaskType::ICONS as $iconName)
+                        <button
+                            type="button"
+                            wire:click="$set('newTagIcon', '{{ $iconName }}')"
+                            @class([
+                                'flex size-8 cursor-pointer items-center justify-center rounded-lg border',
+                                'border-zinc-900 dark:border-white' => $newTagIcon === $iconName,
+                                'border-zinc-200 dark:border-white/10' => $newTagIcon !== $iconName,
+                            ])
+                            aria-label="{{ $iconName }}"
+                            data-test="create-task-tag-icon-{{ $iconName }}"
+                        >
+                            <flux:icon :icon="$iconName" variant="micro" class="text-zinc-600 dark:text-zinc-300"/>
+                        </button>
+                    @endforeach
+                </div>
+                <flux:error name="newTagIcon"/>
+            </div>
+
+            @php($previewIcon = in_array($newTagIcon, \App\Models\TaskType::ICONS, true) ? $newTagIcon : null)
             <div class="flex items-center gap-2">
                 <flux:text size="sm" class="text-zinc-400">{{ __('Preview') }}</flux:text>
                 <flux:badge size="sm" color="zinc" variant="pill">
-                    <x-tag-dot :color="$newTagColor"
-                               class="me-1.5 size-2"/>{{ $newTagName !== '' ? $newTagName : __('tag') }}
+                    <x-tag-dot :color="$newTagColor" :icon="$previewIcon"
+                               class="me-1.5"/>{{ $newTagName !== '' ? $newTagName : __('tag') }}
                 </flux:badge>
             </div>
 

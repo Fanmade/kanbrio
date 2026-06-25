@@ -108,6 +108,35 @@ it('rejects an icon outside the allowed set', function () {
         ->assertHasErrors('editIcon');
 });
 
+it('creates a task type with no icon', function () {
+    [$admin, $project] = adminProject();
+
+    Livewire::actingAs($admin)
+        ->test(ProjectTaskTypes::class, ['short_name' => 'ABC'])
+        ->call('startCreate')
+        ->set('editName', 'Plain')
+        ->call('clearIcon')
+        ->assertSet('editIcon', null)
+        ->call('save')
+        ->assertHasNoErrors();
+
+    expect($project->taskTypes()->where('name', 'Plain')->value('icon'))->toBeNull();
+});
+
+it('clears the icon from an existing task type', function () {
+    [$admin, $project] = adminProject();
+    $type = TaskType::factory()->for($project)->create(['name' => 'Bug', 'icon' => 'bug-ant']);
+
+    Livewire::actingAs($admin)
+        ->test(ProjectTaskTypes::class, ['short_name' => 'ABC'])
+        ->call('startEdit', $type->id)
+        ->call('clearIcon')
+        ->call('save')
+        ->assertHasNoErrors();
+
+    expect($type->refresh()->icon)->toBeNull();
+});
+
 it('deletes a task type, leaving its tasks untyped', function () {
     [$admin, $project] = adminProject();
     $type = TaskType::factory()->for($project)->create();

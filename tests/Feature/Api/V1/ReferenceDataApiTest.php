@@ -29,13 +29,14 @@ it('lists a project task types', function () {
 });
 
 it('lists a project tags with usage counts', function () {
-    $tag = Tag::factory()->for($this->project)->create(['name' => 'urgent']);
+    $tag = Tag::factory()->for($this->project)->icon('beaker')->create(['name' => 'urgent']);
     Task::factory()->for($this->project)->create()->tags()->attach($tag);
     Sanctum::actingAs($this->user, ['read']);
 
     $this->getJson('/api/v1/projects/ABC/tags')
         ->assertOk()
         ->assertJsonPath('data.0.name', 'urgent')
+        ->assertJsonPath('data.0.icon', 'beaker')
         ->assertJsonPath('data.0.task_count', 1);
 });
 

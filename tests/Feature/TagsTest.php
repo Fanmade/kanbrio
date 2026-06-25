@@ -255,3 +255,15 @@ it('adds a tag to a subtask too', function () {
 
     expect($subtask->fresh()->tags->pluck('name')->all())->toBe(['epic']);
 });
+
+it('creates a tag with an icon and keeps it when the tag is reused', function () {
+    $project = Project::factory()->create();
+
+    $tag = Tag::findOrCreateForProject($project->id, 'Bug', 'red', 'bug-ant');
+    expect($tag->icon)->toBe('bug-ant');
+
+    // Reusing the tag (case-insensitively) returns the existing one, icon intact.
+    $again = Tag::findOrCreateForProject($project->id, 'bug', 'blue', 'beaker');
+    expect($again->is($tag))->toBeTrue()
+        ->and($again->icon)->toBe('bug-ant');
+});

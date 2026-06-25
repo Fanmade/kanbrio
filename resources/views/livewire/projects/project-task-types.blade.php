@@ -110,6 +110,19 @@
             <div class="flex flex-col gap-1.5">
                 <flux:label>{{ __('Icon') }}</flux:label>
                 <div class="flex max-h-44 flex-wrap gap-2 overflow-y-auto rounded-lg border border-zinc-200 p-2 dark:border-white/10" data-test="task-type-icon-picker">
+                    <button
+                        type="button"
+                        wire:click="clearIcon"
+                        @class([
+                            'flex size-8 cursor-pointer items-center justify-center rounded-lg border',
+                            'border-zinc-900 dark:border-white' => $editIcon === null,
+                            'border-zinc-200 dark:border-white/10' => $editIcon !== null,
+                        ])
+                        aria-label="{{ __('No icon') }}"
+                        data-test="task-type-icon-none"
+                    >
+                        <flux:icon icon="no-symbol" variant="micro" class="text-zinc-400" />
+                    </button>
                     @foreach ($this->icons as $iconName)
                         <button
                             type="button"

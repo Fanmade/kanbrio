@@ -20,7 +20,7 @@
         <div class="flex flex-wrap gap-1">
             @foreach ($this->appliedTags as $tag)
                 <flux:badge size="sm" color="zinc" variant="pill" wire:key="applied-tag-{{ $tag->id }}">
-                    <x-tag-dot :color="$tag->color" class="me-1.5 size-2" />{{ $tag->name }}
+                    <x-tag-dot :color="$tag->color" :icon="$tag->icon" class="me-1.5" />{{ $tag->name }}
                     @if ($canManageTags)
                         <flux:badge.close
                             wire:click="removeTag({{ $tag->id }})"

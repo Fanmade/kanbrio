@@ -36,7 +36,12 @@ class ProjectTaskTypes extends Component
 
     public string $editColor = 'sky';
 
-    public string $editIcon = 'tag';
+    /**
+     * The chosen icon, or null for a colour-only type. Declared null (not 'tag')
+     * so that when the icon is cleared, Livewire's omit-null hydration falls back
+     * to null rather than re-applying a non-null default.
+     */
+    public ?string $editIcon = null;
 
     public string $editBranchPrefix = '';
 
@@ -128,6 +133,14 @@ class ProjectTaskTypes extends Component
     }
 
     /**
+     * Clear the chosen icon, so the type is identified by colour alone.
+     */
+    public function clearIcon(): void
+    {
+        $this->editIcon = null;
+    }
+
+    /**
      * Create the new type, or persist edits to the existing one. Names must be
      * unique within the project, case-insensitively.
      */
@@ -139,7 +152,7 @@ class ProjectTaskTypes extends Component
         $validated = $this->validate([
             'editName' => ['required', 'string', 'max:255'],
             'editColor' => ['required', 'string', 'in:'.implode(',', $this->palette())],
-            'editIcon' => ['required', 'string', 'in:'.implode(',', TaskType::ICONS)],
+            'editIcon' => ['nullable', 'string', 'in:'.implode(',', TaskType::ICONS)],
             'editBranchPrefix' => ['nullable', 'string', 'max:50', 'regex:/^[A-Za-z0-9][A-Za-z0-9\/-]*$/'],
         ]);
 
@@ -159,7 +172,7 @@ class ProjectTaskTypes extends Component
         $attributes = [
             'name' => $name,
             'color' => $validated['editColor'],
-            'icon' => $validated['editIcon'],
+            'icon' => $this->editIcon,
             'branch_prefix' => trim((string) $validated['editBranchPrefix']) ?: null,
         ];
 

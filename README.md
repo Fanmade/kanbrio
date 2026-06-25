@@ -95,13 +95,14 @@ Built on Laravel with Livewire and Flux UI. English and German out of the box.
   image and PDF thumbnails. Files above the size limit are rejected with a
   clear message.
 - **Tags** — label tasks with color-coded tags, scoped to their project and
-  shown as badges with a colored dot. Add one from a searchable list of the
-  project's most-used tags, or create a new tag on the spot and pick its color.
-  A per-project tag page lets members rename and recolor tags (renaming onto an
-  existing tag merges the two), while admins and owners can delete them; every
-  change is recorded in the activity log.
+  shown as badges with a colored dot, or an optional icon in the tag's color. Add
+  one from a searchable list of the project's most-used tags, or create a new tag
+  on the spot and pick its color and icon. A per-project tag page lets members
+  rename, recolor and set the icon of tags (renaming onto an existing tag merges
+  the two), while admins and owners can delete them; every change is recorded in
+  the activity log.
 - **Task types** — classify a task by an optional type, scoped to its project and
-  shown as a colored icon badge on its board card. Each project starts with a
+  shown as a colored badge with an optional icon on its board card. Each project starts with a
   sensible default set (Feature, Bug, Chore); pick one when creating a task or
   change it later from the task page, and filter the board to a single type.
   Admins can add, rename, recolor, re-icon, reorder and delete a project's types

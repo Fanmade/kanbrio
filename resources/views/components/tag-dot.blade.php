@@ -1,9 +1,10 @@
-@props(['color' => 'zinc'])
+@props(['color' => 'zinc', 'icon' => null])
 
 {{--
-    A small colored dot for a tag. The color → class map is written out in full
-    (rather than an interpolated `bg-{$color}-500`) so Tailwind's JIT compiler
-    keeps the classes — the same approach Flux uses for its badge colors.
+    A tag's leading marker: its Heroicon when one is set, otherwise a small dot —
+    both tinted with the tag's color. The color → class maps are written out in
+    full (rather than an interpolated `bg-{$color}-500`) so Tailwind's JIT
+    compiler keeps the classes — the same approach Flux uses for its badge colors.
 --}}
 @php
     $background = match ($color) {
@@ -26,6 +27,32 @@
         'rose' => 'bg-rose-500',
         default => 'bg-zinc-400',
     };
+    $foreground = match ($color) {
+        'red' => 'text-red-500',
+        'orange' => 'text-orange-500',
+        'amber' => 'text-amber-500',
+        'yellow' => 'text-yellow-500',
+        'lime' => 'text-lime-500',
+        'green' => 'text-green-500',
+        'emerald' => 'text-emerald-500',
+        'teal' => 'text-teal-500',
+        'cyan' => 'text-cyan-500',
+        'sky' => 'text-sky-500',
+        'blue' => 'text-blue-500',
+        'indigo' => 'text-indigo-500',
+        'violet' => 'text-violet-500',
+        'purple' => 'text-purple-500',
+        'fuchsia' => 'text-fuchsia-500',
+        'pink' => 'text-pink-500',
+        'rose' => 'text-rose-500',
+        default => 'text-zinc-400',
+    };
 @endphp
 
-<span {{ $attributes->merge(['class' => "inline-block size-2 shrink-0 rounded-full {$background}"]) }}></span>
+@if ($icon)
+    <span {{ $attributes->merge(['class' => "inline-flex shrink-0 {$foreground}"]) }}>
+        <flux:icon :icon="$icon" variant="micro" class="size-3.5" />
+    </span>
+@else
+    <span {{ $attributes->merge(['class' => "inline-block size-2 shrink-0 rounded-full {$background}"]) }}></span>
+@endif

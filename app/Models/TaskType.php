@@ -22,7 +22,7 @@ use Illuminate\Support\Carbon;
  * @property int $project_id
  * @property string $name
  * @property string $color
- * @property string $icon
+ * @property string|null $icon
  * @property string|null $branch_prefix
  * @property int $position
  * @property Carbon|null $created_at

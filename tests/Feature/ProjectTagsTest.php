@@ -131,3 +131,35 @@ it('forbids a plain member from deleting a tag', function () {
 
     expect(Tag::find($tag->id))->not->toBeNull();
 });
+
+it('sets and clears a tag icon through the edit modal', function () {
+    [$user, $project, $tag] = memberProjectTag();
+
+    $component = Livewire::actingAs($user)
+        ->test(ProjectTags::class, ['short_name' => $project->short_name])
+        ->call('startEdit', $tag->id)
+        ->set('editIcon', 'beaker')
+        ->call('saveEdit')
+        ->assertHasNoErrors();
+
+    expect($tag->refresh()->icon)->toBe('beaker');
+
+    $component->call('startEdit', $tag->id)
+        ->call('clearIcon')
+        ->assertSet('editIcon', null)
+        ->call('saveEdit')
+        ->assertHasNoErrors();
+
+    expect($tag->refresh()->icon)->toBeNull();
+});
+
+it('rejects a tag icon outside the allowed set', function () {
+    [$user, $project, $tag] = memberProjectTag();
+
+    Livewire::actingAs($user)
+        ->test(ProjectTags::class, ['short_name' => $project->short_name])
+        ->call('startEdit', $tag->id)
+        ->set('editIcon', 'not-a-real-icon')
+        ->call('saveEdit')
+        ->assertHasErrors('editIcon');
+});

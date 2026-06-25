@@ -55,8 +55,8 @@
                 min="0"
                 wire:model="autoArchiveDays"
                 :label="__('Auto-archive Done tasks after (days)')"
-                :description="__('Tasks left in Done this many days are archived off the board. Leave blank to use the default, or 0 to disable for this project.')"
-                :placeholder="__('Default')"
+                :description="__('Tasks left in Done this many days are archived off the board. Leave blank to use the system default (:days days), or 0 to disable for this project.', ['days' => $this->defaultAutoArchiveDays])"
+                :placeholder="$this->defaultAutoArchiveDays"
                 data-test="project-auto-archive-days"
             />
             <div class="flex gap-2">

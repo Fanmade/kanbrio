@@ -4,6 +4,7 @@ namespace App\Livewire\Projects;
 
 use App\Models\Project;
 use App\Models\Tag;
+use App\Models\TaskType;
 use Flux\Flux;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Collection;
@@ -33,6 +34,12 @@ class ProjectTags extends Component
     public string $editName = '';
 
     public string $editColor = 'zinc';
+
+    /**
+     * The chosen icon, or null for a colour-only tag. Declared null (not a
+     * non-null default) so clearing it survives Livewire's omit-null hydration.
+     */
+    public ?string $editIcon = null;
 
     public function mount(string $short_name): void
     {
@@ -78,6 +85,17 @@ class ProjectTags extends Component
     }
 
     /**
+     * The curated Heroicons a tag may carry — the same set as task types.
+     *
+     * @return list<string>
+     */
+    #[Computed]
+    public function icons(): array
+    {
+        return TaskType::ICONS;
+    }
+
+    /**
      * Open the edit dialog for one of the project's tags.
      */
     public function startEdit(int $tagId): void
@@ -89,8 +107,17 @@ class ProjectTags extends Component
         $this->editingTagId = $tag->id;
         $this->editName = $tag->name;
         $this->editColor = $tag->color;
+        $this->editIcon = $tag->icon;
         $this->resetValidation();
         $this->editing = true;
+    }
+
+    /**
+     * Clear the chosen icon, so the tag is identified by colour alone.
+     */
+    public function clearIcon(): void
+    {
+        $this->editIcon = null;
     }
 
     /**
@@ -106,6 +133,7 @@ class ProjectTags extends Component
         $validated = $this->validate([
             'editName' => ['required', 'string', 'max:255'],
             'editColor' => ['required', 'string', 'in:'.implode(',', $this->palette())],
+            'editIcon' => ['nullable', 'string', 'in:'.implode(',', TaskType::ICONS)],
         ]);
 
         $tag = $project->tags()->whereKey($this->editingTagId)->firstOrFail();
@@ -118,12 +146,14 @@ class ProjectTags extends Component
 
         if ($collision !== null) {
             $collision->recolor($validated['editColor']);
+            $collision->forceFill(['icon' => $this->editIcon])->save();
             $tag->mergeInto($collision);
 
             Flux::toast(variant: 'success', text: __('Tags merged.'));
         } else {
             $tag->rename($name);
             $tag->recolor($validated['editColor']);
+            $tag->forceFill(['icon' => $this->editIcon])->save();
 
             Flux::toast(variant: 'success', text: __('Tag updated.'));
         }
