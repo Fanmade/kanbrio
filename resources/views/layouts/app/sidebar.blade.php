@@ -66,6 +66,25 @@
             <x-sidebar-account-menu />
         </flux:sidebar>
 
+        {{-- Flux persists the desktop collapse state in localStorage and only
+             applies it once @fluxScripts (loaded at the end of the body) upgrades
+             the sidebar — so a collapsed sidebar would render expanded and visibly
+             snap shut on every load. Apply the collapsed state here, before first
+             paint, to remove that flash (KAN-291). --}}
+        <script>
+            (function () {
+                try {
+                    if (window.matchMedia('(min-width: 1024px)').matches
+                        && JSON.parse(localStorage.getItem('flux-sidebar-collapsed-desktop'))) {
+                        document.querySelector('[data-flux-sidebar]')
+                            ?.setAttribute('data-flux-sidebar-collapsed-desktop', '');
+                    }
+                } catch (error) {
+                    // No stored preference (or storage unavailable) — render expanded.
+                }
+            })();
+        </script>
+
         <flux:header class="border-b border-zinc-200 bg-white dark:border-zinc-700 dark:bg-zinc-900">
             <flux:sidebar.toggle class="lg:hidden" icon="bars-2" inset="left" />
 
