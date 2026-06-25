@@ -20,7 +20,10 @@ it('renames and recolors a tag through the management page', function () {
         ->fill('@edit-tag-name', 'Defect')
         ->click('@edit-tag-color-rose')
         ->click('@save-tag')
-        ->waitForText('Defect')
+        // The modal only closes once saveEdit() has persisted, so wait for it to
+        // disappear — not for "Defect", which is already in the open editor.
+        ->assertMissing('@edit-tag-name')
+        ->assertSee('Defect')
         ->assertNoJavascriptErrors();
 
     expect($tag->fresh()->name)->toBe('Defect')
