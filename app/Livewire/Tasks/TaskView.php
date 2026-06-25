@@ -27,6 +27,14 @@ use Livewire\Attributes\Locked;
 use Livewire\Attributes\On;
 use Livewire\Component;
 
+/**
+ * The `task` property exposes the `task()` computed and is read as a property
+ * (`$this->task`, never `$this->task()`) so Livewire memoizes it for the whole
+ * request — a render then resolves the task once instead of re-querying it and
+ * its eager loads per call site.
+ *
+ * @property-read Task $task
+ */
 class TaskView extends Component
 {
     use HandlesAttachments;
@@ -99,7 +107,7 @@ class TaskView extends Component
         $this->shortName = $short_name;
         $this->taskNumber = $task_number;
 
-        $task = $this->task();
+        $task = $this->task;
         $this->authorize('view', $task);
 
         $this->status = $task->status->value;
@@ -126,7 +134,7 @@ class TaskView extends Component
 
     protected function attachable(): Project|Task
     {
-        return $this->task();
+        return $this->task;
     }
 
     /**
@@ -135,17 +143,17 @@ class TaskView extends Component
     #[Computed]
     public function mentionablesUrl(): string
     {
-        return route('project.mentionables', $this->task()->project);
+        return route('project.mentionables', $this->task->project);
     }
 
     protected function dependable(): Task
     {
-        return $this->task();
+        return $this->task;
     }
 
     protected function taggable(): Task
     {
-        return $this->task();
+        return $this->task;
     }
 
     protected function forgetTaggable(): void
@@ -155,7 +163,7 @@ class TaskView extends Component
 
     protected function reparentable(): Task
     {
-        return $this->task();
+        return $this->task;
     }
 
     protected function forgetReparentable(): void
@@ -171,7 +179,7 @@ class TaskView extends Component
     #[Computed]
     public function members(): Collection
     {
-        return $this->task()->project->members()->orderBy('name')->get();
+        return $this->task->project->members()->orderBy('name')->get();
     }
 
     /**
@@ -181,7 +189,7 @@ class TaskView extends Component
     #[Computed]
     public function canAddSubtask(): bool
     {
-        return $this->task()->nestingDepth() < (int) config('kanvigo.tasks.max_depth');
+        return $this->task->nestingDepth() < (int) config('kanvigo.tasks.max_depth');
     }
 
     /**
@@ -206,7 +214,7 @@ class TaskView extends Component
 
     public function updatedStatus(string $value): void
     {
-        $task = $this->task();
+        $task = $this->task;
         $this->authorize('updateStatus', $task);
 
         $new = Status::tryFrom($value);
@@ -254,7 +262,7 @@ class TaskView extends Component
         $this->confirmingCascade = false;
         $this->pendingStatus = '';
         $this->rememberCascadeChoice = false;
-        $this->status = $this->task()->status->value;
+        $this->status = $this->task->status->value;
     }
 
     /**
@@ -263,7 +271,7 @@ class TaskView extends Component
     public function undoParentBump(): void
     {
         $previous = Status::tryFrom($this->parentBumpUndoStatus);
-        $parent = $this->task()->parent;
+        $parent = $this->task->parent;
         $this->parentBumpUndoStatus = '';
 
         if ($previous === null || $parent === null) {
@@ -286,7 +294,7 @@ class TaskView extends Component
      */
     public function confirmCancel(): void
     {
-        $this->authorize('update', $this->task());
+        $this->authorize('update', $this->task);
 
         $this->reset('cancelReason', 'cancelMessage');
         $this->resetValidation();
@@ -307,7 +315,7 @@ class TaskView extends Component
      */
     public function cancelTask(): void
     {
-        $task = $this->task();
+        $task = $this->task;
         $this->authorize('update', $task);
 
         $validated = $this->validate([
@@ -334,7 +342,7 @@ class TaskView extends Component
      */
     public function reopenTask(): void
     {
-        $task = $this->task();
+        $task = $this->task;
         $this->authorize('update', $task);
 
         app(CancelTask::class)->reopen($task);
@@ -350,7 +358,7 @@ class TaskView extends Component
     #[Computed]
     public function openSubtaskCount(): int
     {
-        return $this->task()->descendants
+        return $this->task->descendants
             ->reject(static fn (Task $task): bool => $task->status->isTerminal())
             ->count();
     }
@@ -379,7 +387,7 @@ class TaskView extends Component
             return;
         }
 
-        $task = $this->task();
+        $task = $this->task;
         $this->authorize('updateStatus', $task);
 
         if ($remember) {
@@ -426,7 +434,7 @@ class TaskView extends Component
 
     public function updatedPriority(string|int $value): void
     {
-        $task = $this->task();
+        $task = $this->task;
         $this->authorize('update', $task);
 
         $new = Priority::tryFrom((int) $value);
@@ -452,12 +460,12 @@ class TaskView extends Component
     #[Computed]
     public function taskTypes(): Collection
     {
-        return $this->task()->project->taskTypes()->get();
+        return $this->task->project->taskTypes()->get();
     }
 
     public function updatedTypeId(mixed $value): void
     {
-        $task = $this->task();
+        $task = $this->task;
         $this->authorize('update', $task);
 
         $newId = ($value === '' || $value === null) ? null : (int) $value;
@@ -490,7 +498,7 @@ class TaskView extends Component
 
     public function updatedAssigneeIds(): void
     {
-        $task = $this->task();
+        $task = $this->task;
         $this->authorize('update', $task);
 
         $changes = $task->assignees()->sync($this->assigneeIds);
@@ -523,7 +531,7 @@ class TaskView extends Component
 
     public function edit(): void
     {
-        $task = $this->task();
+        $task = $this->task;
         $this->authorize('update', $task);
 
         $this->title = $task->title;
@@ -534,7 +542,7 @@ class TaskView extends Component
 
     public function save(): void
     {
-        $task = $this->task();
+        $task = $this->task;
         $this->authorize('update', $task);
 
         $validated = $this->validate([
