@@ -11,6 +11,7 @@ use App\Models\Project;
 use App\Models\Tag;
 use App\Models\Task;
 use App\Models\User;
+use App\Support\BoardCache;
 use Fanmade\DelegatedPermissions\Models\Role;
 use Flux\Flux;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
@@ -122,13 +123,37 @@ class ProjectShow extends Component
     #[Computed]
     public function project(): Project
     {
-        $project = Project::where('short_name', $this->shortName)
-            ->with(['rootTasks.tags', 'rootTasks.assignees', 'rootTasks.descendants'])
-            ->firstOrFail();
+        $project = Project::where('short_name', $this->shortName)->firstOrFail();
 
         $this->authorize('view', $project);
 
         return $project;
+    }
+
+    /**
+     * The project's top-level tasks with the data the overview cards need: tags,
+     * assignees, and the descendant subtree that drives each card's rolled-up
+     * progress and direct-subtask preview.
+     *
+     * Cached under the project's board freshness token — the same mechanism the
+     * kanban boards use — so an idle live-refresh poll is a cheap version read
+     * plus cache hit instead of re-scanning every root task's full subtree. Any
+     * task write bumps the version (via the Task `saved` hook) and the next
+     * render rebuilds.
+     *
+     * @return EloquentCollection<int, Task>
+     */
+    #[Computed]
+    public function rootTasks(): EloquentCollection
+    {
+        $project = $this->project();
+
+        return BoardCache::remember(
+            "project:overview:{$project->id}:roots:v".BoardCache::version($project->id),
+            static fn (): EloquentCollection => $project->rootTasks()
+                ->with(['tags', 'assignees', 'descendants'])
+                ->get(),
+        );
     }
 
     protected function attachable(): Project|Task
@@ -155,7 +180,7 @@ class ProjectShow extends Component
     public function openTasks(): Collection
     {
         return $this->filterTasks(
-            $this->project()->rootTasks
+            $this->rootTasks()
                 ->reject(static fn (Task $task): bool => $task->isArchived())
                 ->reject(static fn (Task $task): bool => $task->status->isTerminal())
         );
@@ -171,7 +196,7 @@ class ProjectShow extends Component
     public function completedTasks(): Collection
     {
         return $this->filterTasks(
-            $this->project()->rootTasks
+            $this->rootTasks()
                 ->reject(static fn (Task $task): bool => $task->isArchived())
                 ->filter(static fn (Task $task): bool => $task->status->isTerminal())
         );
@@ -187,7 +212,7 @@ class ProjectShow extends Component
     public function archivedTasks(): Collection
     {
         return $this->filterTasks(
-            $this->project()->rootTasks
+            $this->rootTasks()
                 ->filter(static fn (Task $task): bool => $task->isArchived())
         );
     }
@@ -267,7 +292,7 @@ class ProjectShow extends Component
     #[Computed]
     public function hasArchivedRootTasks(): bool
     {
-        return $this->project()->rootTasks->contains(static fn (Task $task): bool => $task->isArchived());
+        return $this->rootTasks()->contains(static fn (Task $task): bool => $task->isArchived());
     }
 
     /**
@@ -313,7 +338,7 @@ class ProjectShow extends Component
 
         $task->archive();
 
-        unset($this->project);
+        unset($this->project, $this->rootTasks);
 
         Flux::toast(variant: 'success', text: __('Task archived.'));
     }
@@ -329,7 +354,7 @@ class ProjectShow extends Component
 
         $task->unarchive();
 
-        unset($this->project);
+        unset($this->project, $this->rootTasks);
 
         Flux::toast(variant: 'success', text: __('Task restored.'));
     }
@@ -542,7 +567,7 @@ class ProjectShow extends Component
     #[On('task-created')]
     public function refreshAfterCreate(): void
     {
-        unset($this->project);
+        unset($this->project, $this->rootTasks);
     }
 
     /**
@@ -553,6 +578,6 @@ class ProjectShow extends Component
     #[On('live-refresh')]
     public function liveRefresh(): void
     {
-        unset($this->project, $this->publicNotes);
+        unset($this->project, $this->rootTasks, $this->publicNotes);
     }
 }

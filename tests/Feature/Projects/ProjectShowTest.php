@@ -8,6 +8,7 @@ use App\Models\Project;
 use App\Models\Task;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Livewire\Livewire;
 
 uses(RefreshDatabase::class);
@@ -303,4 +304,58 @@ it('forbids non-members', function () {
     Livewire::actingAs(User::factory()->create())
         ->test(ProjectShow::class, ['short_name' => $this->project->short_name])
         ->assertForbidden();
+});
+
+it('serves the overview root tasks from cache on an idle re-render', function () {
+    Task::factory()->count(3)->for($this->project)->create();
+
+    // First render builds and caches the root-task load under the board token.
+    Livewire::actingAs($this->user)->test(ProjectShow::class, ['short_name' => $this->project->short_name]);
+
+    DB::enableQueryLog();
+    Livewire::actingAs($this->user)->test(ProjectShow::class, ['short_name' => $this->project->short_name]);
+    $taskQueries = collect(DB::getQueryLog())
+        ->filter(static fn (array $entry): bool => str_contains((string) $entry['query'], 'from "tasks"'))
+        ->count();
+    DB::disableQueryLog();
+
+    // No write happened, so the overview is served from cache — no task scan.
+    expect($taskQueries)->toBe(0);
+});
+
+it('rebuilds the overview after a task change invalidates the cache', function () {
+    Task::factory()->count(3)->for($this->project)->create();
+
+    $component = Livewire::actingAs($this->user)->test(ProjectShow::class, ['short_name' => $this->project->short_name]);
+    expect($component->instance()->rootTasks())->toHaveCount(3);
+
+    // A new root task bumps the project's board version via the Task saved hook.
+    Task::factory()->for($this->project)->create();
+
+    // A fresh render reflects the change rather than the stale cached set.
+    $component = Livewire::actingAs($this->user)->test(ProjectShow::class, ['short_name' => $this->project->short_name]);
+    expect($component->instance()->rootTasks())->toHaveCount(4);
+});
+
+it('renders the overview with a query count that does not grow with subtree size', function () {
+    // Each render uses a fresh project, so neither benefits from the other's cache.
+    $queriesToRender = function (int $subtasks): int {
+        $project = Project::factory()->withOwner($this->user)->create();
+        $root = Task::factory()->for($project)->create();
+        Task::factory()->count($subtasks)->for($project)->childOf($root)->create();
+
+        DB::flushQueryLog();
+        DB::enableQueryLog();
+        Livewire::actingAs($this->user)
+            ->test(ProjectShow::class, ['short_name' => $project->short_name])
+            ->set('tasksCollapsed', false);
+        $count = count(DB::getQueryLog());
+        DB::disableQueryLog();
+
+        return $count;
+    };
+
+    // A root task with 20 subtasks must issue no more queries than one with 2 —
+    // the subtree loads in bulk, so adding subtasks must not add queries (no N+1).
+    expect($queriesToRender(20))->toBeLessThanOrEqual($queriesToRender(2));
 });
