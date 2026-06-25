@@ -104,7 +104,80 @@ it('merges into the existing tag when a rename collides, re-pointing tasks', fun
 
     expect(Tag::find($bug->id))->toBeNull()
         ->and($task->fresh()->tags()->pluck('tags.id')->all())->toBe([$defect->id])
-        ->and($project->activities()->where('action', 'tag_deleted')->count())->toBe(1);
+        ->and($project->activities()->where('action', 'tag_merged')->count())->toBe(1);
+});
+
+it('merges the selected tags into the chosen surviving tag, re-pointing tasks', function () {
+    [$admin, $project] = [User::factory()->create(), Project::factory()->create()];
+    joinProject($project, $admin, 'admin');
+    $docs = Tag::factory()->for($project)->create(['name' => 'Docs']);
+    $documentation = Tag::factory()->for($project)->create(['name' => 'Documentation']);
+
+    $onlyDocs = Task::factory()->for($project)->create();
+    $onlyDocs->tags()->attach($docs);
+    $both = Task::factory()->for($project)->create();
+    $both->tags()->attach([$docs->id, $documentation->id]);
+
+    Livewire::actingAs($admin)
+        ->test(ProjectTags::class, ['short_name' => $project->short_name])
+        ->set('selected', [$docs->id, $documentation->id])
+        ->set('mergeTargetId', $documentation->id)
+        ->call('mergeTags')
+        ->assertSet('merging', false)
+        ->assertSet('selected', []);
+
+    expect(Tag::find($docs->id))->toBeNull()
+        ->and(Tag::find($documentation->id))->not->toBeNull()
+        ->and($onlyDocs->fresh()->tags()->pluck('tags.id')->all())->toBe([$documentation->id])
+        ->and($both->fresh()->tags()->pluck('tags.id')->all())->toBe([$documentation->id])
+        ->and($project->activities()->where('action', 'tag_merged')->count())->toBe(1);
+});
+
+it('defaults to the most-used tag and shows the names when opening the merge dialog', function () {
+    [$admin, $project] = [User::factory()->create(), Project::factory()->create()];
+    joinProject($project, $admin, 'admin');
+    $small = Tag::factory()->for($project)->create(['name' => 'Spike']);
+    $big = Tag::factory()->for($project)->create(['name' => 'Research']);
+
+    Task::factory()->for($project)->create()->tags()->attach($small);
+    Task::factory()->for($project)->create()->tags()->attach($big);
+    Task::factory()->for($project)->create()->tags()->attach($big);
+
+    Livewire::actingAs($admin)
+        ->test(ProjectTags::class, ['short_name' => $project->short_name])
+        ->set('selected', [$small->id, $big->id])
+        ->call('startMerge')
+        ->assertSet('merging', true)
+        ->assertSet('mergeTargetId', $big->id)
+        ->assertSeeText('Spike')
+        ->assertSeeText('Research');
+});
+
+it('does not merge when fewer than two tags are selected', function () {
+    [$admin, $project, $tag] = memberProjectTag('admin');
+
+    Livewire::actingAs($admin)
+        ->test(ProjectTags::class, ['short_name' => $project->short_name])
+        ->set('selected', [$tag->id])
+        ->set('mergeTargetId', $tag->id)
+        ->call('mergeTags');
+
+    expect(Tag::find($tag->id))->not->toBeNull();
+});
+
+it('forbids a plain member from merging tags', function () {
+    [$member, $project, $tag] = memberProjectTag('member');
+    $other = Tag::factory()->for($project)->create(['name' => 'Chore']);
+
+    Livewire::actingAs($member)
+        ->test(ProjectTags::class, ['short_name' => $project->short_name])
+        ->set('selected', [$tag->id, $other->id])
+        ->set('mergeTargetId', $tag->id)
+        ->call('mergeTags')
+        ->assertStatus(403);
+
+    expect(Tag::find($tag->id))->not->toBeNull()
+        ->and(Tag::find($other->id))->not->toBeNull();
 });
 
 it('lets an admin delete a tag, detaching it from tasks', function () {

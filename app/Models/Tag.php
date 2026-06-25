@@ -165,14 +165,16 @@ class Tag extends Model
     /**
      * Fold this tag into another of the same project: re-point every task tagged
      * with this one onto the target (without creating duplicate pivot rows), then
-     * delete this tag. Used when a rename would collide with an existing tag —
-     * the two are merged rather than the rename rejected.
+     * delete this tag, logging the merge against the project. Used both when a
+     * rename would collide with an existing tag and by the explicit merge-tags
+     * action — the two are merged rather than one silently lost.
      */
     public function mergeInto(self $target): void
     {
         $taskIds = $this->tasks()->pluck('tasks.id')->all();
         $target->tasks()->syncWithoutDetaching($taskIds);
 
-        $this->deleteWithActivity();
+        $this->project->recordActivity('tag_merged', 'tags', $this->name, $target->name);
+        $this->delete();
     }
 }

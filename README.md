@@ -99,8 +99,9 @@ Built on Laravel with Livewire and Flux UI. English and German out of the box.
   one from a searchable list of the project's most-used tags, or create a new tag
   on the spot and pick its color and icon. A per-project tag page lets members
   rename, recolor and set the icon of tags (renaming onto an existing tag merges
-  the two), while admins and owners can delete them; every change is recorded in
-  the activity log.
+  the two), while admins and owners can delete them or merge several duplicates
+  into one chosen tag — re-tagging affected tasks before the others are removed.
+  Every change is recorded in the activity log.
 - **Task types** — classify a task by an optional type, scoped to its project and
   shown as a colored badge with an optional icon on its board card. Each project starts with a
   sensible default set (Feature, Bug, Chore); pick one when creating a task or

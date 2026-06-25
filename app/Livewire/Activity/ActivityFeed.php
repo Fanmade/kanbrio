@@ -178,6 +178,7 @@ class ActivityFeed extends Component
             'tag_renamed' => __('renamed the tag :old to :new', ['old' => (string) $activity->old_value, 'new' => (string) $activity->new_value]),
             'tag_recolored' => __('changed the color of the tag :name', ['name' => (string) ($newValues['name'] ?? '')]),
             'tag_deleted' => __('deleted the tag :name', ['name' => (string) $activity->old_value]),
+            'tag_merged' => __('merged the tag :old into :new', ['old' => (string) $activity->old_value, 'new' => (string) $activity->new_value]),
             'parent_changed' => $this->parentDescription($activity->old_value, $activity->new_value),
             'canceled' => $this->cancellationDescription($newValues),
             'reopened' => __('reopened this'),

@@ -15,10 +15,10 @@ use Livewire\Component;
 
 /**
  * Per-project tag catalog management: rename (merging on a name collision),
- * recolor and delete a project's tags. Renaming and recoloring are open to any
- * member holding `manage-tags`; deletion is restricted to `manage-settings`
- * (admin/owner). Every change is recorded in the project activity log by the
- * Tag model itself.
+ * recolor, delete and merge a project's tags. Renaming and recoloring are open
+ * to any member holding `manage-tags`; deletion and merging are restricted to
+ * `manage-settings` (admin/owner) since they destroy tags. Every change is
+ * recorded in the project activity log by the Tag model itself.
  */
 class ProjectTags extends Component
 {
@@ -40,6 +40,20 @@ class ProjectTags extends Component
      * non-null default) so clearing it survives Livewire's omit-null hydration.
      */
     public ?string $editIcon = null;
+
+    /**
+     * The ids of the tags ticked for merging.
+     *
+     * @var list<int>
+     */
+    public array $selected = [];
+
+    public bool $merging = false;
+
+    /**
+     * The tag the selected tags fold into — the one that survives the merge.
+     */
+    public ?int $mergeTargetId = null;
 
     public function mount(string $short_name): void
     {
@@ -69,6 +83,28 @@ class ProjectTags extends Component
     {
         return $this->project()->tags()
             ->withCount('tasks')
+            ->orderBy('name')
+            ->get();
+    }
+
+    /**
+     * The ticked tags, most-used first — the candidates for a merge and the
+     * options offered as the surviving tag. Scoped to the project, so a tampered
+     * id from another project is silently dropped.
+     *
+     * @return Collection<int, Tag>
+     */
+    #[Computed]
+    public function selectedTags(): Collection
+    {
+        if ($this->selected === []) {
+            return new Collection;
+        }
+
+        return $this->project()->tags()
+            ->withCount('tasks')
+            ->whereKey($this->selected)
+            ->orderByDesc('tasks_count')
             ->orderBy('name')
             ->get();
     }
@@ -178,6 +214,51 @@ class ProjectTags extends Component
         unset($this->tags);
 
         Flux::toast(variant: 'success', text: __('Tag deleted.'));
+    }
+
+    /**
+     * Open the merge dialog for the ticked tags, defaulting the surviving tag to
+     * the most-used of them. A no-op unless at least two tags are selected.
+     */
+    public function startMerge(): void
+    {
+        $this->authorize('manageSettings', $this->project());
+
+        $selected = $this->selectedTags();
+
+        if ($selected->count() < 2) {
+            return;
+        }
+
+        $this->mergeTargetId = $selected->first()->id;
+        $this->merging = true;
+    }
+
+    /**
+     * Fold every other selected tag into the chosen surviving tag — re-pointing
+     * their tasks first — then drop them. Restricted to manage-settings
+     * (admin/owner). A no-op unless at least two valid tags are selected and the
+     * surviving tag is one of them.
+     */
+    public function mergeTags(): void
+    {
+        $project = $this->project();
+        $this->authorize('manageSettings', $project);
+
+        $selected = $this->selectedTags();
+        $target = $selected->firstWhere('id', $this->mergeTargetId);
+
+        if ($target === null || $selected->count() < 2) {
+            return;
+        }
+
+        $selected->reject(static fn (Tag $tag): bool => $tag->is($target))
+            ->each(static fn (Tag $tag) => $tag->mergeInto($target));
+
+        $this->reset('selected', 'merging', 'mergeTargetId');
+        unset($this->tags, $this->selectedTags);
+
+        Flux::toast(variant: 'success', text: __('Tags merged.'));
     }
 
     public function render(): View
