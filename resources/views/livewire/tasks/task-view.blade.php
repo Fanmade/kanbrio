@@ -23,6 +23,17 @@
             <span class="font-mono text-zinc-400">{{ $this->task->reference }}</span>
         </div>
         <div class="flex shrink-0 items-center gap-3">
+            <flux:tooltip :content="__('Project board')">
+                <flux:button
+                    size="sm"
+                    variant="ghost"
+                    icon="view-columns"
+                    :href="route('project.board', $this->task->project)"
+                    wire:navigate
+                    :aria-label="__('Project board')"
+                    data-test="task-board-link"
+                />
+            </flux:tooltip>
             <x-live-updates-toggle />
             <livewire:subscriptions.subscription-toggle :subscribable="$this->task" :wire:key="'sub-task-'.$this->task->id" />
         </div>

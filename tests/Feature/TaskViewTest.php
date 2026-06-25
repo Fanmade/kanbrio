@@ -33,6 +33,12 @@ it('caps and scrolls the task description', function () {
         ->assertSeeHtml('max-h-96 overflow-y-auto');
 });
 
+it('offers a shortcut from the task to the project board', function () {
+    ($this->mountTask)()
+        ->assertSeeHtml('data-test="task-board-link"')
+        ->assertSeeHtml(route('project.board', $this->project));
+});
+
 it('changes the task status inline and logs the transition', function () {
     ($this->mountTask)()
         ->set('status', Status::Done->value);
