@@ -89,6 +89,13 @@
     ::file-selector-button {
         border-color: var(--color-gray-200, currentColor);
     }
+
+    /* Reserve the viewport scrollbar's space so it never reflows the page when
+       content height changes (e.g. filtering the tag picker rapidly toggled the
+       window scrollbar, jolting the layout — KAN-295). */
+    html {
+        scrollbar-gutter: stable;
+    }
 }
 
 [data-flux-field]:not(ui-radio, ui-checkbox) {
