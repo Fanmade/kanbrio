@@ -5,48 +5,110 @@ namespace App\Authorization;
 use App\Models\Project;
 use App\Models\User;
 use Fanmade\DelegatedPermissions\Models\Permission;
+use Fanmade\DelegatedPermissions\Models\PermissionGroup;
 use Fanmade\DelegatedPermissions\Models\Role;
 use Fanmade\DelegatedPermissions\RoleManager;
+use Illuminate\Support\Collection;
 
 /**
- * Provisions a project's delegated role tree (owner → admin → member) on top of
- * the delegated-permissions package. Self-bootstrapping: it seeds the permission
- * catalog and the global system role on demand.
+ * Provisions a project's delegated role tree (owner → admin → member → viewer)
+ * on top of the delegated-permissions package. Self-bootstrapping: it seeds the
+ * permission catalog, its groups and the global system role on demand.
  */
 class ProjectRoleProvisioner
 {
     /**
-     * The project-scoped permission catalog.
+     * The project-scoped permission catalog, grouped for the management UI. The
+     * group order and contents drive how the permission picker is laid out; the
+     * flattened set is the catalog every project role is bounded by.
+     *
+     * @var array<string, list<string>>
+     */
+    public const array GROUPS = [
+        'Project' => ['view-project', 'manage-settings', 'delete-project', 'view-activity-log'],
+        'Members & roles' => ['manage-members', 'invite-members', 'manage-roles'],
+        'Tasks' => ['create-task', 'edit-task', 'delete-task', 'close-task', 'cancel-task', 'archive-task', 'manage-dependencies'],
+        'Tags' => ['manage-tags', 'tag-tasks'],
+        'Attachments' => ['manage-attachments', 'delete-attachment'],
+        'Comments' => ['create-comment', 'moderate-comments'],
+    ];
+
+    /**
+     * The flat project-scoped permission catalog (every permission across the
+     * groups). The owner role holds exactly this set.
      *
      * @var list<string>
      */
     public const array CATALOG = [
-        'view-project', 'create-tasks', 'manage-tags',
-        'manage-settings', 'delete-project',
+        'view-project', 'manage-settings', 'delete-project', 'view-activity-log',
         'manage-members', 'invite-members', 'manage-roles',
+        'create-task', 'edit-task', 'delete-task', 'close-task', 'cancel-task', 'archive-task', 'manage-dependencies',
+        'manage-tags', 'tag-tasks',
+        'manage-attachments', 'delete-attachment',
+        'create-comment', 'moderate-comments',
     ];
 
     /**
      * The permissions each seeded role holds. Each role is a strict superset of
-     * the one below it, so the delegation bounds (child ⊆ parent) hold.
+     * the one below it (owner ⊇ admin ⊇ member ⊇ viewer), so the delegation
+     * bounds (child ⊆ parent) hold. These mirror today's coarse behaviour:
+     * members contribute, admins also govern settings, owners also manage people
+     * and roles; viewer is read-only.
      *
      * @var array<string, list<string>>
      */
     public const array GRANTS = [
-        'member' => ['view-project', 'create-tasks', 'manage-tags'],
-        'admin' => ['view-project', 'create-tasks', 'manage-tags', 'manage-settings', 'delete-project'],
-        'owner' => ['view-project', 'create-tasks', 'manage-tags', 'manage-settings', 'delete-project', 'manage-members', 'invite-members', 'manage-roles'],
+        'viewer' => ['view-project', 'view-activity-log'],
+        'member' => [
+            'view-project', 'view-activity-log',
+            'create-task', 'edit-task', 'delete-task', 'close-task', 'cancel-task', 'archive-task', 'manage-dependencies',
+            'manage-tags', 'tag-tasks',
+            'manage-attachments', 'delete-attachment',
+            'create-comment',
+        ],
+        'admin' => [
+            'view-project', 'view-activity-log',
+            'create-task', 'edit-task', 'delete-task', 'close-task', 'cancel-task', 'archive-task', 'manage-dependencies',
+            'manage-tags', 'tag-tasks',
+            'manage-attachments', 'delete-attachment',
+            'create-comment', 'moderate-comments',
+            'manage-settings', 'delete-project',
+        ],
+        'owner' => self::CATALOG,
     ];
 
     public function __construct(private readonly RoleManager $roles) {}
 
     /**
-     * Ensure the catalog permissions exist.
+     * Ensure the catalog permissions and their groups exist. Cheap on the common
+     * path: when everything is already seeded it costs two count queries.
      */
     public function seedCatalog(): void
     {
+        $existing = Permission::query()->whereIn('name', self::CATALOG)->pluck('id', 'name');
+
+        if ($existing->count() === count(self::CATALOG)
+            && PermissionGroup::query()->whereIn('name', array_keys(self::GROUPS))->count() === count(self::GROUPS)) {
+            return;
+        }
+
         foreach (self::CATALOG as $name) {
-            Permission::query()->firstOrCreate(['name' => $name]);
+            $existing[$name] ??= Permission::query()->create(['name' => $name])->getKey();
+        }
+
+        $this->seedGroups($existing);
+    }
+
+    /**
+     * Ensure each permission group exists and holds exactly its catalog members.
+     *
+     * @param  Collection<string, int>  $permissionIds  permission name => id
+     */
+    protected function seedGroups(Collection $permissionIds): void
+    {
+        foreach (self::GROUPS as $groupName => $names) {
+            $group = PermissionGroup::query()->firstOrCreate(['name' => $groupName]);
+            $group->permissions()->sync(array_map(static fn (string $name): int => $permissionIds[$name], $names));
         }
     }
 
@@ -62,8 +124,9 @@ class ProjectRoleProvisioner
     }
 
     /**
-     * Ensure the project has its owner → admin → member tree, returning the roles
-     * keyed by name. Idempotent.
+     * Ensure the project has its owner → admin → member → viewer tree, returning
+     * the roles keyed by name. Idempotent, and tolerant of a partial tree (it
+     * fills in any missing role rather than starting over).
      *
      * @return array<string, Role>
      */
@@ -77,19 +140,21 @@ class ProjectRoleProvisioner
             ->get()
             ->keyBy('name');
 
-        if ($existing->has('owner') && $existing->has('admin') && $existing->has('member')) {
+        if ($existing->has('owner') && $existing->has('admin') && $existing->has('member') && $existing->has('viewer')) {
             return $existing->all();
         }
 
-        $owner = $this->roles->createRole('owner', $this->systemRole(), self::GRANTS['owner'], $project);
-        $admin = $this->roles->createRole('admin', $owner, self::GRANTS['admin']);
-        $member = $this->roles->createRole('member', $admin, self::GRANTS['member']);
+        $owner = $existing['owner'] ?? $this->roles->createRole('owner', $this->systemRole(), self::GRANTS['owner'], $project);
+        $admin = $existing['admin'] ?? $this->roles->createRole('admin', $owner, self::GRANTS['admin']);
+        $member = $existing['member'] ?? $this->roles->createRole('member', $admin, self::GRANTS['member']);
+        $viewer = $existing['viewer'] ?? $this->roles->createRole('viewer', $member, self::GRANTS['viewer']);
 
-        return ['owner' => $owner, 'admin' => $admin, 'member' => $member];
+        return ['owner' => $owner, 'admin' => $admin, 'member' => $member, 'viewer' => $viewer];
     }
 
     /**
-     * The project's role of the given name (owner|admin|member), provisioning if needed.
+     * The project's role of the given name (owner|admin|member|viewer, or a
+     * custom role), provisioning the base tree if needed.
      */
     public function roleFor(Project $project, string $name): Role
     {

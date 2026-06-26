@@ -32,12 +32,12 @@ it('lists the seeded roles for an owner', function () {
 it('lets an owner define a custom role bounded by the project permissions', function () {
     $project = Project::factory()->create();
     $owner = projectOwner($project);
-    $createTasks = Permission::query()->where('name', 'create-tasks')->value('id');
+    $createTask = Permission::query()->where('name', 'create-task')->value('id');
 
     Livewire::actingAs($owner)
         ->test(ProjectRoles::class, ['project' => $project])
         ->set('name', 'Triager')
-        ->set('permissionIds', [$createTasks])
+        ->set('permissionIds', [$createTask])
         ->call('createRole')
         ->assertHasNoErrors();
 
@@ -45,7 +45,7 @@ it('lets an owner define a custom role bounded by the project permissions', func
     expect($role)->not->toBeNull();
 
     $triager = User::factory()->create()->assignRole($role);
-    expect($triager->can('create-tasks', $project))->toBeTrue()
+    expect($triager->can('create-task', $project))->toBeTrue()
         ->and($triager->can('manage-settings', $project))->toBeFalse();
 });
 
