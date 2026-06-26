@@ -4,6 +4,7 @@ namespace App\Mcp\Tools;
 
 use App\Mcp\Concerns\RequiresWriteAccess;
 use App\Models\Project;
+use App\Models\Task;
 use App\Support\ReferenceResolver;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Illuminate\JsonSchema\Types\Type;
@@ -37,7 +38,9 @@ class AddCommentTool extends Tool
 
         $commentable = ReferenceResolver::commentable($validated['reference']);
 
-        if ($commentable === null || ! $request->user()->can('view', $commentable)) {
+        $project = $commentable instanceof Task ? $commentable->project : $commentable;
+
+        if ($commentable === null || ! $request->user()->can('create-comment', $project)) {
             return Response::error('No project or task with reference "'.$validated['reference'].'" exists, or you do not have access to it.');
         }
 

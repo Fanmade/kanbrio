@@ -101,7 +101,7 @@ trait ManagesTags
     public function addTag(string $name): void
     {
         $item = $this->taggable();
-        $this->authorize('update', $item);
+        $this->authorize('tag', $item);
 
         $name = trim($name);
 
@@ -127,7 +127,7 @@ trait ManagesTags
     public function removeTag(int $tagId): void
     {
         $item = $this->taggable();
-        $this->authorize('update', $item);
+        $this->authorize('tag', $item);
 
         $tag = $item->tags()->whereKey($tagId)->first();
 
@@ -147,7 +147,7 @@ trait ManagesTags
      */
     public function openTagModal(string $name = ''): void
     {
-        $this->authorize('update', $this->taggable());
+        $this->authorize('tag', $this->taggable());
 
         $this->resetErrorBag(['newTagName', 'newTagColor', 'newTagIcon']);
         $this->newTagName = trim($name);
@@ -162,7 +162,7 @@ trait ManagesTags
     public function createTag(): void
     {
         $item = $this->taggable();
-        $this->authorize('update', $item);
+        $this->authorize('tag', $item);
 
         $validated = $this->validate([
             'newTagName' => ['required', 'string', 'max:255'],

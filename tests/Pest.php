@@ -3,6 +3,7 @@
 use App\Authorization\ProjectRoleProvisioner;
 use App\Models\Project;
 use App\Models\User;
+use Fanmade\DelegatedPermissions\RoleManager;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -81,4 +82,34 @@ function joinProject(Project $project, User|int|array $users, string $role = 'me
         $project->members()->syncWithoutDetaching([$user->id]);
         $provisioner->syncMember($project, $user, $role);
     }
+}
+
+/**
+ * A user holding the named base project role (owner|admin|member|viewer).
+ */
+function userWithRole(Project $project, string $role): User
+{
+    $user = User::factory()->create();
+    joinProject($project, $user, $role);
+
+    return $user;
+}
+
+/**
+ * A user holding a fresh custom project role that grants exactly the given
+ * permissions (plus view-project, so they can reach the project at all).
+ *
+ * @param  list<string>  $permissions
+ */
+function userWithPermissions(Project $project, array $permissions): User
+{
+    $owner = app(ProjectRoleProvisioner::class)->roleFor($project, 'owner');
+    $role = app(RoleManager::class)->createRole(
+        'Custom '.fake()->unique()->word(),
+        $owner,
+        array_values(array_unique(['view-project', ...$permissions])),
+        $project,
+    );
+
+    return User::factory()->create()->assignRole($role);
 }

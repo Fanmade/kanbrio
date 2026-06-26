@@ -263,9 +263,9 @@ class CommentList extends Component
     protected function storeComment(string $body, ?int $parentId = null): void
     {
         $commentable = $this->commentable();
+        $project = $commentable instanceof Task ? $commentable->project : $commentable;
 
-        // Anyone who can view the item (i.e. project members) may comment.
-        $this->authorize('view', $commentable);
+        $this->authorize('create-comment', $project);
 
         $commentable->comments()->create([
             'user_id' => Auth::id(),

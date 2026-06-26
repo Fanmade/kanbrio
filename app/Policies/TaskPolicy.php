@@ -75,4 +75,14 @@ class TaskPolicy
     {
         return $user->hasScopedPermission('manage-dependencies', $task->project);
     }
+
+    /**
+     * Applying or removing tags on the task. (Tagging targets a task, so this
+     * lives on the task policy; managing the project's tag catalog is the
+     * separate manage-tags permission.)
+     */
+    public function tag(User $user, Task $task): bool
+    {
+        return $user->hasScopedPermission('tag-tasks', $task->project);
+    }
 }

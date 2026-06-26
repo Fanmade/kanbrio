@@ -47,6 +47,7 @@ class ActivityFeed extends Component
     public function mount(Project|Task $subject): void
     {
         $this->initMorphSubject($subject);
+        $this->authorize('view-activity-log', $subject instanceof Task ? $subject->project : $subject);
 
         $this->collapsed = (bool) Auth::user()->preference(self::COLLAPSED_PREFERENCE_KEY, true);
     }
