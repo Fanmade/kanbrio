@@ -61,13 +61,14 @@ enum Priority: int
     }
 
     /**
-     * The priorities in ascending order (lowest first).
+     * The priorities ranked from highest to lowest — the order they should appear
+     * in pickers and filters, so the most urgent choice sits at the top.
      *
      * @return array<int, self>
      */
-    public static function ordered(): array
+    public static function descending(): array
     {
-        return [self::Lowest, self::Low, self::Medium, self::High, self::Highest];
+        return [self::Highest, self::High, self::Medium, self::Low, self::Lowest];
     }
 
     /**

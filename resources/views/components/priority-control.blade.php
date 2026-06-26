@@ -20,7 +20,7 @@
 
         <flux:menu>
             <flux:menu.radio.group wire:model.live="{{ $model }}">
-                @foreach (\App\Enums\Priority::ordered() as $option)
+                @foreach (\App\Enums\Priority::descending() as $option)
                     <flux:menu.radio :value="$option->value" :icon="$option->icon()" data-test="priority-option-{{ $option->value }}">
                         {{ $option->label() }}
                     </flux:menu.radio>

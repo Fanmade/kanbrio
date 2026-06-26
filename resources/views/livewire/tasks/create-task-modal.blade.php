@@ -46,9 +46,11 @@
             {{-- Priority, status and (when the project has any) type --}}
             @php($hasTaskTypes = ($this->projectId && count($this->taskTypes) > 0))
             <div @class(['grid grid-cols-1 gap-4', 'sm:grid-cols-3' => $hasTaskTypes, 'sm:grid-cols-2' => ! $hasTaskTypes])>
-                <flux:select wire:model="priority" :label="__('Priority')" data-test="create-task-priority">
-                    @foreach (\App\Enums\Priority::ordered() as $priority)
-                        <flux:select.option :value="$priority->value">{{ $priority->label() }}</flux:select.option>
+                <flux:select variant="listbox" wire:model="priority" :label="__('Priority')" data-test="create-task-priority">
+                    @foreach (\App\Enums\Priority::descending() as $priority)
+                        <flux:select.option :value="$priority->value">
+                            <x-priority-badge :priority="$priority" />
+                        </flux:select.option>
                     @endforeach
                 </flux:select>
 

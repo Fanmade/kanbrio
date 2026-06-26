@@ -19,10 +19,12 @@
 
                     <flux:popover class="flex w-64 flex-col gap-3">
                         <flux:switch wire:model.live="showArchived" :label="__('Show archived')" align="left" data-test="show-archived" />
-                        <flux:select wire:model.live="priorityFilter" size="sm" :label="__('Priority')" data-test="priority-filter">
+                        <flux:select variant="listbox" wire:model.live="priorityFilter" size="sm" :label="__('Priority')" data-test="priority-filter">
                             <flux:select.option value="">{{ __('All priorities') }}</flux:select.option>
-                            @foreach (\App\Enums\Priority::ordered() as $priority)
-                                <flux:select.option :value="$priority->value">{{ $priority->label() }}</flux:select.option>
+                            @foreach (\App\Enums\Priority::descending() as $priority)
+                                <flux:select.option :value="$priority->value">
+                                    <x-priority-badge :priority="$priority" />
+                                </flux:select.option>
                             @endforeach
                         </flux:select>
                         @if (count($this->taskTypes) > 0)

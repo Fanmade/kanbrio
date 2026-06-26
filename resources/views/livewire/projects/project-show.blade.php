@@ -122,7 +122,7 @@
                             <flux:field>
                                 <flux:label>{{ __('Priority') }}</flux:label>
                                 <flux:checkbox.group wire:model.live="priorityFilters" data-test="priority-filter" class="flex flex-col gap-1">
-                                    @foreach (\App\Enums\Priority::ordered() as $priority)
+                                    @foreach (\App\Enums\Priority::descending() as $priority)
                                         <flux:checkbox :value="$priority->value" :label="$priority->label()" />
                                     @endforeach
                                 </flux:checkbox.group>

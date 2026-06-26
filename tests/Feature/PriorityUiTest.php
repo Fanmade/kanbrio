@@ -43,6 +43,18 @@ it('defaults the new-task priority to the project default when the dialog opens'
         ->toBe(Priority::default());
 });
 
+it('lists the priority picker with the highest priority first', function () {
+    // KAN-293: the create dialog's priority picker must show Highest at the top
+    // and Lowest at the bottom.
+    $html = Livewire::actingAs($this->member)
+        ->test(CreateTaskModal::class)
+        ->call('open', $this->project->id)
+        ->html();
+
+    expect(mb_strpos($html, Priority::Highest->label()))
+        ->toBeLessThan(mb_strpos($html, Priority::Lowest->label()));
+});
+
 it('updates a task priority inline from the task view and logs it', function () {
     $task = Task::factory()->for($this->project)->priority(Priority::Medium)->create();
 
