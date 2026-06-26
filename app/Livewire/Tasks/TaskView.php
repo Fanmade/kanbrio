@@ -215,13 +215,14 @@ class TaskView extends Component
     public function updatedStatus(string $value): void
     {
         $task = $this->task;
-        $this->authorize('updateStatus', $task);
 
         $new = Status::tryFrom($value);
 
         if ($new === null || $task->status === $new) {
             return;
         }
+
+        $this->authorize($new === Status::Done ? 'close' : 'updateStatus', $task);
 
         // Closing a parent with open subtasks under the "ask" preference: hold the
         // change and let the modal decide whether to cascade.
@@ -294,7 +295,7 @@ class TaskView extends Component
      */
     public function confirmCancel(): void
     {
-        $this->authorize('update', $this->task);
+        $this->authorize('cancel', $this->task);
 
         $this->reset('cancelReason', 'cancelMessage');
         $this->resetValidation();
@@ -316,7 +317,7 @@ class TaskView extends Component
     public function cancelTask(): void
     {
         $task = $this->task;
-        $this->authorize('update', $task);
+        $this->authorize('cancel', $task);
 
         $validated = $this->validate([
             'cancelReason' => ['required', new Enum(CancelReason::class)],
@@ -343,7 +344,7 @@ class TaskView extends Component
     public function reopenTask(): void
     {
         $task = $this->task;
-        $this->authorize('update', $task);
+        $this->authorize('cancel', $task);
 
         app(CancelTask::class)->reopen($task);
 
@@ -388,7 +389,7 @@ class TaskView extends Component
         }
 
         $task = $this->task;
-        $this->authorize('updateStatus', $task);
+        $this->authorize($new === Status::Done ? 'close' : 'updateStatus', $task);
 
         if ($remember) {
             Auth::user()?->setPreference(

@@ -171,7 +171,7 @@ trait ManagesDependencies
     public function addDependency(): void
     {
         $item = $this->dependable();
-        $this->authorize('update', $item);
+        $this->authorize('manageDependencies', $item);
 
         $this->validate([
             'dependencyReference' => ['required', 'string'],
@@ -216,7 +216,7 @@ trait ManagesDependencies
     public function removeDependency(int $dependencyId): void
     {
         $item = $this->dependable();
-        $this->authorize('update', $item);
+        $this->authorize('manageDependencies', $item);
 
         $dependency = Dependency::findOrFail($dependencyId);
 

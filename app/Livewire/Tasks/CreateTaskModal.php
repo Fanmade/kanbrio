@@ -479,7 +479,7 @@ class CreateTaskModal extends Component
 
         abort_if($project === null, 404);
 
-        $this->authorize('update', $project);
+        $this->authorize('create-task', $project);
 
         $parent = $this->resolveParent($project, $validated['parentId'] ?? null);
 

@@ -345,7 +345,7 @@ class ProjectShow extends Component
     {
         $task = $this->project()->rootTasks()->whereKey($taskId)->firstOrFail();
 
-        $this->authorize('update', $task);
+        $this->authorize('archive', $task);
 
         $task->archive();
 
@@ -361,7 +361,7 @@ class ProjectShow extends Component
     {
         $task = $this->project()->rootTasks()->whereKey($taskId)->firstOrFail();
 
-        $this->authorize('update', $task);
+        $this->authorize('archive', $task);
 
         $task->unarchive();
 

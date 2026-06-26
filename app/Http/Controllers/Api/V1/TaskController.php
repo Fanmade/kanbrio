@@ -82,7 +82,7 @@ class TaskController extends Controller
     {
         $project = ReferenceResolver::project($short_name);
 
-        abort_if($project === null || Auth::user()->cannot('update', $project), 404);
+        abort_if($project === null || Auth::user()->cannot('create-task', $project), 404);
 
         $validated = $request->validate([
             'title' => ['required', 'string', 'max:255'],
@@ -102,7 +102,7 @@ class TaskController extends Controller
             $parent = ReferenceResolver::task($validated['parent']);
 
             abort_if(
-                $parent === null || $parent->project_id !== $project->id || Auth::user()->cannot('update', $parent),
+                $parent === null || $parent->project_id !== $project->id || Auth::user()->cannot('view', $parent),
                 404,
             );
         }
@@ -227,7 +227,7 @@ class TaskController extends Controller
      */
     public function cancel(Request $request, string $reference): TaskDetailResource
     {
-        $task = $this->resolveForUpdate($reference);
+        $task = $this->resolveForCancel($reference);
 
         if ($task->isCanceled()) {
             throw ValidationException::withMessages(['cancel_reason' => __('This task is already canceled.')]);
@@ -252,7 +252,7 @@ class TaskController extends Controller
      */
     public function reopen(string $reference): TaskDetailResource
     {
-        $task = $this->resolveForUpdate($reference);
+        $task = $this->resolveForCancel($reference);
 
         if (! $task->isCanceled()) {
             throw ValidationException::withMessages(['status' => __('This task is not canceled.')]);
@@ -299,6 +299,19 @@ class TaskController extends Controller
         $task = ReferenceResolver::task($reference);
 
         abort_if($task === null || Auth::user()->cannot('update', $task), 404);
+
+        return $task;
+    }
+
+    /**
+     * Resolve a task the caller may cancel or reopen (404 when missing or not
+     * permitted).
+     */
+    private function resolveForCancel(string $reference): Task
+    {
+        $task = ReferenceResolver::task($reference);
+
+        abort_if($task === null || Auth::user()->cannot('cancel', $task), 404);
 
         return $task;
     }

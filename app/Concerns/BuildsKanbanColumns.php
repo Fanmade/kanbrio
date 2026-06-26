@@ -88,13 +88,13 @@ trait BuildsKanbanColumns
      */
     protected function applyTaskMove(Task $task, string $status): ?StatusCascadeResult
     {
-        $this->authorize('updateStatus', $task);
-
         $new = Status::tryFrom($status);
 
         if ($new === null || $task->status === $new) {
             return null;
         }
+
+        $this->authorize($new === Status::Done ? 'close' : 'updateStatus', $task);
 
         // Position is set first; the status change (and its cascade) is persisted
         // by the shared action, which saves the model — carrying the new position.
@@ -108,7 +108,7 @@ trait BuildsKanbanColumns
      */
     protected function applyTaskArchive(Task $task): void
     {
-        $this->authorize('updateStatus', $task);
+        $this->authorize('archive', $task);
 
         $task->archive();
     }
@@ -118,7 +118,7 @@ trait BuildsKanbanColumns
      */
     protected function applyTaskUnarchive(Task $task): void
     {
-        $this->authorize('updateStatus', $task);
+        $this->authorize('archive', $task);
 
         $task->unarchive();
     }
@@ -131,13 +131,16 @@ trait BuildsKanbanColumns
      */
     protected function applyTaskReorder(Task $task, string $status, ?int $beforeId, ?int $afterId): ?StatusCascadeResult
     {
-        $this->authorize('updateStatus', $task);
-
         $new = Status::tryFrom($status);
 
         if ($new === null) {
             return null;
         }
+
+        // Completing the task (moving it into Done) needs close; a plain move or a
+        // reposition within a column is an ordinary status edit.
+        $closing = $new === Status::Done && $task->status !== Status::Done;
+        $this->authorize($closing ? 'close' : 'updateStatus', $task);
 
         $task->position = $this->positionBetween($beforeId, $afterId);
 

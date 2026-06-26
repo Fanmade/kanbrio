@@ -56,7 +56,7 @@ class CreateTaskTool extends Tool
 
         $project = ReferenceResolver::project($validated['reference']);
 
-        if ($project === null || ! $request->user()->can('update', $project)) {
+        if ($project === null || ! $request->user()->can('create-task', $project)) {
             return Response::error('No project with short_name "'.$validated['reference'].'" exists, or you do not have access to it. References look like "PROJ".');
         }
 
@@ -65,7 +65,7 @@ class CreateTaskTool extends Tool
         if (isset($validated['parent'])) {
             $parent = ReferenceResolver::task($validated['parent']);
 
-            if ($parent === null || ! $request->user()->can('update', $parent)) {
+            if ($parent === null || ! $request->user()->can('view', $parent)) {
                 return Response::error('No task with reference "'.$validated['parent'].'" exists, or you do not have access to it. References look like "PROJ-42".');
             }
 
