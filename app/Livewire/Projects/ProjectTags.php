@@ -42,6 +42,19 @@ class ProjectTags extends Component
     public ?string $editIcon = null;
 
     /**
+     * The names the edited tag is also found by when searching. Edited as a list
+     * of staged chips and persisted on save.
+     *
+     * @var list<string>
+     */
+    public array $editSynonyms = [];
+
+    /**
+     * The text typed into the "add synonym" field of the edit dialog.
+     */
+    public string $synonymQuery = '';
+
+    /**
      * The ids of the tags ticked for merging.
      *
      * @var list<int>
@@ -54,6 +67,12 @@ class ProjectTags extends Component
      * The tag the selected tags fold into — the one that survives the merge.
      */
     public ?int $mergeTargetId = null;
+
+    /**
+     * Whether merging should keep the folded-in tags' names (and their synonyms)
+     * as synonyms of the surviving tag.
+     */
+    public bool $mergeAsSynonyms = false;
 
     public function mount(string $short_name): void
     {
@@ -144,6 +163,13 @@ class ProjectTags extends Component
         $this->editName = $tag->name;
         $this->editColor = $tag->color;
         $this->editIcon = $tag->icon;
+
+        $synonyms = [];
+        foreach ($tag->synonyms()->orderBy('name')->get() as $synonym) {
+            $synonyms[] = $synonym->name;
+        }
+        $this->editSynonyms = $synonyms;
+        $this->synonymQuery = '';
         $this->resetValidation();
         $this->editing = true;
     }
@@ -154,6 +180,42 @@ class ProjectTags extends Component
     public function clearIcon(): void
     {
         $this->editIcon = null;
+    }
+
+    /**
+     * Stage the typed text as a synonym of the tag being edited, skipping blanks,
+     * the tag's own name and any already-staged synonym (case-insensitively).
+     */
+    public function addSynonym(): void
+    {
+        $name = trim($this->synonymQuery);
+        $this->synonymQuery = '';
+
+        if ($name === '') {
+            return;
+        }
+
+        $taken = array_map(mb_strtolower(...), [$this->editName, ...$this->editSynonyms]);
+
+        if (in_array(mb_strtolower($name), $taken, true)) {
+            return;
+        }
+
+        $this->editSynonyms[] = $name;
+    }
+
+    /**
+     * Remove a staged synonym by its position.
+     */
+    public function removeSynonym(int $index): void
+    {
+        $remaining = [];
+        foreach ($this->editSynonyms as $position => $synonym) {
+            if ($position !== $index) {
+                $remaining[] = $synonym;
+            }
+        }
+        $this->editSynonyms = $remaining;
     }
 
     /**
@@ -190,12 +252,14 @@ class ProjectTags extends Component
             $tag->rename($name);
             $tag->recolor($validated['editColor']);
             $tag->forceFill(['icon' => $this->editIcon])->save();
+            $tag->syncSynonyms($this->editSynonyms);
 
             Flux::toast(variant: 'success', text: __('Tag updated.'));
         }
 
         $this->editing = false;
         $this->editingTagId = null;
+        $this->reset('editSynonyms', 'synonymQuery');
         unset($this->tags);
     }
 
@@ -231,6 +295,7 @@ class ProjectTags extends Component
         }
 
         $this->mergeTargetId = $selected->first()->id;
+        $this->mergeAsSynonyms = false;
         $this->merging = true;
     }
 
@@ -252,10 +317,12 @@ class ProjectTags extends Component
             return;
         }
 
-        $selected->reject(static fn (Tag $tag): bool => $tag->is($target))
-            ->each(static fn (Tag $tag) => $tag->mergeInto($target));
+        $adopt = $this->mergeAsSynonyms;
 
-        $this->reset('selected', 'merging', 'mergeTargetId');
+        $selected->reject(static fn (Tag $tag): bool => $tag->is($target))
+            ->each(static fn (Tag $tag) => $tag->mergeInto($target, adoptAsSynonym: $adopt));
+
+        $this->reset('selected', 'merging', 'mergeTargetId', 'mergeAsSynonyms');
         unset($this->tags, $this->selectedTags);
 
         Flux::toast(variant: 'success', text: __('Tags merged.'));

@@ -161,6 +161,34 @@
                 </flux:badge>
             </div>
 
+            <div class="flex flex-col gap-1.5">
+                <flux:label>{{ __('Synonyms') }}</flux:label>
+                <flux:text size="sm" class="text-zinc-400">
+                    {{ __('Alternative names this tag is also found by when searching.') }}
+                </flux:text>
+                @if ($editSynonyms !== [])
+                    <div class="flex flex-wrap items-center gap-1" data-test="edit-tag-synonyms">
+                        @foreach ($editSynonyms as $index => $synonym)
+                            <flux:badge size="sm" color="zinc" variant="pill" wire:key="synonym-{{ $index }}">
+                                {{ $synonym }}
+                                <flux:badge.close
+                                    wire:click="removeSynonym({{ $index }})"
+                                    :aria-label="__('Remove synonym')"
+                                    data-test="remove-synonym-{{ $index }}"
+                                />
+                            </flux:badge>
+                        @endforeach
+                    </div>
+                @endif
+                <flux:input
+                    size="sm"
+                    wire:model="synonymQuery"
+                    :placeholder="__('Add a synonym')"
+                    x-on:keydown.enter.prevent="$wire.addSynonym()"
+                    data-test="edit-tag-synonym-input"
+                />
+            </div>
+
             <div class="flex justify-end gap-2">
                 <flux:modal.close>
                     <flux:button type="button" variant="ghost">{{ __('Cancel') }}</flux:button>
@@ -192,6 +220,12 @@
                     </flux:radio>
                 @endforeach
             </flux:radio.group>
+
+            <flux:checkbox
+                wire:model="mergeAsSynonyms"
+                :label="__('Keep the merged tags\' names as synonyms of the surviving tag')"
+                data-test="merge-as-synonyms"
+            />
 
             <div class="flex justify-end gap-2">
                 <flux:modal.close>

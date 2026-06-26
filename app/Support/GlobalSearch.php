@@ -174,7 +174,9 @@ class GlobalSearch
             ->whereIn('project_id', $projectIds)
             ->where(static fn (Builder $builder): Builder => $builder
                 ->where('title', $operator, $like)
-                ->orWhereHas('tags', static fn (Builder $tag): Builder => $tag->where('name', $operator, $like)))
+                ->orWhereHas('tags', static fn (Builder $tag): Builder => $tag
+                    ->where('name', $operator, $like)
+                    ->orWhereHas('synonyms', static fn (Builder $synonym): Builder => $synonym->where('name', $operator, $like))))
             ->limit(self::LIMIT)
             ->get()
             ->map(fn (Task $task): SearchResult => $this->toResult($task));

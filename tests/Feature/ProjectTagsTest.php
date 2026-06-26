@@ -133,6 +133,64 @@ it('merges the selected tags into the chosen surviving tag, re-pointing tasks', 
         ->and($project->activities()->where('action', 'tag_merged')->count())->toBe(1);
 });
 
+it('loads, stages and persists tag synonyms from the edit dialog', function () {
+    [$user, $project, $tag] = memberProjectTag(); // tag "Bug"
+    $tag->syncSynonyms(['Glitch']);
+
+    Livewire::actingAs($user)
+        ->test(ProjectTags::class, ['short_name' => $project->short_name])
+        ->call('startEdit', $tag->id)
+        ->assertSet('editSynonyms', ['Glitch'])
+        ->set('synonymQuery', 'Defect')
+        ->call('addSynonym')
+        ->assertSet('synonymQuery', '')
+        ->assertSet('editSynonyms', ['Glitch', 'Defect'])
+        ->set('synonymQuery', 'glitch') // case-insensitive duplicate, ignored
+        ->call('addSynonym')
+        ->set('synonymQuery', 'Bug') // the tag's own name, ignored
+        ->call('addSynonym')
+        ->assertSet('editSynonyms', ['Glitch', 'Defect'])
+        ->call('removeSynonym', 0)
+        ->assertSet('editSynonyms', ['Defect'])
+        ->call('saveEdit')
+        ->assertHasNoErrors();
+
+    expect($tag->fresh()->synonyms()->pluck('name')->all())->toBe(['Defect']);
+});
+
+it('keeps the merged tags as synonyms of the survivor only when opted in', function () {
+    [$admin, $project] = [User::factory()->create(), Project::factory()->create()];
+    joinProject($project, $admin, 'admin');
+    $research = Tag::factory()->for($project)->create(['name' => 'Research']);
+    $evaluation = Tag::factory()->for($project)->create(['name' => 'Evaluation']);
+    $evaluation->syncSynonyms(['Assessment']);
+
+    Livewire::actingAs($admin)
+        ->test(ProjectTags::class, ['short_name' => $project->short_name])
+        ->set('selected', [$research->id, $evaluation->id])
+        ->set('mergeTargetId', $research->id)
+        ->set('mergeAsSynonyms', true)
+        ->call('mergeTags');
+
+    expect($research->fresh()->synonyms()->pluck('name')->sort()->values()->all())
+        ->toBe(['Assessment', 'Evaluation']);
+});
+
+it('does not add synonyms on merge when the option is left off', function () {
+    [$admin, $project] = [User::factory()->create(), Project::factory()->create()];
+    joinProject($project, $admin, 'admin');
+    $research = Tag::factory()->for($project)->create(['name' => 'Research']);
+    $evaluation = Tag::factory()->for($project)->create(['name' => 'Evaluation']);
+
+    Livewire::actingAs($admin)
+        ->test(ProjectTags::class, ['short_name' => $project->short_name])
+        ->set('selected', [$research->id, $evaluation->id])
+        ->set('mergeTargetId', $research->id)
+        ->call('mergeTags');
+
+    expect($research->fresh()->synonyms()->count())->toBe(0);
+});
+
 it('defaults to the most-used tag and shows the names when opening the merge dialog', function () {
     [$admin, $project] = [User::factory()->create(), Project::factory()->create()];
     joinProject($project, $admin, 'admin');

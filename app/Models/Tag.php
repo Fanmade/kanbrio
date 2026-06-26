@@ -7,8 +7,10 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Collection;
 
 /**
  * @property int $id
@@ -112,6 +114,79 @@ class Tag extends Model
     }
 
     /**
+     * Alternative names this tag is also found by when searching.
+     *
+     * @return HasMany<TagSynonym, $this>
+     */
+    public function synonyms(): HasMany
+    {
+        return $this->hasMany(TagSynonym::class);
+    }
+
+    /**
+     * Replace this tag's synonyms with the given names. Names are trimmed and
+     * de-duplicated case-insensitively; blanks and any name matching the tag's
+     * own name are dropped (a tag is already found by its own name). Existing
+     * synonyms are kept (not recreated) so their order/timestamps survive.
+     *
+     * @param  iterable<int, string>  $names
+     */
+    public function syncSynonyms(iterable $names): void
+    {
+        $desired = $this->normalizeSynonymNames($names);
+        $existing = $this->synonyms()->get();
+
+        $existing
+            ->reject(fn (TagSynonym $synonym): bool => $desired->has(mb_strtolower($synonym->name)))
+            ->each(static fn (TagSynonym $synonym) => $synonym->delete());
+
+        $desired
+            ->reject(static fn (string $name, string $key): bool => $existing->contains(
+                static fn (TagSynonym $synonym): bool => mb_strtolower($synonym->name) === $key
+            ))
+            ->each(fn (string $name) => $this->synonyms()->create(['name' => $name]));
+    }
+
+    /**
+     * Append the given names as synonyms, skipping any that already exist (case-
+     * insensitively) or match the tag's own name. Used when merging tags so the
+     * survivor keeps finding the folded-in tags by their old names.
+     *
+     * @param  iterable<int, string>  $names
+     */
+    public function addSynonyms(iterable $names): void
+    {
+        $taken = $this->synonyms()->pluck('name')
+            ->map(static fn (string $name): string => mb_strtolower($name))
+            ->push(mb_strtolower($this->name))
+            ->flip();
+
+        $this->normalizeSynonymNames($names)
+            ->reject(static fn (string $name, string $key): bool => $taken->has($key))
+            ->each(fn (string $name) => $this->synonyms()->create(['name' => $name]));
+    }
+
+    /**
+     * Trim, drop blanks and the tag's own name, and de-duplicate the given names
+     * case-insensitively. Keyed by the lower-cased name, valued by the original
+     * casing to preserve how each synonym was typed.
+     *
+     * @param  iterable<int, string>  $names
+     * @return Collection<string, non-empty-string>
+     */
+    protected function normalizeSynonymNames(iterable $names): Collection
+    {
+        $ownName = mb_strtolower($this->name);
+
+        return Collection::make($names)
+            ->map(static fn (string $name): string => trim($name))
+            ->filter(static fn (string $name): bool => $name !== '')
+            ->reject(fn (string $name): bool => mb_strtolower($name) === $ownName)
+            ->unique(static fn (string $name): string => mb_strtolower($name))
+            ->keyBy(static fn (string $name): string => mb_strtolower($name));
+    }
+
+    /**
      * Rename the tag, logging the change against its project. Returns false (and
      * does nothing) when the name is blank or unchanged.
      */
@@ -168,11 +243,19 @@ class Tag extends Model
      * delete this tag, logging the merge against the project. Used both when a
      * rename would collide with an existing tag and by the explicit merge-tags
      * action — the two are merged rather than one silently lost.
+     *
+     * When $adoptAsSynonym is true the target also takes on this tag's name and
+     * its synonyms (skipping duplicates), so it keeps surfacing for searches that
+     * used the folded-in name.
      */
-    public function mergeInto(self $target): void
+    public function mergeInto(self $target, bool $adoptAsSynonym = false): void
     {
         $taskIds = $this->tasks()->pluck('tasks.id')->all();
         $target->tasks()->syncWithoutDetaching($taskIds);
+
+        if ($adoptAsSynonym) {
+            $target->addSynonyms($this->synonyms->pluck('name')->push($this->name));
+        }
 
         $this->project->recordActivity('tag_merged', 'tags', $this->name, $target->name);
         $this->delete();

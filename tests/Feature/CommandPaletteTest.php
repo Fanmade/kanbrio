@@ -49,6 +49,18 @@ it('finds a task by its tag', function () {
         ->assertSee('Deploy fix');
 });
 
+it('finds a task by a synonym of its tag', function () {
+    // KAN-303: the "research" tag carries the synonym "evaluation", so searching
+    // "evaluation" should surface tasks tagged "research".
+    $this->task->syncTags('research');
+    $this->task->tags->first()->syncSynonyms(['evaluation']);
+
+    Livewire::actingAs($this->user)
+        ->test(CommandPalette::class)
+        ->set('query', 'evaluation')
+        ->assertSee('Deploy fix');
+});
+
 it('does not attach progress to task or project results', function () {
     $project = app(GlobalSearch::class)->search($this->user, 'ABC')->firstWhere('type', 'project');
     $task = app(GlobalSearch::class)->search($this->user, 'Deploy')->firstWhere('type', 'task');

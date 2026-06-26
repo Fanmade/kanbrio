@@ -13,6 +13,7 @@ use App\Models\Task;
 use App\Models\TaskType;
 use App\Models\User;
 use Flux\Flux;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Collection as BaseCollection;
 use Illuminate\Support\Facades\Auth;
@@ -304,7 +305,12 @@ class CreateTaskModal extends Component
                     ->whereColumn('taggables.tag_id', 'tags.id'),
                 'usage_count'
             )
-            ->whereLike('tags.name', '%'.$query.'%')
+            ->where(static function (Builder $tags) use ($query): void {
+                // Match the tag's own name or any of its synonyms, so typing
+                // "eval" still surfaces the "Research" tag (synonym "Evaluation").
+                $tags->whereLike('tags.name', '%'.$query.'%')
+                    ->orWhereHas('synonyms', static fn (Builder $synonyms) => $synonyms->whereLike('name', '%'.$query.'%'));
+            })
             ->orderByDesc('usage_count')
             ->orderBy('tags.name')
             ->limit(12)
