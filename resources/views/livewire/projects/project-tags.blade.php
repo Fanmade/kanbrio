@@ -14,6 +14,10 @@
             <flux:heading size="xl" class="min-w-0 truncate">{{ __('Tags') }}</flux:heading>
             <flux:badge color="indigo">{{ $this->project->short_name }}</flux:badge>
         </div>
+
+        <flux:button size="sm" variant="primary" icon="plus" wire:click="startCreate" data-test="new-tag">
+            {{ __('New tag') }}
+        </flux:button>
     </div>
 
     <flux:text class="text-zinc-500">
@@ -24,7 +28,10 @@
         <div class="flex flex-col items-center gap-2 rounded-lg border border-dashed border-zinc-200 p-10 text-center dark:border-white/10" data-test="tags-empty">
             <flux:icon icon="tag" class="size-8 text-zinc-300 dark:text-zinc-600" />
             <flux:heading size="sm">{{ __('No tags yet') }}</flux:heading>
-            <flux:text size="sm" class="text-zinc-400">{{ __('Tags appear here once they are added to tasks.') }}</flux:text>
+            <flux:text size="sm" class="text-zinc-400">{{ __('Tags appear here once they are added to tasks, or create one now.') }}</flux:text>
+            <flux:button size="sm" variant="primary" icon="plus" wire:click="startCreate" data-test="new-tag-empty" class="mt-1">
+                {{ __('New tag') }}
+            </flux:button>
         </div>
     @else
         <div class="relative">
@@ -120,7 +127,7 @@
     {{-- Edit-tag modal --}}
     <flux:modal wire:model="editing" class="md:w-96" data-test="edit-tag-modal">
         <form wire:submit="saveEdit" class="flex flex-col gap-4">
-            <flux:heading size="lg">{{ __('Edit tag') }}</flux:heading>
+            <flux:heading size="lg">{{ $editingTagId === null ? __('New tag') : __('Edit tag') }}</flux:heading>
 
             <flux:input
                 wire:model.live.debounce.300ms="editName"
@@ -193,7 +200,7 @@
                 <flux:modal.close>
                     <flux:button type="button" variant="ghost">{{ __('Cancel') }}</flux:button>
                 </flux:modal.close>
-                <flux:button type="submit" variant="primary" data-test="save-tag">{{ __('Save changes') }}</flux:button>
+                <flux:button type="submit" variant="primary" data-test="save-tag">{{ $editingTagId === null ? __('Create') : __('Save changes') }}</flux:button>
             </div>
         </form>
     </flux:modal>

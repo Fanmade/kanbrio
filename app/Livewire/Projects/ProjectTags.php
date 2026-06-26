@@ -151,6 +151,24 @@ class ProjectTags extends Component
     }
 
     /**
+     * Open the dialog to create a brand-new tag, with empty fields. The same
+     * dialog handles edits; a null editingTagId marks create mode.
+     */
+    public function startCreate(): void
+    {
+        $this->authorize('manage-tags', $this->project());
+
+        $this->editingTagId = null;
+        $this->editName = '';
+        $this->editColor = 'zinc';
+        $this->editIcon = null;
+        $this->editSynonyms = [];
+        $this->synonymQuery = '';
+        $this->resetValidation();
+        $this->editing = true;
+    }
+
+    /**
      * Open the edit dialog for one of the project's tags.
      */
     public function startEdit(int $tagId): void
@@ -234,8 +252,15 @@ class ProjectTags extends Component
             'editIcon' => ['nullable', 'string', 'in:'.implode(',', TaskType::ICONS)],
         ]);
 
-        $tag = $project->tags()->whereKey($this->editingTagId)->firstOrFail();
         $name = trim($validated['editName']);
+
+        if ($this->editingTagId === null) {
+            $this->createTag($project, $name, $validated['editColor']);
+
+            return;
+        }
+
+        $tag = $project->tags()->whereKey($this->editingTagId)->firstOrFail();
 
         $collision = $project->tags()
             ->whereKeyNot($tag->id)
@@ -261,6 +286,34 @@ class ProjectTags extends Component
         $this->editingTagId = null;
         $this->reset('editSynonyms', 'synonymQuery');
         unset($this->tags);
+    }
+
+    /**
+     * Create a new tag from the dialog. A name that already exists (case-
+     * insensitively) in the project is rejected rather than silently merged, so
+     * creating never folds into an unrelated tag.
+     */
+    protected function createTag(Project $project, string $name, string $color): void
+    {
+        $exists = $project->tags()
+            ->whereRaw('lower(name) = ?', [mb_strtolower($name)])
+            ->exists();
+
+        if ($exists) {
+            $this->addError('editName', __('A tag with that name already exists.'));
+
+            return;
+        }
+
+        Tag::findOrCreateForProject($project->id, $name, $color, $this->editIcon)
+            ->syncSynonyms($this->editSynonyms);
+
+        $this->editing = false;
+        $this->editingTagId = null;
+        $this->reset('editSynonyms', 'synonymQuery');
+        unset($this->tags);
+
+        Flux::toast(variant: 'success', text: __('Tag created.'));
     }
 
     /**

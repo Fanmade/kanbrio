@@ -191,6 +191,44 @@ it('does not add synonyms on merge when the option is left off', function () {
     expect($research->fresh()->synonyms()->count())->toBe(0);
 });
 
+it('creates a new tag with a color, icon and synonyms from the dialog', function () {
+    [$user, $project, $existing] = memberProjectTag(); // an unrelated "Bug" tag
+
+    Livewire::actingAs($user)
+        ->test(ProjectTags::class, ['short_name' => $project->short_name])
+        ->call('startCreate')
+        ->assertSet('editingTagId', null)
+        ->set('editName', 'Research')
+        ->set('editColor', 'emerald')
+        ->set('editIcon', 'beaker')
+        ->set('synonymQuery', 'Evaluation')
+        ->call('addSynonym')
+        ->call('saveEdit')
+        ->assertHasNoErrors()
+        ->assertSet('editing', false);
+
+    $tag = $project->tags()->where('name', 'Research')->first();
+
+    expect($tag)->not->toBeNull()
+        ->and($tag->color)->toBe('emerald')
+        ->and($tag->icon)->toBe('beaker')
+        ->and($tag->synonyms()->pluck('name')->all())->toBe(['Evaluation']);
+});
+
+it('rejects creating a tag whose name already exists', function () {
+    [$user, $project] = memberProjectTag(); // already has a "Bug" tag
+
+    Livewire::actingAs($user)
+        ->test(ProjectTags::class, ['short_name' => $project->short_name])
+        ->call('startCreate')
+        ->set('editName', 'bug') // case-insensitive collision with "Bug"
+        ->call('saveEdit')
+        ->assertHasErrors('editName')
+        ->assertSet('editing', true);
+
+    expect($project->tags()->count())->toBe(1);
+});
+
 it('defaults to the most-used tag and shows the names when opening the merge dialog', function () {
     [$admin, $project] = [User::factory()->create(), Project::factory()->create()];
     joinProject($project, $admin, 'admin');

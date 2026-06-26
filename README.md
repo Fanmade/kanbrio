@@ -99,7 +99,7 @@ Built on Laravel with Livewire and Flux UI. English and German out of the box.
   shown as badges with a colored dot, or an optional icon in the tag's color. Add
   one from a searchable list of the project's most-used tags, or create a new tag
   on the spot and pick its color and icon. A per-project tag page lets members
-  rename, recolor and set the icon of tags (renaming onto an existing tag merges
+  create tags as well as rename, recolor and set the icon of tags (renaming onto an existing tag merges
   the two), while admins and owners can delete them or merge several duplicates
   into one chosen tag — re-tagging affected tasks before the others are removed,
   and optionally keeping the merged names as synonyms of the survivor. Each tag
