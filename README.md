@@ -110,8 +110,9 @@ Built on Laravel with Livewire and Flux UI. English and German out of the box.
   Admins can add, rename, recolor, re-icon, reorder and delete a project's types
   from its task-types page; deleting a type leaves its tasks untyped.
 - **Priorities** — five levels (Lowest, Low, Medium, High, Highest; Medium is the
-  default) on tasks, with new subtasks inheriting their parent task's priority.
-  Board columns are ordered by priority and can be filtered to a single level.
+  default) on tasks, each shown as a coloured, icon'd badge, with new subtasks
+  inheriting their parent task's priority. Pickers and filters list them highest
+  first. Board columns are ordered by priority and can be filtered to a level.
 - **Due dates** on tasks, highlighted on the board when overdue.
 - **Relationships** — link a task to another (by reference) with a typed
   relationship: blocks / blocked by, relates to (symmetric), duplicates /
