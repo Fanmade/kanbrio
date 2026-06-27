@@ -5,6 +5,7 @@ namespace App\Enums;
 enum Permission: string
 {
     case CreateProjects = 'create-projects';
+    case AccessAllProjects = 'access-all-projects';
     case InviteUsers = 'invite-users';
     case CreateApiTokens = 'create-api-tokens';
     case ManageUsers = 'manage-users';
@@ -16,6 +17,7 @@ enum Permission: string
     {
         return match ($this) {
             self::CreateProjects => __('Create projects'),
+            self::AccessAllProjects => __('Access all projects'),
             self::InviteUsers => __('Invite users'),
             self::CreateApiTokens => __('Create API tokens'),
             self::ManageUsers => __('Manage users'),

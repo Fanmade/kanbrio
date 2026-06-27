@@ -167,9 +167,14 @@ Built on Laravel with Livewire and Flux UI. English and German out of the box.
   memberships from the user-administration area requires the member-management
   permission on the project in question (or the system role), so account
   administration alone does not grant the run of every project.
-- **Authorization** via native Gates (`create-projects`, `invite-users`,
-  `create-api-tokens`, `manage-users`) and Policies that resolve project access
-  through inheritance-based, per-project delegated permissions.
+- **Cross-project access** — the account-level `access-all-projects` permission
+  (grantable from user administration) lets staff see and open every project,
+  whether or not they are a member. It is a read/visibility grant only: such a
+  user's project list shows all projects, but contributing to or administering a
+  project still requires a scoped role on it.
+- **Authorization** via native Gates (`create-projects`, `access-all-projects`,
+  `invite-users`, `create-api-tokens`, `manage-users`) and Policies that resolve
+  project access through inheritance-based, per-project delegated permissions.
 - **API tokens** — permitted users mint personal Sanctum tokens (read-only or
   read & write) for MCP/API access and revoke them from Settings.
 - **MCP server** — a Model Context Protocol endpoint at `/mcp`, secured by a bearer

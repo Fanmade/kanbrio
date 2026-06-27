@@ -208,6 +208,17 @@ class User extends Authenticatable implements PasskeyUser
     }
 
     /**
+     * Whether the user may see every project — the account-level
+     * access-all-projects grant. A cross-project read/visibility grant: it opens
+     * the project list and lets the policy's view check pass, but confers no
+     * scoped ability to contribute or administer a project.
+     */
+    public function canAccessAllProjects(): bool
+    {
+        return $this->hasPermission(Permission::AccessAllProjects);
+    }
+
+    /**
      * Replace the user's granted permissions with the given set.
      *
      * @param  array<int, Permission|string>  $values

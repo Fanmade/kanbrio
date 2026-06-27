@@ -30,14 +30,19 @@ class ProjectList extends Component
     public string $description = '';
 
     /**
-     * The projects the current user has access to.
+     * The projects the current user has access to — their memberships, or every
+     * project when they hold the account-level access-all-projects permission.
      *
      * @return Collection<int, Project>
      */
     #[Computed]
     public function projects(): Collection
     {
-        return Auth::user()->projects()->orderBy('title')->get();
+        $user = Auth::user();
+
+        $query = $user->canAccessAllProjects() ? Project::query() : $user->projects();
+
+        return $query->orderBy('title')->get();
     }
 
     /**
