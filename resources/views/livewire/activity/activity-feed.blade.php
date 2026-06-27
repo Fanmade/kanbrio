@@ -12,9 +12,24 @@
     </button>
 
     @unless ($collapsed)
+        @if ($focusSequence)
+            <div
+                wire:key="focus-{{ $focusSequence }}"
+                x-data
+                x-init="$nextTick(() => document.getElementById('log-{{ $focusSequence }}')?.scrollIntoView({ behavior: 'smooth', block: 'center' }))"
+            ></div>
+        @endif
+
         <ul id="activity-body-{{ $morphSubjectId }}" class="mt-3 flex flex-col gap-3">
             @forelse ($this->activities as $activity)
-                <li class="flex items-start gap-2 text-sm">
+                <li
+                    id="log-{{ $activity->sequence }}"
+                    @class([
+                        'flex items-start gap-2 scroll-mt-24 rounded-lg text-sm transition-colors',
+                        '-mx-2 bg-amber-50 px-2 py-1 ring-1 ring-amber-200 dark:bg-amber-400/10 dark:ring-amber-400/20' => $activity->sequence === $focusSequence,
+                    ])
+                    @if ($activity->sequence === $focusSequence) data-test="focused-activity" @endif
+                >
                     <x-user-avatar :user="$activity->user" :name="$activity->user?->name ?? __('System')" />
                     <div class="text-zinc-600 dark:text-zinc-300">
                         <span class="font-medium text-zinc-800 dark:text-zinc-100">{{ $activity->user?->name ?? __('System') }}</span>

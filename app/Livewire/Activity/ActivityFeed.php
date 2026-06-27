@@ -40,12 +40,39 @@ class ActivityFeed extends Component
      */
     public int $visible = self::PER_PAGE;
 
-    public function mount(Project|Task $subject): void
+    /**
+     * The per-subject sequence of an entry to deep-link to (from a "?log=N" URL
+     * or a {@see focusOnSequence()} event), or null. When set, the feed is forced
+     * open and the entry is revealed and scrolled to client-side.
+     */
+    public ?int $focusSequence = null;
+
+    public function mount(Project|Task $subject, ?int $focus = null): void
     {
         $this->initMorphSubject($subject);
         $this->authorize('view-activity-log', $subject instanceof Task ? $subject->project : $subject);
 
         $this->collapsed = (bool) Auth::user()->preference(self::COLLAPSED_PREFERENCE_KEY, true);
+
+        if ($focus !== null && $this->subject()->activities()->where('sequence', $focus)->exists()) {
+            $this->focusOnSequence($focus);
+        }
+    }
+
+    /**
+     * Deep-link to a specific entry: force the feed open and reveal the full
+     * history so the target row is rendered (the view then scrolls to its
+     * `#log-N` anchor). Also reachable same-page via the `focus-activity-log`
+     * event so a comment's reference card can reveal the entry it points at.
+     */
+    #[On('focus-activity-log')]
+    public function focusOnSequence(int $sequence): void
+    {
+        $this->focusSequence = $sequence;
+        $this->collapsed = false;
+        $this->visible = max($this->visible, $this->activityCount());
+
+        unset($this->activities, $this->descriptions, $this->hasMoreActivities);
     }
 
     /**

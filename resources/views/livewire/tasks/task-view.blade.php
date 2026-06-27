@@ -170,7 +170,15 @@
                 <livewire:comments.comment-list :commentable="$this->task" :wire:key="'comments-task-'.$this->task->id" />
 
                 @can('view-activity-log', $this->task->project)
-                    <livewire:activity.activity-feed lazy :subject="$this->task" :wire:key="'activity-task-'.$this->task->id" />
+                    {{-- A "?log=N" deep link to a specific entry renders the feed eagerly:
+                         a lazy feed below the fold never scrolls into view (the target
+                         row doesn't exist yet), so it would never hydrate to reveal it. --}}
+                    <livewire:activity.activity-feed
+                        :lazy="! request('log')"
+                        :subject="$this->task"
+                        :focus="(int) request('log') ?: null"
+                        :wire:key="'activity-task-'.$this->task->id"
+                    />
                 @endcan
             </div>
 
