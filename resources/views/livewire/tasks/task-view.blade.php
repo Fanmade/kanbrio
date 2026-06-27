@@ -178,6 +178,19 @@
             <aside class="w-full shrink-0 lg:w-72">
                 <flux:card class="flex flex-col gap-4">
                     <x-rail-row :label="__('Status')">
+                        @if ($this->previousStatus)
+                            <flux:tooltip :content="__('Move back to :status', ['status' => $this->previousStatus->label()])">
+                                <flux:button
+                                    size="xs"
+                                    variant="filled"
+                                    icon="arrow-left"
+                                    :aria-label="__('Move back to :status', ['status' => $this->previousStatus->label()])"
+                                    wire:click="regressStatus"
+                                    data-test="regress-status"
+                                />
+                            </flux:tooltip>
+                        @endif
+
                         <x-status-control
                             :status="$this->task->status"
                             :can-edit="auth()->user()->can('updateStatus', $this->task) && ! $this->task->isCanceled()"

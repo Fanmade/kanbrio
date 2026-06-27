@@ -324,6 +324,7 @@
   "Move": "Verschieben",
   "Move :task": ":task verschieben",
   "Move a task to Done": "Eine Aufgabe auf Erledigt setzen",
+  "Move back to :status": "Zurück auf :status setzen",
   "Move down": "Nach unten verschieben",
   "Move task": "Aufgabe verschieben",
   "Move to": "Verschieben nach",

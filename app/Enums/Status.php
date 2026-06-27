@@ -89,4 +89,19 @@ enum Status: string
             self::Done, self::Canceled => null,
         };
     }
+
+    /**
+     * The previous status in the working progression (Done → In progress → To do
+     * → Planned), or null when there is none — Planned is the start and Canceled
+     * sits outside the progression.
+     */
+    public function previous(): ?self
+    {
+        return match ($this) {
+            self::Done => self::InProgress,
+            self::InProgress => self::ToDo,
+            self::ToDo => self::Planned,
+            self::Planned, self::Canceled => null,
+        };
+    }
 }

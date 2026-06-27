@@ -234,6 +234,24 @@ class TaskView extends Component
     }
 
     /**
+     * The status a one-click "back" button would move the task to, or null when
+     * there is no previous step or the viewer may not make it. Stepping back never
+     * targets Done, so it always needs only `updateStatus`.
+     */
+    #[Computed]
+    public function previousStatus(): ?Status
+    {
+        $task = $this->task;
+        $previous = $task->status->previous();
+
+        if ($previous === null || $task->isCanceled()) {
+            return null;
+        }
+
+        return Auth::user()?->can('updateStatus', $task) ? $previous : null;
+    }
+
+    /**
      * Advance the task to the next status in one click, routing through the same
      * path as the status control so the cascade prompt, auth and logging all apply.
      */
@@ -247,6 +265,22 @@ class TaskView extends Component
 
         $this->status = $next->value;
         $this->updatedStatus($next->value);
+    }
+
+    /**
+     * Step the task back to the previous status in one click. Stepping back never
+     * lands on a terminal status, so it skips the cascade prompt entirely.
+     */
+    public function regressStatus(): void
+    {
+        $previous = $this->previousStatus();
+
+        if ($previous === null) {
+            return;
+        }
+
+        $this->status = $previous->value;
+        $this->updatedStatus($previous->value);
     }
 
     public function updatedStatus(string $value): void
@@ -446,7 +480,7 @@ class TaskView extends Component
     {
         $result = app(ChangeTaskStatus::class)->handle($task, $new, $cascadeToChildren);
 
-        unset($this->task, $this->nextStatus);
+        unset($this->task, $this->nextStatus, $this->previousStatus);
         $this->status = $new->value;
         $this->parentBumpUndoStatus = $result->parentBumped ? (string) $result->parentPreviousStatus : '';
 
