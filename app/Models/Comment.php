@@ -9,6 +9,7 @@ use App\Contracts\Mentionable;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Support\Carbon;
@@ -111,5 +112,16 @@ class Comment extends Model implements Mentionable
     public function replies(): HasMany
     {
         return $this->hasMany(Comment::class, 'parent_id')->oldest();
+    }
+
+    /**
+     * The activity-log entries this comment references. A comment may point at
+     * several entries, and they may belong to other tasks.
+     *
+     * @return BelongsToMany<Activity, $this>
+     */
+    public function activities(): BelongsToMany
+    {
+        return $this->belongsToMany(Activity::class)->withTimestamps();
     }
 }
