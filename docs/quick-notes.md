@@ -5,10 +5,11 @@ doesn't yet belong on a board.
 
 ## What it does
 
-Create a note from the command palette ("New note") or the **Notes** panel on the
-dashboard. A note has a title and an optional rich-text body — the same editor used
-for descriptions, with inline images. Your notes are listed on the dashboard, newest
-first, where you can edit, share or delete them.
+Create a note from the command palette ("New note"), the **Notes** panel on the
+dashboard, or the dedicated **Notes** page in the sidebar. A note has a title and an
+optional rich-text body — the same editor used for descriptions, with inline images.
+The Notes page lists all your notes, newest first, where you can create, edit, share,
+convert and delete them; the dashboard panel shows the same notes in a compact view.
 
 ## Privacy & sharing
 

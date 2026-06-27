@@ -22,6 +22,9 @@
                     <flux:sidebar.item icon="view-columns" :href="route('board')" :current="request()->routeIs('board')" wire:navigate>
                         {{ __('Board') }}
                     </flux:sidebar.item>
+                    <flux:sidebar.item icon="document-text" :href="route('notes.index')" :current="request()->routeIs('notes.index')" wire:navigate data-test="nav-notes">
+                        {{ __('Notes') }}
+                    </flux:sidebar.item>
                     <flux:sidebar.item icon="bell" :href="route('notifications.index')" :current="request()->routeIs('notifications.index')" wire:navigate>
                         {{ __('Notifications') }}
                     </flux:sidebar.item>

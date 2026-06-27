@@ -12,6 +12,7 @@ use App\Livewire\Board;
 use App\Livewire\Dashboard;
 use App\Livewire\Invitations\AcceptInvitation;
 use App\Livewire\Invitations\InviteUser;
+use App\Livewire\Notes\NoteList;
 use App\Livewire\Notifications\ManageNotifications;
 use App\Livewire\Projects\ProjectBoard;
 use App\Livewire\Projects\ProjectList;
@@ -38,6 +39,7 @@ Route::middleware(['auth', 'verified'])->group(static function () {
 
     Route::livewire('projects', ProjectList::class)->name('projects.index');
     Route::livewire('board', Board::class)->name('board');
+    Route::livewire('notes', NoteList::class)->name('notes.index');
     Route::livewire('notifications', ManageNotifications::class)->name('notifications.index');
     Route::livewire('invite', InviteUser::class)->name('invitations.create');
     Route::livewire('admin/users', UserManagement::class)->name('admin.users');
