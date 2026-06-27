@@ -39,11 +39,11 @@
                         class="flex flex-col gap-3 rounded-lg bg-zinc-50 p-3 dark:bg-white/5"
                         data-test="edit-role-form-{{ $role->id }}"
                     >
-                        <flux:checkbox.group wire:model="editPermissionIds" class="flex flex-col gap-3">
+                        <flux:checkbox.group wire:model="editPermissionIds" class="columns-1 gap-x-8 sm:columns-2 lg:columns-3">
                             @foreach ($this->editPermissionGroups as $group => $permissions)
-                                <div class="flex flex-col gap-1" wire:key="edit-perm-group-{{ \Illuminate\Support\Str::slug($group) }}">
+                                <div class="mb-3 flex break-inside-avoid flex-col gap-1" wire:key="edit-perm-group-{{ \Illuminate\Support\Str::slug($group) }}">
                                     <flux:text size="xs" class="font-medium text-zinc-400">{{ $group }}</flux:text>
-                                    <div class="grid grid-cols-2 gap-1">
+                                    <div class="flex flex-col gap-1">
                                         @foreach ($permissions as $permission)
                                             <flux:checkbox value="{{ $permission->id }}" :label="$permission->name" data-test="edit-permission-{{ $permission->name }}" />
                                         @endforeach
@@ -81,11 +81,11 @@
             <flux:label>{{ __('Permissions') }}</flux:label>
             <flux:description>{{ __('A new role can hold any subset of its parent role\'s permissions.') }}</flux:description>
 
-            <flux:checkbox.group wire:model="permissionIds" class="mt-2 flex flex-col gap-3">
+            <flux:checkbox.group wire:model="permissionIds" class="mt-2 columns-1 gap-x-8 sm:columns-2 lg:columns-3">
                 @forelse ($this->permissionGroups as $group => $permissions)
-                    <div class="flex flex-col gap-1" wire:key="perm-group-{{ \Illuminate\Support\Str::slug($group) }}">
+                    <div class="mb-3 flex break-inside-avoid flex-col gap-1" wire:key="perm-group-{{ \Illuminate\Support\Str::slug($group) }}">
                         <flux:text size="xs" class="font-medium text-zinc-400">{{ $group }}</flux:text>
-                        <div class="grid grid-cols-2 gap-1">
+                        <div class="flex flex-col gap-1">
                             @foreach ($permissions as $permission)
                                 <flux:checkbox value="{{ $permission->id }}" :label="$permission->name" data-test="role-permission-{{ $permission->name }}" />
                             @endforeach

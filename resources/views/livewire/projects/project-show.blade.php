@@ -381,7 +381,7 @@
     @endcan
 
     @can('manage-roles', $this->project)
-        <flux:modal wire:model="managingRoles" class="md:w-[32rem]" data-test="roles-modal">
+        <flux:modal wire:model="managingRoles" class="w-full max-w-5xl" data-test="roles-modal">
             <div class="flex flex-col gap-4">
                 <flux:heading size="lg">{{ __('Manage roles') }}</flux:heading>
 
