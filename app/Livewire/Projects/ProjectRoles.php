@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Projects;
 
+use App\Authorization\PermissionCatalog;
 use App\Authorization\ProjectRoleProvisioner;
 use App\Models\Project;
 use Fanmade\DelegatedPermissions\Models\Permission;
@@ -197,6 +198,15 @@ class ProjectRoles extends Component
         return $this->roles()->mapWithKeys(
             static fn (Role $role): array => [$role->id => $resolver->permissionsFor($role)->sort()->values()->all()],
         )->all();
+    }
+
+    /**
+     * The human-readable, translated label for a permission name, used wherever
+     * a permission is shown in the picker. Defers to {@see PermissionCatalog}.
+     */
+    public function permissionLabel(string $name): string
+    {
+        return PermissionCatalog::label($name);
     }
 
     /**

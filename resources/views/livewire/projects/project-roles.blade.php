@@ -6,7 +6,7 @@
                     <div class="min-w-0">
                         <flux:heading size="sm">{{ $role->name }}</flux:heading>
                         <flux:text size="sm" class="mt-1 text-zinc-500">
-                            {{ implode(', ', $this->permissionsByRole[$role->id] ?? []) ?: __('No permissions') }}
+                            {{ collect($this->permissionsByRole[$role->id] ?? [])->map(fn (string $name) => $this->permissionLabel($name))->implode(', ') ?: __('No permissions') }}
                         </flux:text>
                     </div>
 
@@ -45,7 +45,7 @@
                                     <flux:text size="xs" class="font-medium text-zinc-400">{{ $group }}</flux:text>
                                     <div class="flex flex-col gap-1">
                                         @foreach ($permissions as $permission)
-                                            <flux:checkbox value="{{ $permission->id }}" :label="$permission->name" data-test="edit-permission-{{ $permission->name }}" />
+                                            <flux:checkbox value="{{ $permission->id }}" :label="$this->permissionLabel($permission->name)" data-test="edit-permission-{{ $permission->name }}" />
                                         @endforeach
                                     </div>
                                 </div>
@@ -87,7 +87,7 @@
                         <flux:text size="xs" class="font-medium text-zinc-400">{{ $group }}</flux:text>
                         <div class="flex flex-col gap-1">
                             @foreach ($permissions as $permission)
-                                <flux:checkbox value="{{ $permission->id }}" :label="$permission->name" data-test="role-permission-{{ $permission->name }}" />
+                                <flux:checkbox value="{{ $permission->id }}" :label="$this->permissionLabel($permission->name)" data-test="role-permission-{{ $permission->name }}" />
                             @endforeach
                         </div>
                     </div>
