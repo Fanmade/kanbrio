@@ -146,7 +146,11 @@ Built on Laravel with Livewire and Flux UI. English and German out of the box.
   reason) and noting when an action was performed via an API/MCP token (flagged
   generically, without revealing the token's private name). Collapsed by default;
   the open/closed state is remembered per user. Relative times ("5 hours ago")
-  reveal the exact date and time on hover, here and on comments.
+  reveal the exact date and time on hover, here and on comments. Any entry can be
+  discussed: **Discuss** drops a reference to it into the comment composer (a
+  comment may reference several entries, even ones on other tasks), and the posted
+  comment shows a card per reference linking back to the entry — opening the feed
+  and scrolling to it, navigating across tasks where needed.
 - **Invitation-only onboarding** via signed, expiring email links (public
   registration is disabled).
 - **User administration** — an admin-only area (gated by the `manage-users`

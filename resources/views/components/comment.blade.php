@@ -50,5 +50,26 @@
         </div>
     @else
         <x-rich-text :content="$comment->body" class="text-sm" />
+
+        @if ($comment->activities->isNotEmpty())
+            <div class="mt-1 flex flex-col gap-1" data-test="comment-activity-references">
+                @foreach ($comment->activities as $activity)
+                    <a
+                        href="{{ $activity->deepLinkUrl() }}"
+                        wire:navigate
+                        class="flex items-start gap-2 rounded-lg border border-zinc-200 bg-zinc-50 px-2.5 py-1.5 text-xs text-zinc-600 transition-colors hover:border-zinc-300 dark:border-white/10 dark:bg-zinc-700/40 dark:text-zinc-300 dark:hover:border-white/20"
+                        wire:key="comment-{{ $comment->id }}-ref-{{ $activity->id }}"
+                        data-test="comment-activity-reference"
+                    >
+                        <flux:icon name="clock" variant="micro" class="mt-0.5 shrink-0 text-zinc-400" />
+                        <span class="flex-1">
+                            <span class="font-medium text-zinc-800 dark:text-zinc-100">{{ $activity->user?->name ?? __('System') }}</span>
+                            {{ \App\Support\ActivityDescriber::describe($activity) }}
+                            <span class="text-zinc-400">· {{ $activity->reference }}</span>
+                        </span>
+                    </a>
+                @endforeach
+            </div>
+        @endif
     @endif
 </div>

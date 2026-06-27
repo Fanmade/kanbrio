@@ -74,6 +74,25 @@ class Activity extends Model
     }
 
     /**
+     * A deep link to this entry in its subject's activity feed: the "?log=N"
+     * query forces the (lazy, collapsed) feed open and the "#log-N" fragment
+     * scrolls to the row. Null for subjects without a per-entry reference.
+     */
+    public function deepLinkUrl(): ?string
+    {
+        $subject = $this->subject;
+
+        if (! $subject instanceof Task) {
+            return null;
+        }
+
+        return route('task.show', [
+            'short_name' => $subject->project->short_name,
+            'task_number' => $subject->task_number,
+        ]).'?log='.$this->sequence.'#log-'.$this->sequence;
+    }
+
+    /**
      * @return BelongsTo<User, $this>
      */
     public function user(): BelongsTo

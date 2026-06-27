@@ -10,6 +10,7 @@ use App\Models\Project;
 use App\Models\Task;
 use App\Support\ReferenceResolver;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\On;
@@ -114,12 +115,29 @@ class CommentList extends Component
     #[Computed]
     public function comments(): Collection
     {
-        return $this->commentable()->comments()
+        $comments = $this->commentable()->comments()
             ->whereNull('parent_id')
-            ->with(['user', 'replies.user'])
+            ->with([
+                'user',
+                'activities.user', 'activities.subject',
+                'replies.user', 'replies.activities.user', 'replies.activities.subject',
+            ])
             ->latest()
             ->limit($this->visible)
             ->get();
+
+        // Referenced entries are always task-subject, and each card deep-links via
+        // the task's project short name — eager-load the project on the referenced
+        // task subjects so the cards don't N+1 as the comment list grows.
+        $referencedTasks = $comments
+            ->flatMap(static fn (Comment $comment): array => [$comment, ...$comment->replies->all()])
+            ->flatMap(static fn (Comment $comment): Collection => $comment->activities)
+            ->map(static fn (Activity $activity): ?Model => $activity->subject)
+            ->filter(static fn (?Model $subject): bool => $subject instanceof Task);
+
+        (new Collection($referencedTasks))->loadMissing('project');
+
+        return $comments;
     }
 
     /**
