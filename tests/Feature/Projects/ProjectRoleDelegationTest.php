@@ -84,3 +84,121 @@ it('refuses to delete a protected base role', function () {
 
     expect(Role::query()->whereKey($memberRole->id)->exists())->toBeTrue();
 });
+
+it('edits a custom role in place and cascades a revoke to its descendants', function () {
+    $project = Project::factory()->create();
+    $owner = User::factory()->create();
+    joinProject($project, $owner, 'owner');
+
+    $ownerRole = app(ProjectRoleProvisioner::class)->roleFor($project, 'owner');
+    $roles = app(RoleManager::class);
+    $resolver = app(PermissionResolver::class);
+
+    $lead = $roles->createRole('Lead', $ownerRole, ['view-project', 'create-task', 'edit-task'], $project);
+    $sub = $roles->createRole('Sub', $lead, ['view-project', 'edit-task'], $project);
+
+    $ids = static fn (array $names): array => Permission::query()->whereIn('name', $names)->pluck('id')->all();
+
+    Livewire::actingAs($owner)
+        ->test(ProjectRoles::class, ['project' => $project])
+        ->call('startEdit', $lead->id)
+        // Keep view-project + create-task, drop edit-task, add manage-dependencies.
+        ->set('editPermissionIds', $ids(['view-project', 'create-task', 'manage-dependencies']))
+        ->call('saveRole')
+        ->assertHasNoErrors();
+
+    expect($resolver->permissionsFor($lead->fresh())->all())
+        ->toEqualCanonicalizing(['view-project', 'create-task', 'manage-dependencies']);
+
+    // The revoke of edit-task cascaded to the descendant Sub.
+    expect($resolver->permissionsFor($sub->fresh())->all())->not->toContain('edit-task');
+});
+
+it('drops an out-of-bounds permission when editing a role', function () {
+    $project = Project::factory()->create();
+    $owner = User::factory()->create();
+    joinProject($project, $owner, 'owner');
+
+    $ownerRole = app(ProjectRoleProvisioner::class)->roleFor($project, 'owner');
+    $roles = app(RoleManager::class);
+
+    // Sub's parent Lead lacks manage-settings, so it can never be granted to Sub.
+    $lead = $roles->createRole('Lead', $ownerRole, ['view-project', 'create-task'], $project);
+    $sub = $roles->createRole('Sub', $lead, ['view-project'], $project);
+
+    $ids = Permission::query()->whereIn('name', ['view-project', 'create-task', 'manage-settings'])->pluck('id')->all();
+
+    Livewire::actingAs($owner)
+        ->test(ProjectRoles::class, ['project' => $project])
+        ->call('startEdit', $sub->id)
+        ->set('editPermissionIds', $ids)
+        ->call('saveRole')
+        ->assertHasNoErrors();
+
+    expect(app(PermissionResolver::class)->permissionsFor($sub->fresh())->all())
+        ->toEqualCanonicalizing(['view-project', 'create-task']);
+});
+
+it('will not open a protected base role for editing', function () {
+    $project = Project::factory()->create();
+    $owner = User::factory()->create();
+    joinProject($project, $owner, 'owner');
+
+    $member = app(ProjectRoleProvisioner::class)->roleFor($project, 'member');
+
+    $editingRoleId = Livewire::actingAs($owner)
+        ->test(ProjectRoles::class, ['project' => $project])
+        ->call('startEdit', $member->id)
+        ->get('editingRoleId');
+
+    expect($editingRoleId)->toBeNull();
+});
+
+it('instantiates a role template bounded by the chosen parent', function () {
+    $project = Project::factory()->create();
+
+    $ownerRole = app(ProjectRoleProvisioner::class)->roleFor($project, 'owner');
+
+    // Lead holds none of the attachment permissions, so a Designer template under
+    // it cannot grant them — the preset is intersected with the parent.
+    $lead = app(RoleManager::class)->createRole(
+        'Lead',
+        $ownerRole,
+        ['view-project', 'view-activity-log', 'create-task', 'edit-task', 'manage-roles'],
+        $project,
+    );
+    $manager = User::factory()->create()->assignRole($lead);
+
+    Livewire::actingAs($manager)
+        ->test(ProjectRoles::class, ['project' => $project])
+        ->set('parentId', $lead->id)
+        ->call('applyTemplate', 'Designer')
+        ->assertHasNoErrors();
+
+    $designer = Role::query()->where('scope_id', $project->id)->where('name', 'Designer')->first();
+
+    expect($designer)->not->toBeNull()
+        ->and($designer->parent_id)->toBe($lead->id);
+
+    $perms = app(PermissionResolver::class)->permissionsFor($designer)->all();
+
+    expect($perms)->toContain('view-project', 'create-task', 'edit-task')
+        ->and($perms)->not->toContain('manage-attachments', 'delete-attachment', 'tag-tasks');
+});
+
+it('does not create a second role when a template name is already taken', function () {
+    $project = Project::factory()->create();
+    $owner = User::factory()->create();
+    joinProject($project, $owner, 'owner');
+
+    $ownerRole = app(ProjectRoleProvisioner::class)->roleFor($project, 'owner');
+
+    Livewire::actingAs($owner)
+        ->test(ProjectRoles::class, ['project' => $project])
+        ->set('parentId', $ownerRole->id)
+        ->call('applyTemplate', 'Reviewer')
+        ->call('applyTemplate', 'Reviewer')
+        ->assertHasNoErrors();
+
+    expect(Role::query()->where('scope_id', $project->id)->where('name', 'Reviewer')->count())->toBe(1);
+});
