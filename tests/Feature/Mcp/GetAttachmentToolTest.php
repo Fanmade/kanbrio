@@ -57,6 +57,123 @@ it('returns metadata text for a non-viewable attachment type', function () {
         ->assertSee('cannot be displayed inline');
 });
 
+it('returns the contents of a text-based attachment inline', function () {
+    Storage::disk('attachments')->put('attachments/error.log', "boom on line 1\nboom on line 2\n");
+
+    $attachment = Attachment::factory()->create([
+        'attachable_id' => $this->task->id,
+        'attachable_type' => $this->task->getMorphClass(),
+        'disk' => 'attachments',
+        'path' => 'attachments/error.log',
+        'name' => 'error.log',
+        'mime_type' => 'text/plain',
+    ]);
+
+    KanvigoServer::actingAs($this->member)
+        ->tool(GetAttachmentTool::class, ['id' => $attachment->id])
+        ->assertOk()
+        ->assertSee('boom on line 1')
+        ->assertSee('boom on line 2');
+});
+
+it('inlines an allow-listed textual application type (JSON)', function () {
+    Storage::disk('attachments')->put('attachments/payload.json', '{"status":"failed"}');
+
+    $attachment = Attachment::factory()->create([
+        'attachable_id' => $this->task->id,
+        'attachable_type' => $this->task->getMorphClass(),
+        'disk' => 'attachments',
+        'path' => 'attachments/payload.json',
+        'name' => 'payload.json',
+        'mime_type' => 'application/json',
+    ]);
+
+    KanvigoServer::actingAs($this->member)
+        ->tool(GetAttachmentTool::class, ['id' => $attachment->id])
+        ->assertOk()
+        ->assertSee('"status":"failed"');
+});
+
+it('returns the first page of a large text attachment with a next-offset notice', function () {
+    $cap = 256 * 1024;
+    $body = str_repeat('a', $cap).'TAIL-MARKER';
+    Storage::disk('attachments')->put('attachments/big.log', $body);
+
+    $attachment = Attachment::factory()->create([
+        'attachable_id' => $this->task->id,
+        'attachable_type' => $this->task->getMorphClass(),
+        'disk' => 'attachments',
+        'path' => 'attachments/big.log',
+        'name' => 'big.log',
+        'mime_type' => 'text/plain',
+    ]);
+
+    KanvigoServer::actingAs($this->member)
+        ->tool(GetAttachmentTool::class, ['id' => $attachment->id])
+        ->assertOk()
+        ->assertSee('bytes 0–'.$cap.' of '.($cap + 11))
+        ->assertSee('call again with offset='.$cap)
+        ->assertDontSee('TAIL-MARKER');
+});
+
+it('pages to a later section of a text attachment via offset', function () {
+    $cap = 256 * 1024;
+    $body = str_repeat('a', $cap).'TAIL-MARKER';
+    Storage::disk('attachments')->put('attachments/big.log', $body);
+
+    $attachment = Attachment::factory()->create([
+        'attachable_id' => $this->task->id,
+        'attachable_type' => $this->task->getMorphClass(),
+        'disk' => 'attachments',
+        'path' => 'attachments/big.log',
+        'name' => 'big.log',
+        'mime_type' => 'text/plain',
+    ]);
+
+    KanvigoServer::actingAs($this->member)
+        ->tool(GetAttachmentTool::class, ['id' => $attachment->id, 'offset' => $cap])
+        ->assertOk()
+        ->assertSee('TAIL-MARKER')
+        ->assertSee('end of file');
+});
+
+it('reports when the offset is past the end of the file', function () {
+    Storage::disk('attachments')->put('attachments/small.log', 'short');
+
+    $attachment = Attachment::factory()->create([
+        'attachable_id' => $this->task->id,
+        'attachable_type' => $this->task->getMorphClass(),
+        'disk' => 'attachments',
+        'path' => 'attachments/small.log',
+        'name' => 'small.log',
+        'mime_type' => 'text/plain',
+    ]);
+
+    KanvigoServer::actingAs($this->member)
+        ->tool(GetAttachmentTool::class, ['id' => $attachment->id, 'offset' => 9999])
+        ->assertOk()
+        ->assertSee('past the end of the file');
+});
+
+it('falls back to metadata when a text-typed file is not valid UTF-8', function () {
+    Storage::disk('attachments')->put('attachments/corrupt.log', "\xff\xfe\x00binary");
+
+    $attachment = Attachment::factory()->create([
+        'attachable_id' => $this->task->id,
+        'attachable_type' => $this->task->getMorphClass(),
+        'disk' => 'attachments',
+        'path' => 'attachments/corrupt.log',
+        'name' => 'corrupt.log',
+        'mime_type' => 'text/plain',
+    ]);
+
+    KanvigoServer::actingAs($this->member)
+        ->tool(GetAttachmentTool::class, ['id' => $attachment->id])
+        ->assertOk()
+        ->assertSee('corrupt.log')
+        ->assertSee('cannot be displayed inline');
+});
+
 it('denies access to an attachment in a project the user is not a member of', function () {
     $project = Project::factory()->create(['short_name' => 'XYZ']);
     $task = Task::factory()->for($project)->create();

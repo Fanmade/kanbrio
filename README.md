@@ -199,8 +199,9 @@ Built on Laravel with Livewire and Flux UI. English and German out of the box.
   projects, add comments, link/unlink dependencies) require a token with write
   access. Descriptions and comment bodies are exchanged as HTML (sanitized to an
   allow-list on write). Inspecting a project or task also returns its comment thread
-  and any cancellation reason, and agents can read attachments — including inline
-  description images — by their id. Personal notes have their own tools (create,
+  and any cancellation reason, and agents can read attachments by their id —
+  inline description images, audio, and text-based files (logs, JSON, XML, CSV, …)
+  returned inline as text, with a byte offset to page through large files. Personal notes have their own tools (create,
   list, get, update and convert-to-task), referenced by a numeric note id.
 - **REST API** — a versioned, documented HTTP API under `/api/v1` for projects,
   tasks and comments, authenticated with the same personal access tokens (Bearer;
