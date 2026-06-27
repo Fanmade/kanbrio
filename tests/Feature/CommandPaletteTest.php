@@ -1,5 +1,6 @@
 <?php
 
+use App\Enums\Status;
 use App\Livewire\CommandPalette;
 use App\Models\Project;
 use App\Models\Task;
@@ -59,6 +60,38 @@ it('finds a task by a synonym of its tag', function () {
         ->test(CommandPalette::class)
         ->set('query', 'evaluation')
         ->assertSee('Deploy fix');
+});
+
+it('ranks completed and canceled tasks below the matching action', function () {
+    // Two closed tasks whose titles contain the action word, mirroring KAN-327.
+    Task::factory()->for($this->project)->create(['title' => 'New task toast bug', 'status' => Status::Done]);
+    Task::factory()->for($this->project)->create(['title' => 'Add a New task action', 'status' => Status::Canceled]);
+
+    $titles = Livewire::actingAs($this->user)
+        ->test(CommandPalette::class)
+        ->set('query', 'New task')
+        ->instance()
+        ->items()
+        ->pluck('title');
+
+    $action = $titles->search('New task');
+    $closed = $titles->search('New task toast bug');
+
+    // The "New task" action comes before the completed/canceled task matches.
+    expect($action)->not->toBeFalse()
+        ->and($closed)->not->toBeFalse()
+        ->and($action)->toBeLessThan($closed);
+});
+
+it('marks a completed task result as deprioritized but not a reference jump to it', function () {
+    $done = Task::factory()->for($this->project)->create(['title' => 'Shipped feature', 'status' => Status::Done]);
+
+    $textMatch = app(GlobalSearch::class)->search($this->user, 'Shipped')->firstWhere('reference', $done->reference);
+    $jump = app(GlobalSearch::class)->search($this->user, $done->reference)->firstWhere('reference', $done->reference);
+
+    expect($textMatch->deprioritized)->toBeTrue()
+        ->and($jump->deprioritized)->toBeFalse()
+        ->and($jump->pinned)->toBeTrue();
 });
 
 it('does not attach progress to task or project results', function () {

@@ -45,7 +45,7 @@
             />
 
             <flux:command.items>
-                @php($items = $this->results->merge($this->actions))
+                @php($items = $this->items)
 
                 {{-- The empty state ("No results found") is rendered by Flux's
                      <flux:command.items>; we override that view (resources/views/

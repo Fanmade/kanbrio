@@ -42,6 +42,23 @@ class CommandPalette extends Component
     }
 
     /**
+     * The palette entries in display order: entity matches, then quick actions,
+     * with completed/canceled tasks sunk to the very bottom so they never sit
+     * above the action a user is reaching for (KAN-327). The sort is stable, so
+     * everything else keeps its order.
+     *
+     * @return Collection<int, SearchResult>
+     */
+    #[Computed]
+    public function items(): Collection
+    {
+        return $this->results()
+            ->merge($this->actions())
+            ->sortBy(static fn (SearchResult $item): int => $item->deprioritized ? 1 : 0)
+            ->values();
+    }
+
+    /**
      * Quick actions, gated by permission and filtered by the current query.
      *
      * @return Collection<int, SearchResult>

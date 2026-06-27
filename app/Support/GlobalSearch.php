@@ -2,6 +2,7 @@
 
 namespace App\Support;
 
+use App\Enums\Status;
 use App\Models\Project;
 use App\Models\Task;
 use App\Models\User;
@@ -169,6 +170,9 @@ class GlobalSearch
         $like = $this->like($query);
         $operator = $this->likeOperator();
 
+        $terminal = $this->terminalStatusValues();
+        $placeholders = implode(', ', array_fill(0, count($terminal), '?'));
+
         return Task::query()
             ->with('project')
             ->whereIn('project_id', $projectIds)
@@ -177,9 +181,26 @@ class GlobalSearch
                 ->orWhereHas('tags', static fn (Builder $tag): Builder => $tag
                     ->where('name', $operator, $like)
                     ->orWhereHas('synonyms', static fn (Builder $synonym): Builder => $synonym->where('name', $operator, $like))))
+            // Active tasks first, so completed/canceled matches never crowd open
+            // ones out of the limited result set (KAN-327).
+            ->orderByRaw("CASE WHEN status IN ($placeholders) THEN 1 ELSE 0 END", $terminal)
             ->limit(self::LIMIT)
             ->get()
             ->map(fn (Task $task): SearchResult => $this->toResult($task));
+    }
+
+    /**
+     * The stored status values the palette treats as low-priority — terminal
+     * states (completed or canceled) that should rank below active tasks.
+     *
+     * @return list<string>
+     */
+    private function terminalStatusValues(): array
+    {
+        return array_values(array_map(
+            static fn (Status $status): string => $status->value,
+            array_filter(Status::cases(), static fn (Status $status): bool => $status->isTerminal()),
+        ));
     }
 
     /**
@@ -191,19 +212,22 @@ class GlobalSearch
             $model instanceof Task => new SearchResult(
                 type: 'task',
                 title: $model->title,
+                icon: $model->status->icon(),
                 url: route('task.show', [
                     'short_name' => $model->project->short_name,
                     'task_number' => $model->task_number,
                 ]),
-                icon: $model->status->icon(),
                 reference: $model->reference,
                 pinned: $pinned,
+                // Sink completed/canceled tasks below the actions — but never a
+                // deliberate reference jump, which the user typed explicitly.
+                deprioritized: ! $pinned && $model->status->isTerminal(),
             ),
             $model instanceof Project => new SearchResult(
                 type: 'project',
                 title: $model->title,
-                url: route('project.show', ['short_name' => $model->short_name]),
                 icon: 'folder',
+                url: route('project.show', ['short_name' => $model->short_name]),
                 reference: $model->short_name,
                 pinned: $pinned,
             ),
