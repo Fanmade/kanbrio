@@ -140,6 +140,8 @@ Built on Laravel with Livewire and Flux UI. English and German out of the box.
 - **Mentions & references** — in any description or comment, type `@` to mention a
   project member (they are notified and auto-subscribed to the item) and `#` to
   reference a task, picked from an autocomplete of the project's members and tasks.
+  A mention's label can be shortened after picking — trim the trailing words (e.g.
+  `@Jon Doe` → `@Jon`) and it stays linked to the same person.
   Mentions render as links to the member's profile, and references as links to the
   task — wherever the content is shown — each with a hover preview card: a mention
   shows the user's name, avatar and their role in the project; a reference shows the

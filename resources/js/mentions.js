@@ -1,13 +1,17 @@
+import { Mark, mergeAttributes } from '@tiptap/core';
 import Mention from '@tiptap/extension-mention';
+import { Plugin, PluginKey } from '@tiptap/pm/state';
+import Suggestion from '@tiptap/suggestion';
 
 /**
  * @mention / #reference support for the Flux (Tiptap) rich-text editor.
  *
- * Two atomic inline nodes are added:
- *   - `mention`   — a member, triggered by `@`, rendered as
+ *   - `mention`   — a member, triggered by `@`, implemented as a *mark* over the
+ *                   visible "@Name" text so its label can be shortened (trimming
+ *                   trailing words keeps the link). Renders as
  *                   `<span class="mention" data-type="mention" data-id="…">@Name</span>`.
- *   - `reference` — a task, triggered by `#`, rendered as a link
- *                   `<a class="reference" data-type="reference" data-id="…" href="/KAN-42">KAN-42</a>`.
+ *   - `reference` — a task, triggered by `#`, an atomic inline node rendered as a
+ *                   link `<a class="reference" data-type="reference" data-id="…" href="/KAN-42">KAN-42</a>`.
  *
  * The suggestion list filters the project's members and tasks, fetched on demand
  * from the `data-mentionables-url` endpoint on the editor wrapper the first time a
@@ -153,31 +157,100 @@ const escapeHtml = (value) =>
         "'": '&#39;',
     })[char]);
 
-/**
- * The `@` member-mention node, rendered as a styled span tagged with the user id.
- */
-const MentionNode = Mention.extend({ name: 'mention' }).configure({
-    HTMLAttributes: { class: 'mention' },
-    renderText: ({ node }) => `@${node.attrs.label ?? node.attrs.id}`,
-    suggestion: {
-        char: '@',
-        items: async ({ query, editor }) => {
-            const { users } = await mentionablesFor(editor);
-            const needle = query.toLowerCase();
+const mentionSuggestionKey = new PluginKey('mentionSuggestion');
+const mentionInvariantKey = new PluginKey('mentionInvariant');
 
-            return users.filter((user) => user.name.toLowerCase().includes(needle)).slice(0, 8);
-        },
-        command: ({ editor, range, props }) => {
-            editor
-                .chain()
-                .focus()
-                .insertContentAt(range, [
-                    { type: 'mention', attrs: { id: props.id, label: props.name } },
-                    { type: 'text', text: ' ' },
-                ])
-                .run();
-        },
-        render: () => suggestionRenderer((user) => escapeHtml(user.name)),
+/**
+ * The `@` member-mention.
+ *
+ * Implemented as a mark over the visible "@Name" text (not an atomic node) so the
+ * label is ordinary editable text: deleting trailing words shortens the label
+ * while the mark — and its `data-id` — stays anchored to the same user. It still
+ * renders as the `<span class="mention" data-type="mention" data-id>` the server
+ * already parses, so storage and display are unchanged.
+ *
+ * Invariant: a mention is valid only while its text starts with `@`. The
+ * appendTransaction below strips the mark from any run that no longer begins with
+ * `@` (e.g. its leading token was deleted), so a gutted mention cleanly becomes
+ * plain text instead of a half-broken node.
+ */
+const MentionMark = Mark.create({
+    name: 'mention',
+    inclusive: false,
+
+    addAttributes() {
+        return {
+            id: {
+                default: null,
+                parseHTML: (element) => element.getAttribute('data-id'),
+                renderHTML: (attributes) => (attributes.id ? { 'data-id': attributes.id } : {}),
+            },
+        };
+    },
+
+    parseHTML() {
+        return [{ tag: 'span[data-type="mention"]' }];
+    },
+
+    renderHTML({ HTMLAttributes }) {
+        return ['span', mergeAttributes({ class: 'mention', 'data-type': 'mention' }, HTMLAttributes), 0];
+    },
+
+    addProseMirrorPlugins() {
+        const markType = this.type;
+
+        return [
+            Suggestion({
+                editor: this.editor,
+                char: '@',
+                pluginKey: mentionSuggestionKey,
+                items: async ({ query, editor }) => {
+                    const { users } = await mentionablesFor(editor);
+                    const needle = query.toLowerCase();
+
+                    return users.filter((user) => user.name.toLowerCase().includes(needle)).slice(0, 8);
+                },
+                command: ({ editor, range, props }) => {
+                    editor
+                        .chain()
+                        .focus()
+                        .insertContentAt(range, [
+                            {
+                                type: 'text',
+                                text: `@${props.name}`,
+                                marks: [{ type: 'mention', attrs: { id: props.id } }],
+                            },
+                            { type: 'text', text: ' ' },
+                        ])
+                        .run();
+                },
+                render: () => suggestionRenderer((user) => escapeHtml(user.name)),
+            }),
+
+            new Plugin({
+                key: mentionInvariantKey,
+                appendTransaction: (transactions, oldState, newState) => {
+                    if (!transactions.some((transaction) => transaction.docChanged)) {
+                        return null;
+                    }
+
+                    let tr = null;
+
+                    newState.doc.descendants((node, pos) => {
+                        if (!node.isText || !node.marks.some((mark) => mark.type === markType)) {
+                            return;
+                        }
+
+                        if (!node.text.startsWith('@')) {
+                            tr = tr ?? newState.tr;
+                            tr.removeMark(pos, pos + node.nodeSize, markType);
+                        }
+                    });
+
+                    return tr;
+                },
+            }),
+        ];
     },
 });
 
@@ -243,4 +316,4 @@ const ReferenceNode = Mention.extend({
     },
 });
 
-export const mentionExtensions = [MentionNode, ReferenceNode];
+export const mentionExtensions = [MentionMark, ReferenceNode];
