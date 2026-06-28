@@ -50,7 +50,7 @@ trait Cancellable
             'canceled',
             'cancellation',
             null,
-            json_encode(['reason' => $reason->value, 'message' => $message], JSON_THROW_ON_ERROR),
+            Activity::encodeValue(['reason' => $reason->value, 'message' => $message]),
         );
     }
 

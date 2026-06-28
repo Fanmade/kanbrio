@@ -220,8 +220,8 @@ class Tag extends Model
         $this->project->recordActivity(
             'tag_recolored',
             'tags',
-            json_encode(['name' => $this->name, 'color' => $oldColor], JSON_THROW_ON_ERROR),
-            json_encode(['name' => $this->name, 'color' => $newColor], JSON_THROW_ON_ERROR),
+            Activity::encodeValue(['name' => $this->name, 'color' => $oldColor]),
+            Activity::encodeValue(['name' => $this->name, 'color' => $newColor]),
         );
 
         return true;

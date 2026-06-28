@@ -22,8 +22,8 @@ class ActivityDescriber
      */
     public static function describe(Activity $activity): string
     {
-        $newValues = (array) json_decode((string) $activity->new_value, true);
-        $oldValues = (array) json_decode((string) $activity->old_value, true);
+        $newValues = Activity::decodeValue($activity->new_value);
+        $oldValues = Activity::decodeValue($activity->old_value);
 
         return match ($activity->action) {
             'created' => __('created this'),

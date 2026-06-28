@@ -109,4 +109,39 @@ class Activity extends Model
     {
         return $this->belongsToMany(Comment::class)->withTimestamps();
     }
+
+    /**
+     * Encode a structured payload — an assignee/tag name list, or a dependency,
+     * cancellation or tag-recolor snapshot — for storage in old_value/new_value.
+     * Returns null for an empty or absent list, so "nothing on this side" stays
+     * null rather than the string "[]".
+     *
+     * This is the single encoding contract for the JSON-shaped activity values;
+     * scalar values (a status, a name, a reason) are stored as-is and read back
+     * from old_value/new_value directly. {@see decodeValue()} is its inverse.
+     *
+     * @param  array<mixed>|null  $value
+     */
+    public static function encodeValue(?array $value): ?string
+    {
+        return $value === null || $value === []
+            ? null
+            : json_encode($value, JSON_THROW_ON_ERROR);
+    }
+
+    /**
+     * Decode a structured payload previously stored by {@see encodeValue()}.
+     * Returns [] for null, blank or non-JSON input, so callers get a predictable
+     * array shape.
+     *
+     * @return array<mixed>
+     */
+    public static function decodeValue(?string $value): array
+    {
+        if ($value === null || $value === '') {
+            return [];
+        }
+
+        return (array) json_decode($value, true);
+    }
 }

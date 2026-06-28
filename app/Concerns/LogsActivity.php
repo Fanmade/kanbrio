@@ -106,8 +106,8 @@ trait LogsActivity
         return $this->recordActivity(
             'assignee_changed',
             'assignees',
-            $removed === [] ? null : json_encode($removed, JSON_THROW_ON_ERROR),
-            $added === [] ? null : json_encode($added, JSON_THROW_ON_ERROR),
+            Activity::encodeValue($removed),
+            Activity::encodeValue($added),
         );
     }
 
@@ -128,8 +128,8 @@ trait LogsActivity
         return $this->recordActivity(
             'tags_changed',
             'tags',
-            $removedNames === [] ? null : json_encode(array_values($removedNames), JSON_THROW_ON_ERROR),
-            $addedNames === [] ? null : json_encode(array_values($addedNames), JSON_THROW_ON_ERROR),
+            Activity::encodeValue(array_values($removedNames)),
+            Activity::encodeValue(array_values($addedNames)),
         );
     }
 
@@ -145,7 +145,7 @@ trait LogsActivity
      */
     public function recordDependencyChange(bool $linked, string $direction, string $reference): Activity
     {
-        $payload = json_encode(['direction' => $direction, 'reference' => $reference], JSON_THROW_ON_ERROR);
+        $payload = Activity::encodeValue(['direction' => $direction, 'reference' => $reference]);
 
         return $this->recordActivity(
             'dependency_changed',
