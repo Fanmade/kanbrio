@@ -5,6 +5,7 @@ namespace App\Livewire\Projects;
 use App\Models\Project;
 use App\Models\Tag;
 use App\Models\TaskType;
+use App\Support\IconCatalog;
 use Flux\Flux;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Collection;
@@ -95,7 +96,7 @@ class ProjectTaskTypes extends Component
     #[Computed]
     public function icons(): array
     {
-        return TaskType::ICONS;
+        return IconCatalog::available();
     }
 
     /**
@@ -152,7 +153,7 @@ class ProjectTaskTypes extends Component
         $validated = $this->validate([
             'editName' => ['required', 'string', 'max:255'],
             'editColor' => ['required', 'string', 'in:'.implode(',', $this->palette())],
-            'editIcon' => ['nullable', 'string', 'in:'.implode(',', TaskType::ICONS)],
+            'editIcon' => ['nullable', 'string', 'in:'.implode(',', IconCatalog::available())],
             'editBranchPrefix' => ['nullable', 'string', 'max:50', 'regex:/^[A-Za-z0-9][A-Za-z0-9\/-]*$/'],
         ]);
 

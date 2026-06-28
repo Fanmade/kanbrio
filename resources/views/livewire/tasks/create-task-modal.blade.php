@@ -243,7 +243,7 @@
 
             <x-icon-picker name="newTagIcon" :selected="$newTagIcon" test="create-task-tag" clear="clearNewTagIcon" />
 
-            @php($previewIcon = in_array($newTagIcon, \App\Models\TaskType::ICONS, true) ? $newTagIcon : null)
+            @php($previewIcon = \App\Support\IconCatalog::validOrNull($newTagIcon))
             <div class="flex items-center gap-2">
                 <flux:text size="sm" class="text-zinc-400">{{ __('Preview') }}</flux:text>
                 <flux:badge size="sm" color="zinc" variant="pill">

@@ -160,7 +160,7 @@
 
             <x-icon-picker name="editIcon" :selected="$editIcon" test="edit-tag" clear="clearIcon" />
 
-            @php($previewIcon = in_array($editIcon, \App\Models\TaskType::ICONS, true) ? $editIcon : null)
+            @php($previewIcon = \App\Support\IconCatalog::validOrNull($editIcon))
             <div class="flex items-center gap-2">
                 <flux:text size="sm" class="text-zinc-400">{{ __('Preview') }}</flux:text>
                 <flux:badge size="sm" color="zinc" variant="pill">

@@ -12,6 +12,7 @@ use App\Models\Tag;
 use App\Models\Task;
 use App\Models\TaskType;
 use App\Models\User;
+use App\Support\IconCatalog;
 use Flux\Flux;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
@@ -410,7 +411,7 @@ class CreateTaskModal extends Component
         $validated = $this->validate([
             'newTagName' => ['required', 'string', 'max:255'],
             'newTagColor' => ['required', 'string', 'in:'.implode(',', Tag::PALETTE)],
-            'newTagIcon' => ['nullable', 'string', 'in:'.implode(',', TaskType::ICONS)],
+            'newTagIcon' => ['nullable', 'string', 'in:'.implode(',', IconCatalog::available())],
         ]);
 
         $this->stageTag($validated['newTagName'], $validated['newTagColor'], $this->newTagIcon);

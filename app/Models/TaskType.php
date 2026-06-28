@@ -37,31 +37,6 @@ class TaskType extends Model
     use HasFactory;
 
     /**
-     * The Heroicons offered when picking a type's icon — a curated set relevant to
-     * classifying work, rather than the full Heroicon catalog.
-     *
-     * @todo: This should not live in the model, but in a configuration file
-     *
-     * @var list<string>
-     */
-    public const array ICONS = [
-        'tag', 'sparkles', 'bug-ant', 'wrench-screwdriver', 'wrench', 'bolt',
-        'beaker', 'book-open', 'shield-check', 'rocket-launch', 'paint-brush',
-        'cog-6-tooth', 'flag', 'star', 'exclamation-triangle',
-        'arrows-right-left', 'arrow-path-rounded-square', 'cube-transparent',
-        'magnifying-glass', 'light-bulb', 'circle-stack',
-        'chat-bubble-left-right', 'server-stack', 'fire', 'link', 'document-text',
-        'arrow-trending-up', 'bell', 'command-line', 'credit-card', 'computer-desktop',
-        'device-phone-mobile', 'device-tablet', 'finger-print', 'information-circle',
-        'question-mark-circle', 'chart-pie', 'cake', 'clipboard-document-list',
-        'key', 'language', 'lifebuoy', 'lock-closed', 'map-pin', 'moon',
-        'paper-airplane', 'scale', 'scissors', 'share', 'shopping-bag', 'shopping-cart',
-        'signal', 'speaker-wave', 'truck', 'user-group', 'user-circle', 'view-columns',
-        'x-mark', 'arrows-up-down', 'hand-raised', 'home', 'envelope-open', 'envelope',
-        'at-symbol', 'phone', 'building-office', 'building-library',
-    ];
-
-    /**
      * The default types seeded into every new project — a sensible starting set
      * users can rename, recolor or extend. Order here is the seeded position.
      *

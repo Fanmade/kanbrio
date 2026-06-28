@@ -133,7 +133,7 @@
 
             <div class="flex items-center gap-2">
                 <flux:text size="sm" class="text-zinc-400">{{ __('Preview') }}</flux:text>
-                @php($previewIcon = in_array($editIcon, \App\Models\TaskType::ICONS, true) ? $editIcon : null)
+                @php($previewIcon = \App\Support\IconCatalog::validOrNull($editIcon))
                 <flux:badge size="sm" :color="$editColor" :icon="$previewIcon">
                     {{ $editName !== '' ? $editName : __('Type') }}
                 </flux:badge>

@@ -8,7 +8,7 @@
 {{--
     The curated icon picker shared by every place a tag or task type is given an
     icon (tag rail, create-task modal, project tags, project task types). A "no
-    icon" button followed by the curated {@see \App\Models\TaskType::ICONS} set.
+    icon" button followed by the curated {@see \App\Support\IconCatalog::available()} set.
 --}}
 <div class="flex flex-col gap-1.5">
     <flux:label>{{ __('Icon') }}</flux:label>
@@ -26,7 +26,7 @@
         >
             <flux:icon icon="no-symbol" variant="micro" class="text-zinc-400" />
         </button>
-        @foreach (\App\Models\TaskType::ICONS as $iconName)
+        @foreach (\App\Support\IconCatalog::available() as $iconName)
             <button
                 type="button"
                 wire:click="$set('{{ $name }}', '{{ $iconName }}')"
