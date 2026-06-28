@@ -52,6 +52,10 @@ class ActivityDescriber
             'comment_deleted' => ($activity->new_value ?? '') !== ''
                 ? __('deleted a comment: :reason', ['reason' => (string) $activity->new_value])
                 : __('deleted a comment'),
+            'attachment_added' => __('added an attachment'),
+            'attachment_removed' => ($activity->old_value ?? '') !== ''
+                ? __('removed the attachment :name', ['name' => (string) $activity->old_value])
+                : __('removed an attachment'),
             default => $activity->action,
         };
     }

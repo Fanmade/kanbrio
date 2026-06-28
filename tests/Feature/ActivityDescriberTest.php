@@ -32,6 +32,12 @@ it('describes a comment deletion, with and without a reason', function () {
         ->and(describeActivity('comment_deleted', null, 'wrong task'))->toBe('deleted a comment: wrong task');
 });
 
+it('describes attachment activities, naming the removed file', function () {
+    expect(describeActivity('attachment_added'))->toBe('added an attachment')
+        ->and(describeActivity('attachment_removed', 'diagram.png'))->toBe('removed the attachment diagram.png')
+        ->and(describeActivity('attachment_removed'))->toBe('removed an attachment');
+});
+
 it('describes a status change with labels', function () {
     expect(describeActivity('status_changed', Status::ToDo->value, Status::Done->value))
         ->toBe('changed status from '.Status::ToDo->label().' to '.Status::Done->label());
