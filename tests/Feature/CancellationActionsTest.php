@@ -116,7 +116,7 @@ it('reports how many open subtasks a cancel would cascade to', function () {
     Task::factory()->for($this->project)->childOf($parent)->status(Status::ToDo)->create();
     Task::factory()->for($this->project)->childOf($parent)->status(Status::Done)->create();
 
-    expect(app(CancelTask::class)->openSubtaskCount($parent))->toBe(1);
+    expect($parent->openSubtaskCount())->toBe(1);
 });
 
 it('reopens only the parent, leaving cascade-canceled subtasks canceled', function () {

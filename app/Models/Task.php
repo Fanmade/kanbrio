@@ -236,6 +236,48 @@ class Task extends Model implements Dependable, Mentionable, Subscribable
     }
 
     /**
+     * The task's open (non-terminal) descendants across the whole subtree — the
+     * tasks a Done/Canceled cascade would reach. Prefers an already-loaded
+     * {@see descendants()} relation, falling back to a query.
+     *
+     * @return Collection<int, static>
+     */
+    public function openDescendants(): Collection
+    {
+        $descendants = $this->relationLoaded('descendants')
+            ? $this->descendants
+            : $this->descendants()->get();
+
+        return $descendants
+            ->reject(static fn (Task $task): bool => $task->status->isTerminal())
+            ->values()
+            ->toBase();
+    }
+
+    /**
+     * How many open (non-terminal) descendants the task has across its subtree.
+     */
+    public function openSubtaskCount(): int
+    {
+        return $this->openDescendants()->count();
+    }
+
+    /**
+     * How many of the task's direct children are still open. Prefers an
+     * already-loaded {@see children()} relation, falling back to a query.
+     */
+    public function openChildCount(): int
+    {
+        $children = $this->relationLoaded('children')
+            ? $this->children
+            : $this->children()->get();
+
+        return $children
+            ->reject(static fn (Task $task): bool => $task->status->isTerminal())
+            ->count();
+    }
+
+    /**
      * The public, flat per-project reference, e.g. "ABC-42".
      *
      * @return Attribute<non-falsy-string, never>

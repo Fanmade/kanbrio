@@ -5,7 +5,6 @@ namespace App\Actions;
 use App\Concerns\Cancellable;
 use App\Enums\CancelReason;
 use App\Models\Task;
-use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -37,7 +36,7 @@ class CancelTask
 
             $cascaded = 0;
 
-            foreach ($this->openDescendants($task) as $descendant) {
+            foreach ($task->openDescendants() as $descendant) {
                 if ($descendant->cancel($reason) !== null) {
                     $cascaded++;
                 }
@@ -55,25 +54,5 @@ class CancelTask
     public function reopen(Task $task): void
     {
         $task->reopen();
-    }
-
-    /**
-     * How many open (non-terminal) descendants a cancel would cascade to.
-     */
-    public function openSubtaskCount(Task $task): int
-    {
-        return $this->openDescendants($task)->count();
-    }
-
-    /**
-     * The task's open (non-terminal) descendants across the whole subtree.
-     *
-     * @return Collection<int, Task>
-     */
-    private function openDescendants(Task $task): Collection
-    {
-        return $task->descendants()->get()
-            ->reject(static fn (Task $descendant): bool => $descendant->status->isTerminal())
-            ->values();
     }
 }

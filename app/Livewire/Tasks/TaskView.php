@@ -430,9 +430,7 @@ class TaskView extends Component
     #[Computed]
     public function openSubtaskCount(): int
     {
-        return $this->task->descendants
-            ->reject(static fn (Task $task): bool => $task->status->isTerminal())
-            ->count();
+        return $this->task->openSubtaskCount();
     }
 
     /**

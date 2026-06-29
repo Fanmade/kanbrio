@@ -7,7 +7,6 @@ use App\Enums\Status;
 use App\Models\Task;
 use App\Models\User;
 use App\Support\StatusCascadeResult;
-use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 
@@ -59,13 +58,13 @@ class ChangeTaskStatus
         $parentPreviousStatus = null;
         $parentCloseable = false;
         $parentClosed = false;
-        $parentPref = $this->parentClosePreference();
+        $parentPref = $this->cascadePreference(self::PARENT_CLOSE_PREFERENCE_KEY);
 
         DB::transaction(function () use ($task, $new, $cascadeToChildren, $parent, $parentPref, &$undo, &$cascaded, &$parentBumped, &$parentPreviousStatus, &$parentCloseable, &$parentClosed): void {
             $this->changeOne($task, $new, $undo);
 
             if ($new->isTerminal() && $this->resolveCascade($new, $cascadeToChildren)) {
-                foreach ($this->openDescendants($task) as $descendant) {
+                foreach ($task->openDescendants() as $descendant) {
                     $this->changeOne($descendant, $new, $undo);
                     $cascaded++;
                 }
@@ -87,7 +86,7 @@ class ChangeTaskStatus
             $parentCloseable = $new->isTerminal()
                 && $parent !== null
                 && ! $parent->status->isTerminal()
-                && $this->openChildCount($parent) === 0;
+                && $parent->openChildCount() === 0;
 
             if ($parentCloseable && $parentPref === CascadePreference::Always) {
                 $this->changeOne($parent, $new, $undo);
@@ -161,7 +160,7 @@ class ChangeTaskStatus
             return $explicit;
         }
 
-        return match ($this->preference()) {
+        return match ($this->cascadePreference(self::PREFERENCE_KEY)) {
             CascadePreference::Always => true,
             CascadePreference::Never => false,
             CascadePreference::Ask => $new === Status::Canceled,
@@ -169,51 +168,16 @@ class ChangeTaskStatus
     }
 
     /**
-     * The actor's cascade preference, defaulting to "ask".
+     * The actor's cascade preference for the given preference key (the status
+     * cascade or the parent-close prompt), defaulting to "ask".
      */
-    private function preference(): CascadePreference
+    private function cascadePreference(string $key): CascadePreference
     {
         $user = Auth::user();
         $value = $user instanceof User
-            ? $user->preference(self::PREFERENCE_KEY, CascadePreference::Ask->value)
+            ? $user->preference($key, CascadePreference::Ask->value)
             : CascadePreference::Ask->value;
 
         return CascadePreference::tryFrom((string) $value) ?? CascadePreference::Ask;
-    }
-
-    /**
-     * The actor's "close the parent with its last subtask" preference, defaulting
-     * to "ask".
-     */
-    private function parentClosePreference(): CascadePreference
-    {
-        $user = Auth::user();
-        $value = $user instanceof User
-            ? $user->preference(self::PARENT_CLOSE_PREFERENCE_KEY, CascadePreference::Ask->value)
-            : CascadePreference::Ask->value;
-
-        return CascadePreference::tryFrom((string) $value) ?? CascadePreference::Ask;
-    }
-
-    /**
-     * The task's open (non-terminal) descendants across the whole subtree.
-     *
-     * @return Collection<int, Task>
-     */
-    private function openDescendants(Task $task): Collection
-    {
-        return $task->descendants()->get()
-            ->reject(static fn (Task $descendant): bool => $descendant->status->isTerminal())
-            ->values();
-    }
-
-    /**
-     * How many of a task's direct children are still open.
-     */
-    private function openChildCount(Task $task): int
-    {
-        return $task->children()->get()
-            ->reject(static fn (Task $child): bool => $child->status->isTerminal())
-            ->count();
     }
 }
