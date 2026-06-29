@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\IconCatalog;
 use Database\Factories\TagFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -42,6 +43,12 @@ class Tag extends Model
     ];
 
     /**
+     * The neutral fallback color, offered alongside the palette in pickers and
+     * accepted when a tag/task type is reset to "no color".
+     */
+    public const string DEFAULT_COLOR = 'zinc';
+
+    /**
      * Auto-assign a palette color to tags created without one, so every tag
      * renders with a sensible color out of the box.
      */
@@ -61,6 +68,40 @@ class Tag extends Model
     public static function colorForName(string $name): string
     {
         return self::PALETTE[abs(crc32(mb_strtolower($name))) % count(self::PALETTE)];
+    }
+
+    /**
+     * The palette plus the neutral default color, as offered in the color
+     * pickers and accepted when editing a tag or task type.
+     *
+     * @return list<string>
+     */
+    public static function paletteWithDefault(): array
+    {
+        return [...self::PALETTE, self::DEFAULT_COLOR];
+    }
+
+    /**
+     * Validation rules for a tag/task-type color. Editing may reset to the
+     * neutral default ($allowDefault); creating must pick a real palette color.
+     *
+     * @return list<string>
+     */
+    public static function colorRule(bool $allowDefault = false): array
+    {
+        $colors = $allowDefault ? self::paletteWithDefault() : self::PALETTE;
+
+        return ['required', 'string', 'in:'.implode(',', $colors)];
+    }
+
+    /**
+     * Validation rules for an optional tag/task-type icon from the curated set.
+     *
+     * @return list<string>
+     */
+    public static function iconRule(): array
+    {
+        return ['nullable', 'string', 'in:'.implode(',', IconCatalog::available())];
     }
 
     /**

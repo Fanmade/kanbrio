@@ -140,7 +140,7 @@ class ProjectTags extends Component
     #[Computed]
     public function palette(): array
     {
-        return [...Tag::PALETTE, 'zinc'];
+        return Tag::paletteWithDefault();
     }
 
     /**
@@ -252,8 +252,8 @@ class ProjectTags extends Component
 
         $validated = $this->validate([
             'editName' => ['required', 'string', 'max:255'],
-            'editColor' => ['required', 'string', 'in:'.implode(',', $this->palette)],
-            'editIcon' => ['nullable', 'string', 'in:'.implode(',', IconCatalog::available())],
+            'editColor' => Tag::colorRule(allowDefault: true),
+            'editIcon' => Tag::iconRule(),
         ]);
 
         $name = trim($validated['editName']);

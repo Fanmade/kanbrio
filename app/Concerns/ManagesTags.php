@@ -4,7 +4,6 @@ namespace App\Concerns;
 
 use App\Models\Tag;
 use App\Models\Task;
-use App\Support\IconCatalog;
 use Flux\Flux;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Collection as BaseCollection;
@@ -166,8 +165,8 @@ trait ManagesTags
 
         $validated = $this->validate([
             'newTagName' => ['required', 'string', 'max:255'],
-            'newTagColor' => ['required', 'string', 'in:'.implode(',', [...Tag::PALETTE, 'zinc'])],
-            'newTagIcon' => ['nullable', 'string', 'in:'.implode(',', IconCatalog::available())],
+            'newTagColor' => Tag::colorRule(allowDefault: true),
+            'newTagIcon' => Tag::iconRule(),
         ]);
 
         $tag = Tag::findOrCreateForProject(
