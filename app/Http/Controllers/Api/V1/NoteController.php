@@ -79,14 +79,16 @@ class NoteController extends Controller
     {
         $model = $this->ownNote($note, 'update');
 
-        $validated = $this->validateNote($request);
+        // PATCH is partial: only the fields actually sent are changed, so e.g.
+        // `{ "body": "x" }` keeps the title, project and visibility untouched.
+        $validated = $this->validateNote($request, partial: true);
 
         app(UpdateNote::class)->handle(
             $model,
-            $validated['title'],
-            $validated['body'] ?? null,
-            $this->resolveProject($validated['project'] ?? null),
-            (bool) ($validated['is_public'] ?? false),
+            $request->has('title') ? $validated['title'] : $model->title,
+            $request->has('body') ? ($validated['body'] ?? null) : $model->body,
+            $request->has('project') ? $this->resolveProject($validated['project'] ?? null) : $model->project,
+            $request->has('is_public') ? (bool) ($validated['is_public'] ?? false) : $model->is_public,
         );
 
         return new NoteResource($model->load(self::RELATIONS));
@@ -145,17 +147,18 @@ class NoteController extends Controller
     }
 
     /**
-     * Validate a note's writable fields.
+     * Validate a note's writable fields. On create, the title is required; on a
+     * partial update only the fields actually present are validated.
      *
      * @return array<string, mixed>
      */
-    private function validateNote(Request $request): array
+    private function validateNote(Request $request, bool $partial = false): array
     {
         return $request->validate([
-            'title' => ['required', 'string', 'max:255'],
-            'body' => ['nullable', 'string'],
-            'project' => ['nullable', 'string'],
-            'is_public' => ['boolean'],
+            'title' => [$partial ? 'sometimes' : 'required', 'string', 'max:255'],
+            'body' => ['sometimes', 'nullable', 'string'],
+            'project' => ['sometimes', 'nullable', 'string'],
+            'is_public' => ['sometimes', 'boolean'],
         ]);
     }
 

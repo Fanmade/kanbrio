@@ -76,6 +76,52 @@ it('updates the caller own note', function () {
         ->assertJsonPath('data.title', 'New');
 });
 
+it('patches the body alone without touching the title, project or visibility', function () {
+    $project = Project::factory()->create();
+    joinProject($project, $this->user);
+    $note = Note::factory()->for($this->user)->publicTo($project)->create(['title' => 'Keep', 'body' => '<p>old</p>']);
+    Sanctum::actingAs($this->user, ['read', 'write']);
+
+    $this->patchJson("/api/v1/notes/{$note->id}", ['body' => '<p>new</p>'])
+        ->assertOk()
+        ->assertJsonPath('data.body', '<p>new</p>')
+        ->assertJsonPath('data.title', 'Keep')
+        ->assertJsonPath('data.project', $project->short_name)
+        ->assertJsonPath('data.is_public', true);
+
+    expect($note->fresh()->project_id)->toBe($project->id);
+});
+
+it('patches the title alone without detaching the project or flipping visibility', function () {
+    $project = Project::factory()->create();
+    joinProject($project, $this->user);
+    $note = Note::factory()->for($this->user)->publicTo($project)->create(['title' => 'Old']);
+    Sanctum::actingAs($this->user, ['read', 'write']);
+
+    $this->patchJson("/api/v1/notes/{$note->id}", ['title' => 'New'])
+        ->assertOk()
+        ->assertJsonPath('data.project', $project->short_name)
+        ->assertJsonPath('data.is_public', true);
+
+    expect($note->fresh())
+        ->project_id->toBe($project->id)
+        ->is_public->toBeTrue();
+});
+
+it('detaches the project when project is sent as null, clearing public visibility', function () {
+    $project = Project::factory()->create();
+    joinProject($project, $this->user);
+    $note = Note::factory()->for($this->user)->publicTo($project)->create();
+    Sanctum::actingAs($this->user, ['read', 'write']);
+
+    $this->patchJson("/api/v1/notes/{$note->id}", ['project' => null])
+        ->assertOk()
+        ->assertJsonPath('data.project', null)
+        ->assertJsonPath('data.is_public', false);
+
+    expect($note->fresh()->project_id)->toBeNull();
+});
+
 it('forbids updating another user note', function () {
     $note = Note::factory()->create(['title' => 'Theirs']);
     Sanctum::actingAs($this->user, ['read', 'write']);
