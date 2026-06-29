@@ -5,10 +5,22 @@ use App\Mcp\Servers\KanvigoServer;
 use App\Mcp\Tools\ListTasksTool;
 use App\Models\Project;
 use App\Models\Task;
+use App\Models\TaskType;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
+
+it('includes each task type name', function () {
+    $user = User::factory()->create();
+    $project = Project::factory()->withMembers([$user])->create(['short_name' => 'ABC']);
+    $type = TaskType::factory()->for($project)->create(['name' => 'Bug']);
+    Task::factory()->for($project)->create(['task_type_id' => $type->id]);
+
+    KanvigoServer::actingAs($user)->tool(ListTasksTool::class, ['reference' => 'ABC'])
+        ->assertOk()
+        ->assertStructuredContent(fn ($json) => $json->where('tasks.0.type', 'Bug')->etc());
+});
 
 it('lists the tasks of a project the user can access', function () {
     $user = User::factory()->create();

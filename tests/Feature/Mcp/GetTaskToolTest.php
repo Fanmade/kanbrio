@@ -6,10 +6,22 @@ use App\Mcp\Tools\GetTaskTool;
 use App\Models\Attachment;
 use App\Models\Project;
 use App\Models\Task;
+use App\Models\TaskType;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
+
+it('includes the task type name (or null when untyped)', function () {
+    $user = User::factory()->create();
+    $project = Project::factory()->withMembers([$user])->create(['short_name' => 'ABC']);
+    $type = TaskType::factory()->for($project)->create(['name' => 'Bug']);
+    $task = Task::factory()->for($project)->create(['task_type_id' => $type->id]);
+
+    KanvigoServer::actingAs($user)->tool(GetTaskTool::class, ['reference' => $task->reference])
+        ->assertOk()
+        ->assertStructuredContent(fn ($json) => $json->where('type', 'Bug')->etc());
+});
 
 it('returns a task in a project the user is a member of', function () {
     $user = User::factory()->create();

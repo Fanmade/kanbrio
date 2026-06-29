@@ -45,6 +45,7 @@ class UpdateTaskTool extends Tool
             'priority' => ['nullable', Rule::in(Priority::names())],
             'due_date' => ['nullable', 'date_format:Y-m-d'],
             'status' => ['nullable', Rule::in($workingStatuses)],
+            'type' => ['nullable', 'string'],
             'cancel_reason' => ['nullable', Rule::in(CancelReason::names())],
             'cancel_message' => ['nullable', 'string', 'max:1000'],
             'reopen' => ['nullable', 'boolean'],
@@ -87,6 +88,15 @@ class UpdateTaskTool extends Tool
         $reopenRequested = $request->has('reopen') && (bool) $validated['reopen'];
         $messageProvided = $request->has('cancel_message') && isset($validated['cancel_message']);
         $tagsProvided = $request->has('tags');
+        $typeProvided = $request->has('type');
+
+        if ($typeProvided) {
+            $type = $this->resolveTaskType($task->project, $validated['type'] ?? null);
+
+            if ($type instanceof Response) {
+                return $type;
+            }
+        }
 
         // status, cancel_reason and reopen are mutually exclusive lifecycle moves.
         if ((int) $statusProvided + (int) $cancelProvided + (int) $reopenRequested > 1) {
@@ -97,8 +107,8 @@ class UpdateTaskTool extends Tool
             return Response::error('cancel_message can only be used together with cancel_reason.');
         }
 
-        if ($updates === [] && ! $statusProvided && ! $cancelProvided && ! $reopenRequested && ! $tagsProvided) {
-            return Response::error('Provide a title, description, priority, due date, status, tags, a cancel_reason or reopen to update.');
+        if ($updates === [] && ! $statusProvided && ! $cancelProvided && ! $reopenRequested && ! $tagsProvided && ! $typeProvided) {
+            return Response::error('Provide a title, description, priority, due date, status, type, tags, a cancel_reason or reopen to update.');
         }
 
         if ($statusProvided && $task->isCanceled()) {
@@ -107,6 +117,11 @@ class UpdateTaskTool extends Tool
 
         if ($updates !== []) {
             $task->update($updates);
+        }
+
+        if ($typeProvided) {
+            $task->task_type_id = $type?->getKey();
+            $task->save();
         }
 
         if ($cancelProvided) {
@@ -170,6 +185,9 @@ class UpdateTaskTool extends Tool
             'status' => $schema->string()
                 ->enum(array_map(static fn (Status $status): string => $status->value, Status::columns()))
                 ->description('New working status for the task (Planned, ToDo, In progress or Done). To cancel a task use cancel_reason; to reopen a canceled task use reopen.'),
+
+            'type' => $schema->string()
+                ->description('New task type, by the name of one of the project\'s configured types (case-insensitive). Pass null or "" to clear the type.'),
 
             'cancel_reason' => $schema->string()
                 ->enum(CancelReason::names())

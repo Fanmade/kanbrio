@@ -50,6 +50,7 @@ class CreateTaskTool extends Tool
             'priority' => ['nullable', Rule::in(Priority::names())],
             'due_date' => ['nullable', 'date_format:Y-m-d'],
             'status' => ['nullable', Rule::in($workingStatuses)],
+            'type' => ['nullable', 'string'],
             'tags' => ['nullable', 'array'],
             'tags.*' => ['string'],
         ], [
@@ -72,6 +73,12 @@ class CreateTaskTool extends Tool
             return $parent;
         }
 
+        $type = $this->resolveTaskType($project, $validated['type'] ?? null);
+
+        if ($type instanceof Response) {
+            return $type;
+        }
+
         try {
             $task = app(CreateTask::class)->handle(
                 $project,
@@ -81,12 +88,14 @@ class CreateTaskTool extends Tool
                 isset($validated['status']) ? Status::from($validated['status']) : null,
                 $validated['due_date'] ?? null,
                 $parent,
+                $type,
             );
         } catch (InvalidArgumentException) {
             return Response::error('The task cannot be nested under "'.$validated['parent'].'": it would exceed the maximum nesting depth.');
         }
 
         $task->setRelation('project', $project);
+        $task->setRelation('taskType', $type);
 
         if (isset($validated['tags'])) {
             $task->syncTags($validated['tags']);
@@ -130,6 +139,9 @@ class CreateTaskTool extends Tool
             'status' => $schema->string()
                 ->enum(array_map(static fn (Status $status): string => $status->value, Status::columns()))
                 ->description('Optional initial status, one of the working statuses (Planned, ToDo, In progress, Done). Defaults to "Planned". A task cannot be created already canceled — cancel it afterwards.'),
+
+            'type' => $schema->string()
+                ->description('Optional task type, by the name of one of the project\'s configured types (case-insensitive). Omit for an untyped task.'),
 
             'tags' => $schema->array()
                 ->items($schema->string())

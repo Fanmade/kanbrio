@@ -8,6 +8,7 @@ use App\Mcp\Servers\KanvigoServer;
 use App\Mcp\Tools\UpdateTaskTool;
 use App\Models\Project;
 use App\Models\Task;
+use App\Models\TaskType;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Laravel\Sanctum\Sanctum;
@@ -15,6 +16,33 @@ use Laravel\Sanctum\Sanctum;
 use function Pest\Laravel\assertDatabaseHas;
 
 uses(RefreshDatabase::class);
+
+it('sets and clears a task type by name', function () {
+    $user = User::factory()->create();
+    Sanctum::actingAs($user, ['read', 'write']);
+    $project = Project::factory()->withMembers([$user])->create(['short_name' => 'ABC']);
+    TaskType::factory()->for($project)->create(['name' => 'Bug']);
+    $task = Task::factory()->for($project)->create();
+
+    KanvigoServer::tool(UpdateTaskTool::class, ['reference' => $task->reference, 'type' => 'Bug'])
+        ->assertOk()
+        ->assertSee('Bug');
+
+    expect($task->fresh()->taskType?->name)->toBe('Bug');
+
+    KanvigoServer::tool(UpdateTaskTool::class, ['reference' => $task->reference, 'type' => ''])->assertOk();
+
+    expect($task->fresh()->task_type_id)->toBeNull();
+});
+
+it('errors updating a task to a type that does not exist', function () {
+    $user = User::factory()->create();
+    Sanctum::actingAs($user, ['read', 'write']);
+    $project = Project::factory()->withMembers([$user])->create(['short_name' => 'ABC']);
+    $task = Task::factory()->for($project)->create();
+
+    KanvigoServer::tool(UpdateTaskTool::class, ['reference' => $task->reference, 'type' => 'Nope'])->assertHasErrors();
+});
 
 it('updates a task title and description', function () {
     $user = User::factory()->create();

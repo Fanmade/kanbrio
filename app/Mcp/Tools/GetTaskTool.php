@@ -17,7 +17,7 @@ use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Tool;
 use Laravel\Mcp\Server\Tools\Annotations\IsReadOnly;
 
-#[Description('Gets a single task by its reference (e.g. "PROJ-42"), including status, priority, description, tags, assignees and its project reference. Only tasks in projects the authenticated user is a member of are accessible.')]
+#[Description('Gets a single task by its reference (e.g. "PROJ-42"), including status, priority, type, description, tags, assignees and its project reference. Only tasks in projects the authenticated user is a member of are accessible.')]
 #[IsReadOnly]
 class GetTaskTool extends Tool
 {
@@ -41,7 +41,7 @@ class GetTaskTool extends Tool
             return Response::error('No task with reference "'.$validated['reference'].'" exists, or you do not have access to it. References look like "PROJ-42".');
         }
 
-        $task->loadMissing(['attachments', 'parent', 'children', 'ancestors', 'descendants']);
+        $task->loadMissing(['attachments', 'parent', 'children', 'ancestors', 'descendants', 'taskType']);
 
         $shortName = $task->project->short_name;
         $reference = static fn (Task $node): string => $shortName.'-'.$node->task_number;
@@ -54,6 +54,7 @@ class GetTaskTool extends Tool
             'priority' => $task->priority->name,
             'due_date' => $task->due_date?->format('Y-m-d'),
             'status' => $task->status->value,
+            'type' => $task->taskType?->name,
             'cancel_reason' => $task->cancel_reason?->name,
             'cancel_message' => $task->cancel_message,
             'tags' => $task->tags->pluck('name')->all(),
@@ -108,6 +109,7 @@ class GetTaskTool extends Tool
             'priority' => $schema->string()->description('The task priority: Lowest, Low, Medium, High or Highest.')->required(),
             'due_date' => $schema->string()->description('The task due date in "YYYY-MM-DD" format; may be null.'),
             'status' => $schema->string()->description('The task status.')->required(),
+            'type' => $schema->string()->description('The task type name, or null when the task is untyped.'),
             'cancel_reason' => $schema->string()->description('Why the task was canceled (WontFix, Duplicate or Deprecated) when its status is Canceled; null otherwise.'),
             'cancel_message' => $schema->string()->description('The optional note left when the task was canceled; null otherwise.'),
             'tags' => $schema->array()->items($schema->string())->description('The tag names applied to the task.')->required(),

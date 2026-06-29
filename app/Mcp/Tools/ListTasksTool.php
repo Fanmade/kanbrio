@@ -54,6 +54,7 @@ class ListTasksTool extends Tool
         $project->loadMissing([
             'tasks.tags',
             'tasks.project',
+            'tasks.taskType',
             // Eager-load each task's blockers so isBlocked() stays N+1-free.
             'tasks.dependencyLinks.blocker',
         ]);
@@ -79,6 +80,7 @@ class ListTasksTool extends Tool
                 'priority' => $task->priority->name,
                 'due_date' => $task->due_date?->format('Y-m-d'),
                 'status' => $task->status->value,
+                'type' => $task->taskType?->name,
                 'cancel_reason' => $task->cancel_reason?->name,
                 'tags' => $task->tags->pluck('name')->all(),
                 'is_blocked' => $task->isBlocked(),
@@ -126,6 +128,7 @@ class ListTasksTool extends Tool
                 'priority' => $schema->string()->description('The task priority: Lowest, Low, Medium, High or Highest.')->required(),
                 'due_date' => $schema->string()->description('The task due date in "YYYY-MM-DD" format; may be null.'),
                 'status' => $schema->string()->description('The task status.')->required(),
+                'type' => $schema->string()->description('The task type name, or null when the task is untyped.'),
                 'cancel_reason' => $schema->string()->description('Why the task was canceled (WontFix, Duplicate or Deprecated) when its status is Canceled; null otherwise. Use the get-task tool for the cancellation message.'),
                 'tags' => $schema->array()->items($schema->string())->description('The tag names applied to the task.')->required(),
                 'is_blocked' => $schema->boolean()->description('Whether the task has a blocker that is not yet complete. Use the get-task tool for the specific blocking/blocked references.')->required(),

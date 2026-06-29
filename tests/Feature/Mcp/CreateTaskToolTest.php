@@ -6,6 +6,7 @@ use App\Mcp\Servers\KanvigoServer;
 use App\Mcp\Tools\CreateTaskTool;
 use App\Models\Project;
 use App\Models\Task;
+use App\Models\TaskType;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Laravel\Sanctum\Sanctum;
@@ -14,6 +15,37 @@ use function Pest\Laravel\assertDatabaseHas;
 use function Pest\Laravel\assertDatabaseMissing;
 
 uses(RefreshDatabase::class);
+
+it('creates a task with a type resolved by name (case-insensitive)', function () {
+    $user = User::factory()->create();
+    Sanctum::actingAs($user, ['read', 'write']);
+    $project = Project::factory()->withMembers([$user])->create(['short_name' => 'ABC']);
+    TaskType::factory()->for($project)->create(['name' => 'Bug']);
+
+    KanvigoServer::tool(CreateTaskTool::class, [
+        'reference' => 'ABC',
+        'title' => 'A defect',
+        'type' => 'bug',
+    ])
+        ->assertOk()
+        ->assertSee('Bug');
+
+    expect($project->tasks()->where('title', 'A defect')->first()->taskType?->name)->toBe('Bug');
+});
+
+it('errors creating a task with a type that does not exist in the project', function () {
+    $user = User::factory()->create();
+    Sanctum::actingAs($user, ['read', 'write']);
+    $project = Project::factory()->withMembers([$user])->create(['short_name' => 'ABC']);
+
+    KanvigoServer::tool(CreateTaskTool::class, [
+        'reference' => 'ABC',
+        'title' => 'X',
+        'type' => 'Nonexistent',
+    ])->assertHasErrors();
+
+    expect($project->tasks()->count())->toBe(0);
+});
 
 it('creates a task in a project the user can access', function () {
     $user = User::factory()->create();
