@@ -5,6 +5,7 @@ namespace App\Notifications;
 use App\Models\Project;
 use App\Models\Task;
 use App\Models\User;
+use App\Notifications\Concerns\ResolvesSubjectUrl;
 use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Notification;
 
@@ -18,6 +19,7 @@ use Illuminate\Notifications\Notification;
 class UserMentioned extends Notification
 {
     use Queueable;
+    use ResolvesSubjectUrl;
 
     public function __construct(public Project|Task $subject, public ?User $actor) {}
 
@@ -41,12 +43,7 @@ class UserMentioned extends Notification
             'reference' => $this->subject instanceof Task ? $this->subject->reference : $this->subject->short_name,
             'title' => $this->subject->title,
             'actor' => $this->actor?->name,
-            'url' => $this->subject instanceof Task
-                ? route('task.show', [
-                    'short_name' => $this->subject->project->short_name,
-                    'task_number' => $this->subject->task_number,
-                ])
-                : route('project.show', ['short_name' => $this->subject->short_name]),
+            'url' => $this->subjectUrl($this->subject),
         ];
     }
 }

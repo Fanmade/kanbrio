@@ -3,14 +3,14 @@
 namespace App\Notifications;
 
 use App\Models\Activity;
-use App\Models\Project;
-use App\Models\Task;
+use App\Notifications\Concerns\ResolvesSubjectUrl;
 use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Notification;
 
 class ItemActivity extends Notification
 {
     use Queueable;
+    use ResolvesSubjectUrl;
 
     public function __construct(public Activity $activity) {}
 
@@ -37,19 +37,7 @@ class ItemActivity extends Notification
             'reference' => $subject->reference ?? $subject->short_name ?? null,
             'title' => $subject->title ?? null,
             'actor' => $this->activity->user?->name,
-            'url' => $this->urlFor($subject),
+            'url' => $this->subjectUrl($subject),
         ];
-    }
-
-    private function urlFor(mixed $subject): ?string
-    {
-        return match (true) {
-            $subject instanceof Task => route('task.show', [
-                'short_name' => $subject->project->short_name,
-                'task_number' => $subject->task_number,
-            ]),
-            $subject instanceof Project => route('project.show', ['short_name' => $subject->short_name]),
-            default => null,
-        };
     }
 }
