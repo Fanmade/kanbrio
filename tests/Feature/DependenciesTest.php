@@ -6,6 +6,7 @@ use App\Models\Dependency;
 use App\Models\Project;
 use App\Models\Task;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 
 uses(RefreshDatabase::class);
 
@@ -25,6 +26,32 @@ test('a task lists its blockers and the tasks it blocks', function () {
 
     expect($task->blockers()->pluck('id'))->toContain($blocker->id)
         ->and($blocker->blocking()->pluck('id'))->toContain($task->id);
+});
+
+test('resolving blockers stays query-bounded as the blocker count grows', function () {
+    $queriesToResolve = function (int $blockerCount): int {
+        $project = Project::factory()->create();
+        $task = Task::factory()->for($project)->create();
+
+        for ($i = 0; $i < $blockerCount; $i++) {
+            $task->addBlocker(Task::factory()->for($project)->create());
+        }
+
+        // A fresh instance so the link/blocker relations are unloaded.
+        $fresh = Task::findOrFail($task->id);
+
+        DB::flushQueryLog();
+        DB::enableQueryLog();
+        $fresh->blockers();
+        $count = count(DB::getQueryLog());
+        DB::disableQueryLog();
+
+        return $count;
+    };
+
+    // The polymorphic blockers load in bulk, so 20 blockers issue no more
+    // queries than 2 — an N+1 would make the large case exceed the small one.
+    expect($queriesToResolve(20))->toBeLessThanOrEqual($queriesToResolve(2));
 });
 
 test('a non-blocking relationship never blocks the task', function () {

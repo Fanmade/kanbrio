@@ -66,7 +66,9 @@ trait HasDependencies
     {
         $blockers = [];
 
-        foreach ($this->dependencyLinks as $link) {
+        // Batch-load the polymorphic blocker for all links in one query rather
+        // than lazy-loading per link — dependsOn()'s BFS calls this on every node.
+        foreach ($this->dependencyLinks->loadMissing('blocker') as $link) {
             if (! $link->type->isBlocking()) {
                 continue;
             }
@@ -90,7 +92,9 @@ trait HasDependencies
     {
         $blocking = [];
 
-        foreach ($this->dependentLinks as $link) {
+        // Batch-load the polymorphic dependent for all links in one query rather
+        // than lazy-loading per link.
+        foreach ($this->dependentLinks->loadMissing('dependent') as $link) {
             if (! $link->type->isBlocking()) {
                 continue;
             }
