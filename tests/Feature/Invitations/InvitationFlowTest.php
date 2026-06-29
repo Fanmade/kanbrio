@@ -20,6 +20,20 @@ it('forbids users without the invite capability', function () {
     actingAs(User::factory()->create())->get('/invite')->assertForbidden();
 });
 
+it('does not mass-assign the inviter, token or granted projects', function () {
+    $invitation = new Invitation([
+        'email' => 'invitee@example.com',
+        'invited_by' => 999,
+        'token' => 'spoofed',
+        'project_ids' => [1, 2],
+    ]);
+
+    expect($invitation->email)->toBe('invitee@example.com')
+        ->and($invitation->invited_by)->toBeNull()
+        ->and($invitation->token)->toBeNull()
+        ->and($invitation->project_ids)->toBeNull();
+});
+
 it('lets an authorised inviter send an invitation and mails a signed link', function () {
     Mail::fake();
 
@@ -101,7 +115,7 @@ it('accepts a valid invitation and creates a verified, project-scoped user', fun
     $project = Project::factory()->create();
     joinProject($project, $inviter);
 
-    $invitation = Invitation::create([
+    $invitation = Invitation::forceCreate([
         'email' => 'new@example.com',
         'token' => 'secret-token',
         'invited_by' => $inviter->id,
@@ -126,7 +140,7 @@ it('accepts a valid invitation and creates a verified, project-scoped user', fun
 });
 
 it('rejects an already accepted invitation through the signed route', function () {
-    $invitation = Invitation::create([
+    $invitation = Invitation::forceCreate([
         'email' => 'used@example.com',
         'token' => 'tok',
         'invited_by' => User::factory()->create()->id,
@@ -144,7 +158,7 @@ it('rejects an already accepted invitation through the signed route', function (
 });
 
 it('rejects a token mismatch through the signed route', function () {
-    $invitation = Invitation::create([
+    $invitation = Invitation::forceCreate([
         'email' => 'mismatch@example.com',
         'token' => 'real-token',
         'invited_by' => User::factory()->create()->id,
@@ -161,7 +175,7 @@ it('rejects a token mismatch through the signed route', function () {
 });
 
 it('rejects a tampered signature', function () {
-    $invitation = Invitation::create([
+    $invitation = Invitation::forceCreate([
         'email' => 'tamper@example.com',
         'token' => 'tok',
         'invited_by' => User::factory()->create()->id,

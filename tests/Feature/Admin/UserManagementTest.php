@@ -130,7 +130,7 @@ it('resends a pending invitation and refreshes its expiry', function () {
     Mail::fake();
 
     $admin = User::factory()->canManageUsers()->create();
-    $invitation = Invitation::create([
+    $invitation = Invitation::forceCreate([
         'email' => 'invitee@example.com',
         'token' => 'a-token',
         'invited_by' => $admin->id,
@@ -148,7 +148,7 @@ it('resends a pending invitation and refreshes its expiry', function () {
 
 it('revokes a pending invitation', function () {
     $admin = User::factory()->canManageUsers()->create();
-    $invitation = Invitation::create([
+    $invitation = Invitation::forceCreate([
         'email' => 'invitee@example.com',
         'token' => 'a-token',
         'invited_by' => $admin->id,
@@ -166,7 +166,7 @@ it('revokes a pending invitation', function () {
 it('shows each user the count of pending invitations they have sent', function () {
     $admin = User::factory()->canManageUsers()->create();
 
-    Invitation::create([
+    Invitation::forceCreate([
         'email' => 'pending@example.com',
         'token' => 'tok-pending',
         'invited_by' => $admin->id,
@@ -175,7 +175,7 @@ it('shows each user the count of pending invitations they have sent', function (
     ]);
 
     // An accepted invitation is no longer pending and must not be counted.
-    $accepted = Invitation::create([
+    $accepted = Invitation::forceCreate([
         'email' => 'accepted@example.com',
         'token' => 'tok-accepted',
         'invited_by' => $admin->id,
@@ -186,7 +186,7 @@ it('shows each user the count of pending invitations they have sent', function (
     $accepted->save();
 
     // An expired invitation is no longer usable and must not be counted.
-    Invitation::create([
+    Invitation::forceCreate([
         'email' => 'expired@example.com',
         'token' => 'tok-expired',
         'invited_by' => $admin->id,

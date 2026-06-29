@@ -10,7 +10,7 @@ it('loads the user administration area with the account list and pending invitat
 
     // A still-valid invitation the admin has sent surfaces as a per-user badge
     // and in the pending-invitations list.
-    $invitation = Invitation::create([
+    $invitation = Invitation::forceCreate([
         'email' => 'invitee@example.com',
         'token' => 'a-token',
         'invited_by' => $admin->id,

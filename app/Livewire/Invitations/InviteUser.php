@@ -72,13 +72,13 @@ class InviteUser extends Component
 
         $token = Str::random(40);
 
-        $invitation = Invitation::create([
-            'email' => $validated['email'],
+        $invitation = new Invitation(['email' => $validated['email']]);
+        $invitation->forceFill([
             'token' => $token,
             'invited_by' => Auth::id(),
             'project_ids' => $grant,
             'expires_at' => now()->addDays(7),
-        ]);
+        ])->save();
 
         Mail::to($invitation->email)->send(new InvitationMail($invitation, $token));
 

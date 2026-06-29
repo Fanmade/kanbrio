@@ -20,7 +20,10 @@ use Illuminate\Support\Carbon;
  * @property Carbon|null $updated_at
  * @property-read User $inviter
  */
-#[Fillable(['email', 'token', 'invited_by', 'project_ids', 'expires_at'])]
+// Only the invitee's email comes from user input. The token, inviter, granted
+// project ids and expiry are all set server-side (see InviteUser), so they are
+// kept out of the mass-assignable allow-list and written via forceFill.
+#[Fillable(['email'])]
 class Invitation extends Model
 {
     /**
