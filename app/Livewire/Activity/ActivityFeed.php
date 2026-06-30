@@ -3,12 +3,12 @@
 namespace App\Livewire\Activity;
 
 use App\Concerns\ResolvesMorphSubject;
+use App\Concerns\TogglesCollapsedPreference;
 use App\Models\Activity;
 use App\Models\Project;
 use App\Models\Task;
 use App\Support\ActivityDescriber;
 use Illuminate\Database\Eloquent\Collection;
-use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\On;
 use Livewire\Component;
@@ -27,6 +27,7 @@ use Livewire\Component;
 class ActivityFeed extends Component
 {
     use ResolvesMorphSubject;
+    use TogglesCollapsedPreference;
 
     public const string COLLAPSED_PREFERENCE_KEY = 'activities_collapsed';
 
@@ -56,7 +57,7 @@ class ActivityFeed extends Component
         $this->initMorphSubject($subject);
         $this->authorize('view-activity-log', $subject instanceof Task ? $subject->project : $subject);
 
-        $this->collapsed = (bool) Auth::user()->preference(self::COLLAPSED_PREFERENCE_KEY, true);
+        $this->initCollapsed(true);
 
         if ($focus !== null && $this->subject->activities()->where('sequence', $focus)->exists()) {
             $this->focusOnSequence($focus);
@@ -112,13 +113,11 @@ class ActivityFeed extends Component
     }
 
     /**
-     * Toggle the activity feed and persist the state as a user preference.
+     * The user-preference key under which the feed's collapsed state persists.
      */
-    public function toggleCollapsed(): void
+    protected function collapsedPreferenceKey(): string
     {
-        $this->collapsed = ! $this->collapsed;
-
-        Auth::user()->setPreference(self::COLLAPSED_PREFERENCE_KEY, $this->collapsed);
+        return self::COLLAPSED_PREFERENCE_KEY;
     }
 
     /**

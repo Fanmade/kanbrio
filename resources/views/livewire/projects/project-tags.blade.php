@@ -1,38 +1,22 @@
 <div class="app-content mx-auto flex w-full max-w-4xl flex-col gap-6" data-test="project-tags">
     {{-- Header --}}
-    <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
-        <div class="flex min-w-0 items-center gap-3">
-            <flux:button
-                size="sm"
-                variant="ghost"
-                icon="arrow-left"
-                :href="route('project.show', $this->project)"
-                :aria-label="__('Back to project')"
-                wire:navigate
-                data-test="back-to-project"
-            />
-            <flux:heading size="xl" class="min-w-0 truncate">{{ __('Tags') }}</flux:heading>
-            <flux:badge color="indigo">{{ $this->project->short_name }}</flux:badge>
-        </div>
-
+    <x-project-settings-header :project="$this->project" :title="__('Tags')">
         <flux:button size="sm" variant="primary" icon="plus" wire:click="startCreate" data-test="new-tag">
             {{ __('New tag') }}
         </flux:button>
-    </div>
+    </x-project-settings-header>
 
     <flux:text class="text-zinc-500">
         {{ __('Rename, recolor, merge and delete the tags used across this project.') }}
     </flux:text>
 
     @if ($this->tags->isEmpty())
-        <div class="flex flex-col items-center gap-2 rounded-lg border border-dashed border-zinc-200 p-10 text-center dark:border-white/10" data-test="tags-empty">
-            <flux:icon icon="tag" class="size-8 text-zinc-300 dark:text-zinc-600" />
-            <flux:heading size="sm">{{ __('No tags yet') }}</flux:heading>
+        <x-empty-state :heading="__('No tags yet')" test="tags-empty">
             <flux:text size="sm" class="text-zinc-400">{{ __('Tags appear here once they are added to tasks, or create one now.') }}</flux:text>
             <flux:button size="sm" variant="primary" icon="plus" wire:click="startCreate" data-test="new-tag-empty" class="mt-1">
                 {{ __('New tag') }}
             </flux:button>
-        </div>
+        </x-empty-state>
     @else
         <div class="relative">
             {{--
@@ -138,23 +122,7 @@
 
             <div class="flex flex-col gap-1.5">
                 <flux:label>{{ __('Color') }}</flux:label>
-                <div class="flex flex-wrap gap-2" data-test="edit-tag-color-picker">
-                    @foreach ($this->palette as $paletteColor)
-                        <button
-                            type="button"
-                            wire:click="$set('editColor', '{{ $paletteColor }}')"
-                            @class([
-                                'flex size-7 cursor-pointer items-center justify-center rounded-full ring-2 ring-offset-2 ring-offset-white dark:ring-offset-zinc-800',
-                                'ring-zinc-900 dark:ring-white' => $editColor === $paletteColor,
-                                'ring-transparent' => $editColor !== $paletteColor,
-                            ])
-                            aria-label="{{ $paletteColor }}"
-                            data-test="edit-tag-color-{{ $paletteColor }}"
-                        >
-                            <x-tag-dot :color="$paletteColor" class="size-5" />
-                        </button>
-                    @endforeach
-                </div>
+                <x-color-picker :palette="$this->palette" :selected="$editColor" name="editColor" test="edit-tag" />
                 <flux:error name="editColor" />
             </div>
 

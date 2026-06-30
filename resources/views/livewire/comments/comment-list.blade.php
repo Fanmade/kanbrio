@@ -1,17 +1,5 @@
 <div class="flex flex-col gap-3">
-    <button
-        type="button"
-        wire:click="toggleCollapsed"
-        class="flex items-center gap-2 text-start"
-        aria-expanded="{{ $collapsed ? 'false' : 'true' }}"
-        aria-controls="comments-body-{{ $morphSubjectId }}"
-    >
-        <flux:icon :name="$collapsed ? 'chevron-right' : 'chevron-down'" variant="micro" class="text-zinc-400" />
-        <flux:heading size="sm">{{ __('Comments') }}</flux:heading>
-        <flux:badge size="sm" color="zinc">{{ $this->commentCount }}</flux:badge>
-    </button>
-
-    @unless ($collapsed)
+    <x-collapsible-section :title="__('Comments')" :count="$this->commentCount" :collapsed="$collapsed" body-id="comments-body-{{ $morphSubjectId }}">
         <div id="comments-body-{{ $morphSubjectId }}" class="flex flex-col gap-3">
             {{-- The full editor is heavy (toolbar, min-height, helper text) and pushes
                  existing comments below the fold, so it stays collapsed behind an
@@ -120,5 +108,5 @@
                 @endif
             </div>
         </div>
-    @endunless
+    </x-collapsible-section>
 </div>

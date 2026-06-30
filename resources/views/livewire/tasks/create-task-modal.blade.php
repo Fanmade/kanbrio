@@ -222,23 +222,7 @@
 
             <div class="flex flex-col gap-1.5">
                 <flux:label>{{ __('Color') }}</flux:label>
-                <div class="flex flex-wrap gap-2" data-test="create-task-tag-color-picker">
-                    @foreach (\App\Models\Tag::PALETTE as $paletteColor)
-                        <button
-                            type="button"
-                            wire:click="$set('newTagColor', '{{ $paletteColor }}')"
-                            @class([
-                                'flex size-7 cursor-pointer items-center justify-center rounded-full ring-2 ring-offset-2 ring-offset-white dark:ring-offset-zinc-800',
-                                'ring-zinc-900 dark:ring-white' => $newTagColor === $paletteColor,
-                                'ring-transparent' => $newTagColor !== $paletteColor,
-                            ])
-                            aria-label="{{ $paletteColor }}"
-                            data-test="create-task-tag-color-{{ $paletteColor }}"
-                        >
-                            <x-tag-dot :color="$paletteColor" class="size-5"/>
-                        </button>
-                    @endforeach
-                </div>
+                <x-color-picker :palette="\App\Models\Tag::PALETTE" :selected="$newTagColor" name="newTagColor" test="create-task-tag" />
             </div>
 
             <x-icon-picker name="newTagIcon" :selected="$newTagIcon" test="create-task-tag" clear="clearNewTagIcon" />

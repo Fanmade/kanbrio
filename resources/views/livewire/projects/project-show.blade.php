@@ -4,7 +4,7 @@
     {{-- Header --}}
     <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
         <div class="flex min-w-0 items-center gap-3">
-            <flux:badge color="indigo">{{ $this->project->short_name }}</flux:badge>
+            <x-project-badge :project="$this->project" />
             <flux:heading size="xl" class="min-w-0 truncate">{{ $this->project->title }}</flux:heading>
         </div>
 

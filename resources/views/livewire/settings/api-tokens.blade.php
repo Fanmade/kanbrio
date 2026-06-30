@@ -32,45 +32,9 @@
                     </flux:callout.text>
                 </flux:callout>
 
-                <div
-                    class="flex items-center space-x-2"
-                    x-data="{
-                        copied: false,
-                        async copy() {
-                            try {
-                                await navigator.clipboard.writeText('{{ $plainTextToken }}');
-                                this.copied = true;
-                                setTimeout(() => this.copied = false, 1500);
-                            } catch (e) {
-                                console.warn('Could not copy to clipboard');
-                            }
-                        }
-                    }"
-                >
-                    <div class="flex items-stretch w-full border rounded-xl dark:border-stone-700">
-                        <input
-                            type="text"
-                            readonly
-                            value="{{ $plainTextToken }}"
-                            class="w-full p-3 bg-transparent outline-none text-stone-900 dark:text-stone-100 font-mono text-sm"
-                        />
-
-                        <button
-                            type="button"
-                            @click="copy()"
-                            class="px-3 transition-colors border-l cursor-pointer border-stone-200 dark:border-stone-600"
-                        >
-                            <flux:icon.document-duplicate x-show="!copied" variant="outline"></flux:icon>
-                            <flux:icon.check
-                                x-show="copied"
-                                variant="solid"
-                                class="text-green-500"
-                            ></flux:icon>
-                        </button>
-                    </div>
-
+                <x-copy-field :value="$plainTextToken" mono>
                     <flux:button variant="ghost" size="sm" wire:click="dismissToken">{{ __('Done') }}</flux:button>
-                </div>
+                </x-copy-field>
             </div>
         @endif
 

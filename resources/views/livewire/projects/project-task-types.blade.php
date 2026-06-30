@@ -1,35 +1,19 @@
 <div class="app-content mx-auto flex w-full max-w-4xl flex-col gap-6" data-test="project-task-types">
     {{-- Header --}}
-    <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
-        <div class="flex min-w-0 items-center gap-3">
-            <flux:button
-                size="sm"
-                variant="ghost"
-                icon="arrow-left"
-                :href="route('project.show', $this->project)"
-                :aria-label="__('Back to project')"
-                wire:navigate
-                data-test="back-to-project"
-            />
-            <flux:heading size="xl" class="min-w-0 truncate">{{ __('Task types') }}</flux:heading>
-            <flux:badge color="indigo">{{ $this->project->short_name }}</flux:badge>
-        </div>
-
+    <x-project-settings-header :project="$this->project" :title="__('Task types')">
         <flux:button size="sm" variant="primary" icon="plus" wire:click="startCreate" data-test="new-task-type">
             {{ __('New type') }}
         </flux:button>
-    </div>
+    </x-project-settings-header>
 
     <flux:text class="text-zinc-500">
         {{ __('Add, rename, recolor and reorder the types tasks can be classified with in this project.') }}
     </flux:text>
 
     @if ($this->taskTypes->isEmpty())
-        <div class="flex flex-col items-center gap-2 rounded-lg border border-dashed border-zinc-200 p-10 text-center dark:border-white/10" data-test="task-types-empty">
-            <flux:icon icon="tag" class="size-8 text-zinc-300 dark:text-zinc-600" />
-            <flux:heading size="sm">{{ __('No task types yet') }}</flux:heading>
+        <x-empty-state :heading="__('No task types yet')" test="task-types-empty">
             <flux:text size="sm" class="text-zinc-400">{{ __('Add a type to classify this project\'s tasks.') }}</flux:text>
-        </div>
+        </x-empty-state>
     @else
         <div class="flex flex-col divide-y divide-zinc-200 rounded-lg border border-zinc-200 dark:divide-white/10 dark:border-white/10" data-test="task-types-list">
             @foreach ($this->taskTypes as $type)
@@ -111,23 +95,7 @@
 
             <div class="flex flex-col gap-1.5">
                 <flux:label>{{ __('Color') }}</flux:label>
-                <div class="flex flex-wrap gap-2" data-test="task-type-color-picker">
-                    @foreach ($this->palette as $paletteColor)
-                        <button
-                            type="button"
-                            wire:click="$set('editColor', '{{ $paletteColor }}')"
-                            @class([
-                                'flex size-7 cursor-pointer items-center justify-center rounded-full ring-2 ring-offset-2 ring-offset-white dark:ring-offset-zinc-800',
-                                'ring-zinc-900 dark:ring-white' => $editColor === $paletteColor,
-                                'ring-transparent' => $editColor !== $paletteColor,
-                            ])
-                            aria-label="{{ $paletteColor }}"
-                            data-test="task-type-color-{{ $paletteColor }}"
-                        >
-                            <x-tag-dot :color="$paletteColor" class="size-5" />
-                        </button>
-                    @endforeach
-                </div>
+                <x-color-picker :palette="$this->palette" :selected="$editColor" name="editColor" test="task-type" />
                 <flux:error name="editColor" />
             </div>
 

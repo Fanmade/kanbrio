@@ -20,7 +20,7 @@
                     <a href="{{ route('project.show', $project) }}" wire:navigate class="block min-w-0">
                         <flux:card class="h-full transition hover:shadow-md">
                             <div class="flex min-w-0 items-center gap-2">
-                                <flux:badge color="indigo" size="sm">{{ $project->short_name }}</flux:badge>
+                                <x-project-badge :project="$project" size="sm" />
                                 <flux:heading size="lg" class="min-w-0 truncate">{{ $project->title }}</flux:heading>
                             </div>
                             @if ($project->description)

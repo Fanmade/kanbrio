@@ -1,17 +1,5 @@
 <flux:card>
-    <button
-        type="button"
-        wire:click="toggleCollapsed"
-        class="flex items-center gap-2 text-start"
-        aria-expanded="{{ $collapsed ? 'false' : 'true' }}"
-        aria-controls="activity-body-{{ $morphSubjectId }}"
-    >
-        <flux:icon :name="$collapsed ? 'chevron-right' : 'chevron-down'" variant="micro" class="text-zinc-400" />
-        <flux:heading size="sm">{{ __('Activity') }}</flux:heading>
-        <flux:badge size="sm" color="zinc">{{ $this->activityCount }}</flux:badge>
-    </button>
-
-    @unless ($collapsed)
+    <x-collapsible-section :title="__('Activity')" :count="$this->activityCount" :collapsed="$collapsed" body-id="activity-body-{{ $morphSubjectId }}">
         @if ($focusSequence)
             <div
                 wire:key="focus-{{ $focusSequence }}"
@@ -71,5 +59,5 @@
                 {{ __('Show older activity') }}
             </flux:button>
         @endif
-    @endunless
+    </x-collapsible-section>
 </flux:card>

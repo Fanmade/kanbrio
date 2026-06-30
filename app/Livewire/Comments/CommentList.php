@@ -4,6 +4,7 @@ namespace App\Livewire\Comments;
 
 use App\Concerns\HandlesAttachments;
 use App\Concerns\ResolvesMorphSubject;
+use App\Concerns\TogglesCollapsedPreference;
 use App\Models\Activity;
 use App\Models\Comment;
 use App\Models\Project;
@@ -26,6 +27,7 @@ class CommentList extends Component
 {
     use HandlesAttachments;
     use ResolvesMorphSubject;
+    use TogglesCollapsedPreference;
 
     public const string COLLAPSED_PREFERENCE_KEY = 'comments_collapsed';
 
@@ -70,17 +72,15 @@ class CommentList extends Component
     {
         $this->initMorphSubject($commentable);
 
-        $this->collapsed = (bool) Auth::user()->preference(self::COLLAPSED_PREFERENCE_KEY, false);
+        $this->initCollapsed();
     }
 
     /**
-     * Toggle the comments section and persist the state as a user preference.
+     * The user-preference key under which the comments' collapsed state persists.
      */
-    public function toggleCollapsed(): void
+    protected function collapsedPreferenceKey(): string
     {
-        $this->collapsed = ! $this->collapsed;
-
-        Auth::user()->setPreference(self::COLLAPSED_PREFERENCE_KEY, $this->collapsed);
+        return self::COLLAPSED_PREFERENCE_KEY;
     }
 
     /**

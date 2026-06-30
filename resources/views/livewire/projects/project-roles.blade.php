@@ -64,25 +64,12 @@
                             class="flex flex-col gap-3 rounded-lg bg-zinc-50 p-3 dark:bg-white/5"
                             data-test="edit-role-form-{{ $role->id }}"
                         >
-                            <flux:checkbox.group wire:model="editPermissionIds" class="columns-1 gap-x-8 sm:columns-2 lg:columns-3">
-                                @foreach ($this->editPermissionGroups as $group => $permissions)
-                                    <div class="mb-3 flex break-inside-avoid flex-col gap-1" wire:key="edit-perm-group-{{ \Illuminate\Support\Str::slug($group) }}">
-                                        <flux:text size="xs" class="font-medium text-zinc-400">{{ $group }}</flux:text>
-                                        <div class="flex flex-col gap-1">
-                                            @foreach ($permissions as $permission)
-                                                <div class="flex items-center gap-1.5">
-                                                    <flux:checkbox value="{{ $permission->id }}" :label="$this->permissionPickerLabel($permission->name)" data-test="edit-permission-{{ $permission->name }}" />
-                                                    @if ($description = $this->permissionDescription($permission->name))
-                                                        <flux:tooltip :content="$description">
-                                                            <flux:icon.question-mark-circle variant="micro" class="cursor-help text-zinc-400" tabindex="0" data-test="edit-permission-hint-{{ $permission->name }}" />
-                                                        </flux:tooltip>
-                                                    @endif
-                                                </div>
-                                            @endforeach
-                                        </div>
-                                    </div>
-                                @endforeach
-                            </flux:checkbox.group>
+                            <x-permission-picker
+                                :groups="$this->editPermissionGroups"
+                                model="editPermissionIds"
+                                test-prefix="edit-permission"
+                                :resolver="$this"
+                            />
 
                             <div class="flex items-center gap-2">
                                 <flux:button type="submit" size="sm" variant="primary" data-test="save-edit-role">{{ __('Save') }}</flux:button>
@@ -131,27 +118,14 @@
                 </div>
             @endif
 
-            <flux:checkbox.group wire:model="permissionIds" class="mt-2 columns-1 gap-x-8 sm:columns-2 lg:columns-3">
-                @forelse ($this->permissionGroups as $group => $permissions)
-                    <div class="mb-3 flex break-inside-avoid flex-col gap-1" wire:key="perm-group-{{ \Illuminate\Support\Str::slug($group) }}">
-                        <flux:text size="xs" class="font-medium text-zinc-400">{{ $group }}</flux:text>
-                        <div class="flex flex-col gap-1">
-                            @foreach ($permissions as $permission)
-                                <div class="flex items-center gap-1.5">
-                                    <flux:checkbox value="{{ $permission->id }}" :label="$this->permissionPickerLabel($permission->name)" data-test="role-permission-{{ $permission->name }}" />
-                                    @if ($description = $this->permissionDescription($permission->name))
-                                        <flux:tooltip :content="$description">
-                                            <flux:icon.question-mark-circle variant="micro" class="cursor-help text-zinc-400" tabindex="0" data-test="role-permission-hint-{{ $permission->name }}" />
-                                        </flux:tooltip>
-                                    @endif
-                                </div>
-                            @endforeach
-                        </div>
-                    </div>
-                @empty
-                    <flux:text size="sm" class="text-zinc-400">{{ __('Choose a parent role to see the permissions you can delegate.') }}</flux:text>
-                @endforelse
-            </flux:checkbox.group>
+            <x-permission-picker
+                :groups="$this->permissionGroups"
+                model="permissionIds"
+                test-prefix="role-permission"
+                :resolver="$this"
+                :empty-message="__('Choose a parent role to see the permissions you can delegate.')"
+                class="mt-2"
+            />
         </flux:field>
 
         <flux:button type="submit" variant="primary" data-test="save-role">{{ __('Add role') }}</flux:button>

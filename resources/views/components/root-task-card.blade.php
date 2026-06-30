@@ -74,18 +74,7 @@
     @if ($subtasks->isNotEmpty())
         <div class="flex flex-col divide-y divide-zinc-100 border-t border-zinc-100 dark:divide-zinc-700 dark:border-zinc-700" data-test="root-task-subtasks-{{ $task->id }}">
             @foreach ($subtasks as $subtask)
-                <a
-                    href="{{ route('task.show', ['short_name' => $shortName, 'task_number' => $subtask->task_number]) }}"
-                    wire:navigate
-                    class="flex items-center justify-between gap-2 py-2 hover:bg-zinc-50 dark:hover:bg-zinc-800"
-                    data-test="root-task-subtask-{{ $subtask->id }}"
-                >
-                    <div class="flex min-w-0 items-center gap-2">
-                        <flux:text size="xs" class="font-mono text-zinc-400">{{ $shortName }}-{{ $subtask->task_number }}</flux:text>
-                        <span @class(['truncate text-sm', 'text-zinc-400' => $subtask->isArchived()])>{{ $subtask->title }}</span>
-                    </div>
-                    <flux:badge size="sm" :color="$subtask->status->color()" :icon="$subtask->status->icon()">{{ $subtask->status->label() }}</flux:badge>
-                </a>
+                <x-subtask-row :task="$subtask" :short-name="$shortName" test="root-task-subtask" padding="py-2" />
             @endforeach
         </div>
     @endif
