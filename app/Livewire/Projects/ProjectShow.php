@@ -475,6 +475,37 @@ class ProjectShow extends Component
     }
 
     /**
+     * Whether the viewer can edit the project — gates the description editor,
+     * the attachment dropzone and the task-creation control. Read in place of
+     * re-running the `update` policy check at each of those sites.
+     */
+    #[Computed]
+    public function canUpdate(): bool
+    {
+        return Auth::user()?->can('update', $this->project) ?? false;
+    }
+
+    /**
+     * The per-row data for a member in the management list: whether their roles
+     * are read-only (it's the viewer themselves, or an owner whose roles are
+     * fixed here) and which assignable roles they do not already hold and could
+     * still be granted.
+     *
+     * @return array{readonly: bool, addable: Collection<int, Role>}
+     */
+    public function memberRow(User $member): array
+    {
+        $heldNames = $member->roles->pluck('name');
+
+        return [
+            'readonly' => $member->getKey() === Auth::id() || $heldNames->contains('owner'),
+            'addable' => $this->assignableRoles
+                ->reject(static fn (Role $role): bool => $heldNames->contains($role->name))
+                ->values(),
+        ];
+    }
+
+    /**
      * Grant a member an additional role, leaving their other roles intact.
      * Requires manage-members, and is limited to the project's assignable
      * (non-owner, visible) roles. Owners and the acting user are left untouched.

@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Notifications;
 
+use App\Models\User;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Notifications\DatabaseNotification;
 use Illuminate\Support\Facades\Auth;
@@ -46,9 +47,37 @@ class NotificationsMenu extends Component
 
     public function markAllRead(): void
     {
-        Auth::user()->unreadNotifications->markAsRead();
+        $user = Auth::user();
+
+        // Mark them read in one statement instead of hydrating every unread model.
+        // A bulk update fires no model events, so the cached unread count (which is
+        // busted by DatabaseNotification's `updated` event) must be cleared by hand.
+        $user->unreadNotifications()->update(['read_at' => now()]);
+        User::forgetUnreadNotificationCount($user->getKey());
 
         unset($this->unreadCount, $this->unreadBadge, $this->notifications);
+    }
+
+    /**
+     * The short verb describing what a notification's underlying action did to its
+     * subject (e.g. "commented on", "changed the status of"), shown on the menu
+     * line before the subject reference.
+     */
+    public function actionLabel(string $action): string
+    {
+        return match ($action) {
+            'created' => __('created'),
+            'status_changed' => __('changed the status of'),
+            'priority_changed' => __('changed the priority of'),
+            'type_changed' => __('changed the type of'),
+            'assignee_changed' => __('updated the assignees of'),
+            'tags_changed' => __('updated the tags of'),
+            'parent_changed' => __('moved'),
+            'commented' => __('commented on'),
+            'comment_deleted' => __('deleted a comment on'),
+            'mentioned' => __('mentioned you in'),
+            default => __('updated'),
+        };
     }
 
     public function open(string $id): void

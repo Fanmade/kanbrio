@@ -45,8 +45,6 @@
     </div>
 
     {{-- Description --}}
-    @php($canUpdate = auth()->user()->can('update', $this->project))
-
     @if ($editing)
         <form wire:submit="save" class="flex flex-col gap-4">
             <flux:input wire:model="title" :label="__('Title')"/>
@@ -74,7 +72,7 @@
             </div>
         </form>
     @else
-        <x-attachments.dropzone :enabled="$canUpdate">
+        <x-attachments.dropzone :enabled="$this->canUpdate">
             <flux:card>
                 @if ($this->project->description)
                     <x-expandable-description :content="$this->project->description" :short-name="$this->project->short_name"/>
@@ -105,11 +103,11 @@
                             data-test="open-task-count">{{ $this->openTasks->count() }}</flux:badge>
             </button>
 
-            @can('update', $this->project)
+            @if ($this->canUpdate)
                 <flux:button size="sm" icon="plus"
                              wire:click="$dispatch('open-create-task', { projectId: {{ $this->project->id }} })"
                              data-test="new-task">{{ __('New task') }}</flux:button>
-            @endcan
+            @endif
         </div>
 
         @unless ($tasksCollapsed)
@@ -190,7 +188,7 @@
                 <div class="flex flex-col gap-3">
                     @forelse ($this->openTasks as $task)
                         <x-root-task-card :task="$task" :short-name="$this->project->short_name"
-                                          :can-archive="$canUpdate" :show-archived="$showArchived"/>
+                                          :can-archive="$this->canUpdate" :show-archived="$showArchived"/>
                     @empty
                         <flux:card>
                             <flux:text
@@ -207,7 +205,7 @@
 
                         @foreach ($this->completedTasks as $task)
                             <x-root-task-card :task="$task" :short-name="$this->project->short_name"
-                                              :can-archive="$canUpdate" :show-archived="$showArchived"/>
+                                              :can-archive="$this->canUpdate" :show-archived="$showArchived"/>
                         @endforeach
                     </div>
                 @endif
@@ -220,7 +218,7 @@
 
                         @foreach ($this->archivedTasks as $task)
                             <x-root-task-card :task="$task" :short-name="$this->project->short_name"
-                                              :can-archive="$canUpdate" :show-archived="$showArchived"/>
+                                              :can-archive="$this->canUpdate" :show-archived="$showArchived"/>
                         @endforeach
                     </div>
                 @endif
@@ -317,9 +315,7 @@
 
                 <div class="flex flex-col gap-2" data-test="members-list">
                     @foreach ($this->members as $member)
-                        @php($heldNames = $member->roles->pluck('name'))
-                        @php($readonly = ($member->id === auth()->id() || $heldNames->contains('owner')))
-                        @php($addable = $this->assignableRoles->reject(fn ($role) => $heldNames->contains($role->name)))
+                        @php($row = $this->memberRow($member))
                         <div class="flex items-start justify-between gap-3" wire:key="member-{{ $member->id }}"
                              data-test="member-row-{{ $member->id }}">
                             <x-user-link :user="$member" class="min-w-0 truncate pt-1 text-sm">{{ $member->name }}</x-user-link>
@@ -331,7 +327,7 @@
                                         <flux:badge size="sm"
                                                     data-test="member-role-{{ $member->id }}-{{ $role->name }}">
                                             {{ $this->roleLabel($role->name) }}
-                                            @unless ($readonly)
+                                            @unless ($row['readonly'])
                                                 <flux:badge.close
                                                     wire:click="removeMemberRole({{ $member->id }}, '{{ $role->name }}')"
                                                     :aria-label="__('Remove role')"
@@ -344,9 +340,9 @@
                                     @endforelse
                                 </div>
 
-                                @unless ($readonly)
+                                @unless ($row['readonly'])
                                     <div class="flex items-center gap-1.5">
-                                        @if ($addable->isNotEmpty())
+                                        @if ($row['addable']->isNotEmpty())
                                             <flux:select
                                                 size="sm"
                                                 class="max-w-32"
@@ -354,7 +350,7 @@
                                                 wire:change="addMemberRole({{ $member->id }}, $event.target.value)"
                                                 data-test="add-member-role-{{ $member->id }}"
                                             >
-                                                @foreach ($addable as $assignable)
+                                                @foreach ($row['addable'] as $assignable)
                                                     <flux:select.option
                                                         value="{{ $assignable->name }}">{{ $this->roleLabel($assignable->name) }}</flux:select.option>
                                                 @endforeach

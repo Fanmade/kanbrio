@@ -8,7 +8,7 @@
 --}}
 @php
     $shortName = $task->project->short_name;
-    $ancestors = $task->ancestors->sortBy($task->getDepthName())->values();
+    $ancestors = $task->orderedAncestors();
 @endphp
 
 <div class="flex min-w-0 flex-wrap items-center gap-x-1 gap-y-0.5">

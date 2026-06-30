@@ -193,6 +193,36 @@ class TaskView extends Component
     }
 
     /**
+     * Whether the viewer may edit this task. Read everywhere it gates the inline
+     * editor, the controls, attachments and the subtask actions — including the
+     * parent partial — instead of re-running the `update` policy check per site.
+     */
+    #[Computed]
+    public function canUpdate(): bool
+    {
+        return Auth::user()?->can('update', $this->task) ?? false;
+    }
+
+    /**
+     * Whether the viewer may change the task's status from the status control:
+     * the `updateStatus` policy check, and the task is not already canceled.
+     */
+    #[Computed]
+    public function canUpdateStatus(): bool
+    {
+        return ! $this->task->isCanceled() && (Auth::user()?->can('updateStatus', $this->task) ?? false);
+    }
+
+    /**
+     * Whether the viewer may see the task's activity log.
+     */
+    #[Computed]
+    public function canViewActivityLog(): bool
+    {
+        return Auth::user()?->can('view-activity-log', $this->task->project) ?? false;
+    }
+
+    /**
      * Refresh the subtask list and depth gate after a subtask is created through
      * the shared creation dialog.
      */

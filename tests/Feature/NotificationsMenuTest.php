@@ -63,6 +63,18 @@ it('marks all notifications as read', function () {
     expect($this->watcher->unreadNotifications()->count())->toBe(0);
 });
 
+it('clears the cached unread count when marking all read', function () {
+    // Warm the count cache so a stale value would survive the bulk update — which
+    // fires no model events, so markAllRead must bust the cache itself.
+    expect($this->watcher->unreadNotificationCount())->toBe(1);
+
+    Livewire::actingAs($this->watcher)
+        ->test(NotificationsMenu::class)
+        ->call('markAllRead');
+
+    expect($this->watcher->unreadNotificationCount())->toBe(0);
+});
+
 it('opens a notification, marks it read and redirects to the item', function () {
     $notification = $this->watcher->notifications()->first();
 

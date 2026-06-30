@@ -5,16 +5,9 @@
     'showArchived' => false,
 ])
 
-@php
-    // Direct children only, derived from the already eager-loaded descendants to
-    // avoid an N+1 query per card. Archived subtasks follow the overview's
-    // "Show archived" toggle; deeper levels are reached by drilling into a subtask.
-    $subtasks = $task->descendants
-        ->where('parent_id', $task->id)
-        ->when(! $showArchived, static fn ($children) => $children->reject(static fn ($child) => $child->isArchived()))
-        ->sortBy('task_number')
-        ->values();
-@endphp
+{{-- Direct children (from the eager-loaded descendants, so no per-card query),
+     honouring the overview's "Show archived" toggle. --}}
+@php($subtasks = $task->loadedChildren(includeArchived: $showArchived))
 
 <flux:card
     class="flex flex-col gap-3"

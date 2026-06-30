@@ -8,7 +8,7 @@
                 {{ $shortName }}
             </a>
             {{-- The task's place in the tree: each open ancestor, root first. --}}
-            @foreach ($this->task->ancestors->sortBy($this->task->getDepthName()) as $ancestor)
+            @foreach ($this->task->orderedAncestors() as $ancestor)
                 <span class="text-zinc-300">/</span>
                 <a
                     href="{{ route('task.show', ['short_name' => $shortName, 'task_number' => $ancestor->task_number]) }}"
@@ -52,8 +52,6 @@
         </div>
     @endif
 
-    @php($canUpdate = auth()->user()->can('update', $this->task))
-
     @if ($this->task->isCanceled())
         <div
             class="flex items-start justify-between gap-3 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm dark:border-red-400/20 dark:bg-red-400/10"
@@ -75,7 +73,7 @@
                     <flux:text size="sm" class="text-zinc-600 dark:text-zinc-300">{{ $this->task->cancel_message }}</flux:text>
                 @endif
             </div>
-            @if ($canUpdate)
+            @if ($this->canUpdate)
                 <flux:button size="xs" variant="ghost" icon="arrow-uturn-left" wire:click="reopenTask" data-test="reopen-task">
                     {{ __('Reopen') }}
                 </flux:button>
@@ -100,7 +98,7 @@
             <div class="flex min-w-0 flex-1 flex-col gap-6">
                 <div class="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
                     <flux:heading size="xl" class="min-w-0">{{ $this->task->title }}</flux:heading>
-                    @can('update', $this->task)
+                    @if ($this->canUpdate)
                         <div class="flex shrink-0 items-center gap-2">
                             @unless ($this->task->isCanceled())
                                 <flux:dropdown align="end">
@@ -112,14 +110,14 @@
                             @endunless
                             <flux:button size="sm" icon="pencil-square" variant="ghost" wire:click="edit" data-test="edit-task">{{ __('Edit') }}</flux:button>
                         </div>
-                    @endcan
+                    @endif
                 </div>
 
                 <div class="flex flex-wrap items-center gap-1">
                     <x-due-date-badge :date="$this->task->due_date" />
                 </div>
 
-                <x-attachments.dropzone :enabled="$canUpdate">
+                <x-attachments.dropzone :enabled="$this->canUpdate">
                     <flux:card>
                         @if ($this->task->description)
                             <x-expandable-description :content="$this->task->description" :short-name="$this->task->project->short_name" />
@@ -134,13 +132,13 @@
                 {{-- Subtasks: the direct children, with a progress rollup over the whole
                      subtree. Hidden entirely when there is nothing to show and nothing can
                      be added (e.g. a task at the maximum nesting depth). --}}
-                @if ($this->task->children->isNotEmpty() || ($canUpdate && $this->canAddSubtask))
+                @if ($this->task->children->isNotEmpty() || ($this->canUpdate && $this->canAddSubtask))
                     <div>
                         <div class="mb-2 flex items-center justify-between gap-2">
                             <flux:heading size="sm">{{ __('Subtasks') }}</flux:heading>
                             <div class="flex items-center gap-3">
                                 <x-task-progress :progress="$this->task->progress()" />
-                                @if ($canUpdate && $this->canAddSubtask)
+                                @if ($this->canUpdate && $this->canAddSubtask)
                                     <flux:button size="sm" icon="plus" wire:click="$dispatch('open-create-task', { projectId: {{ $this->task->project_id }}, parentId: {{ $this->task->id }} })" data-test="new-subtask">{{ __('New subtask') }}</flux:button>
                                 @endif
                             </div>
@@ -158,7 +156,7 @@
 
                 <livewire:comments.comment-list :commentable="$this->task" :wire:key="'comments-task-'.$this->task->id" />
 
-                @can('view-activity-log', $this->task->project)
+                @if ($this->canViewActivityLog)
                     {{-- A "?log=N" deep link to a specific entry renders the feed eagerly:
                          a lazy feed below the fold never scrolls into view (the target
                          row doesn't exist yet), so it would never hydrate to reveal it. --}}
@@ -168,7 +166,7 @@
                         :focus="(int) request('log') ?: null"
                         :wire:key="'activity-task-'.$this->task->id"
                     />
-                @endcan
+                @endif
             </div>
 
             {{-- Metadata rail --}}
@@ -190,7 +188,7 @@
 
                         <x-status-control
                             :status="$this->task->status"
-                            :can-edit="auth()->user()->can('updateStatus', $this->task) && ! $this->task->isCanceled()"
+                            :can-edit="$this->canUpdateStatus"
                         />
 
                         @if ($this->nextStatus)
@@ -208,7 +206,7 @@
                     </x-rail-row>
 
                     <x-rail-row :label="__('Priority')">
-                        <x-priority-control :priority="$this->task->priority" :can-edit="$canUpdate" />
+                        <x-priority-control :priority="$this->task->priority" :can-edit="$this->canUpdate" />
                     </x-rail-row>
 
                     @if ($this->taskTypes->isNotEmpty() || $this->task->taskType)
@@ -216,13 +214,13 @@
                             <x-task-type-control
                                 :type="$this->task->taskType"
                                 :types="$this->taskTypes"
-                                :can-edit="$canUpdate"
+                                :can-edit="$this->canUpdate"
                             />
                         </x-rail-row>
                     @endif
 
                     <x-rail-row :label="__('Assignees')">
-                        @if ($canUpdate && ! $this->task->assignees->contains('id', auth()->id()))
+                        @if ($this->canUpdate && ! $this->task->assignees->contains('id', auth()->id()))
                             <flux:tooltip :content="__('Assign to me')">
                                 <flux:button
                                     size="xs"
@@ -239,7 +237,7 @@
                             :members="$this->members"
                             :selected="$this->task->assignees"
                             model="assigneeIds"
-                            :can-edit="$canUpdate"
+                            :can-edit="$this->canUpdate"
                         />
                     </x-rail-row>
 

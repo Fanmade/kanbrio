@@ -155,21 +155,19 @@
 
             <div class="flex max-h-96 flex-col gap-2 overflow-y-auto" data-test="manage-projects-list">
                 @foreach ($this->manageableProjects as $project)
-                    @php($heldNames = collect($this->managedUserRoles[$project->id] ?? []))
-                    @php($addable = collect(\App\Livewire\Admin\UserManagement::ASSIGNABLE_ROLES)->reject(fn ($role) => $heldNames->contains($role)))
+                    @php($row = $this->projectRow($project))
                     <div class="flex items-start justify-between gap-3" wire:key="mp-{{ $project->id }}" data-test="manage-project-row-{{ $project->id }}">
                         <flux:text class="min-w-0 truncate pt-1">{{ $project->title }} <span class="text-zinc-400">{{ $project->short_name }}</span></flux:text>
 
-                        @if ($heldNames->isEmpty())
+                        @if ($row['heldNames']->isEmpty())
                             <flux:button type="button" size="xs" variant="ghost" icon="plus" wire:click="addUserToProject({{ $project->id }})" data-test="mp-add-{{ $project->id }}">{{ __('Add') }}</flux:button>
                         @else
-                            @php($readonly = $heldNames->contains('owner'))
                             <div class="flex flex-col items-end gap-1.5">
                                 <div class="flex flex-wrap justify-end gap-1" data-test="mp-roles-{{ $project->id }}">
-                                    @foreach ($heldNames as $name)
+                                    @foreach ($row['heldNames'] as $name)
                                         <flux:badge size="sm" data-test="mp-role-{{ $project->id }}-{{ $name }}">
                                             {{ \Illuminate\Support\Str::headline($name) }}
-                                            @unless ($readonly)
+                                            @unless ($row['readonly'])
                                                 <flux:badge.close
                                                     wire:click="removeUserProjectRole({{ $project->id }}, '{{ $name }}')"
                                                     :aria-label="__('Remove role')"
@@ -180,9 +178,9 @@
                                     @endforeach
                                 </div>
 
-                                @unless ($readonly)
+                                @unless ($row['readonly'])
                                     <div class="flex items-center gap-1.5">
-                                        @if ($addable->isNotEmpty())
+                                        @if ($row['addable']->isNotEmpty())
                                             <flux:select
                                                 size="sm"
                                                 class="max-w-28"
@@ -190,7 +188,7 @@
                                                 wire:change="addUserProjectRole({{ $project->id }}, $event.target.value)"
                                                 data-test="mp-add-role-{{ $project->id }}"
                                             >
-                                                @foreach ($addable as $role)
+                                                @foreach ($row['addable'] as $role)
                                                     <flux:select.option value="{{ $role }}">{{ \Illuminate\Support\Str::headline($role) }}</flux:select.option>
                                                 @endforeach
                                             </flux:select>

@@ -4,7 +4,9 @@ namespace App\Concerns;
 
 use App\Models\Task;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Collection as SupportCollection;
 use InvalidArgumentException;
+use Staudenmeir\LaravelAdjacencyList\Eloquent\Collection;
 use Staudenmeir\LaravelAdjacencyList\Eloquent\HasRecursiveRelationships;
 
 /**
@@ -26,10 +28,41 @@ trait Nestable
     public static function bootNestable(): void
     {
         static::saving(static function (Task $task): void {
-            if ($task->isDirty('parent_id') && $task->parent_id !== null) {
+            if ($task->parent_id !== null && $task->isDirty('parent_id')) {
                 $task->assertValidParent();
             }
         });
+    }
+
+    /**
+     * The task's ancestors ordered from the root down to the immediate parent.
+     * Reads the loaded `ancestors` relation, sorted by the depth the
+     * adjacency-list package records under {@see getDepthName()} — the single
+     * source of the breadcrumb ordering rendered by both the task header and the
+     * {@see \resources\views\components\task-breadcrumb.blade.php} component.
+     *
+     * @return SupportCollection<int, static>
+     */
+    public function orderedAncestors(): SupportCollection
+    {
+        return $this->ancestors->sortBy($this->getDepthName())->values();
+    }
+
+    /**
+     * This task's direct children, derived from the already-loaded `descendants`
+     *  relation, so rendering a card does not trigger a `children` query per task.
+     * Optionally drops archived children; ordered by task number.
+     *
+     * @return SupportCollection<int, static>
+     */
+    public function loadedChildren(bool $includeArchived = true): SupportCollection
+    {
+        return $this->descendants
+            ->where('parent_id', $this->getKey())
+            ->when(! $includeArchived, static fn (Collection $children): Collection => $children
+                ->reject(static fn (Task $child): bool => $child->isArchived()))
+            ->sortBy('task_number')
+            ->values();
     }
 
     /**

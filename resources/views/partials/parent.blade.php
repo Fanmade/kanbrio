@@ -14,10 +14,10 @@
             <flux:text size="sm" class="text-zinc-400">{{ __('Top-level task') }}</flux:text>
         @endif
 
-        @can('update', $this->task)
+        @if ($this->canUpdate)
             <flux:button size="xs" variant="ghost" wire:click="startMoveParent" data-test="move-task">
                 {{ __('Move') }}
             </flux:button>
-        @endcan
+        @endif
     </div>
 </x-rail-row>

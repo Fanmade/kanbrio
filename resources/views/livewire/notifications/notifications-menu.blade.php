@@ -26,19 +26,7 @@
 
             @forelse ($this->notifications as $notification)
                 @php($data = $notification->data)
-                @php($label = match ($data['action'] ?? '') {
-                    'created' => __('created'),
-                    'status_changed' => __('changed the status of'),
-                    'priority_changed' => __('changed the priority of'),
-                    'type_changed' => __('changed the type of'),
-                    'assignee_changed' => __('updated the assignees of'),
-                    'tags_changed' => __('updated the tags of'),
-                    'parent_changed' => __('moved'),
-                    'commented' => __('commented on'),
-                    'comment_deleted' => __('deleted a comment on'),
-                    'mentioned' => __('mentioned you in'),
-                    default => __('updated'),
-                })
+                @php($label = $this->actionLabel($data['action'] ?? ''))
                 <flux:menu.item wire:click="open('{{ $notification->id }}')" class="!h-auto">
                     <div class="flex items-start gap-2 py-0.5 {{ $notification->read_at ? 'opacity-60' : '' }}">
                         <span class="mt-1.5 size-2 shrink-0 rounded-full {{ $notification->read_at ? 'bg-transparent' : 'bg-red-500' }}"></span>

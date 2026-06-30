@@ -21,6 +21,10 @@ use Livewire\Attributes\Title;
 use Livewire\Attributes\Url;
 use Livewire\Component;
 
+/**
+ * @property-read User|null $managedUser
+ * @property-read array<int, list<string>> $managedUserRoles
+ */
 #[Title('User administration')]
 class UserManagement extends Component
 {
@@ -301,11 +305,7 @@ class UserManagement extends Component
     #[Computed]
     public function managedUserRoles(): array
     {
-        if ($this->managingProjectsId === null) {
-            return [];
-        }
-
-        $user = User::find($this->managingProjectsId);
+        $user = $this->managedUser;
 
         if ($user === null) {
             return [];
@@ -318,6 +318,26 @@ class UserManagement extends Component
         }
 
         return $roles;
+    }
+
+    /**
+     * The per-row data for a project in the manage-projects modal: the role names
+     * the managed user already holds there, the assignable seeded roles still
+     * available to grant, and whether the row is read-only (they own the project).
+     *
+     * @return array{heldNames: \Illuminate\Support\Collection<int, string>, addable: \Illuminate\Support\Collection<int, string>, readonly: bool}
+     */
+    public function projectRow(Project $project): array
+    {
+        $heldNames = collect($this->managedUserRoles[$project->id] ?? []);
+
+        return [
+            'heldNames' => $heldNames,
+            'addable' => collect(self::ASSIGNABLE_ROLES)
+                ->reject(static fn (string $role): bool => $heldNames->contains($role))
+                ->values(),
+            'readonly' => $heldNames->contains('owner'),
+        ];
     }
 
     /**
