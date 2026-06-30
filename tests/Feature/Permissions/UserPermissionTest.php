@@ -3,7 +3,6 @@
 use App\Enums\Permission;
 use App\Models\Project;
 use App\Models\User;
-use App\Models\UserPermission;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Gate;
 
@@ -18,13 +17,6 @@ it('backs each permission with its gate name and exposes a label', function () {
     }
 });
 
-it('does not mass-assign user_id on a permission grant', function () {
-    $grant = new UserPermission(['user_id' => 999, 'permission' => Permission::ManageUsers]);
-
-    expect($grant->user_id)->toBeNull()
-        ->and($grant->permission)->toBe(Permission::ManageUsers);
-});
-
 it('denies a permission the user has not been granted', function () {
     $user = User::factory()->create();
 
@@ -36,11 +28,8 @@ it('grants a permission after it is synced and persists it', function () {
 
     $user->syncPermissions([Permission::CreateProjects]);
 
-    expect($user->hasPermission(Permission::CreateProjects))->toBeTrue();
-    $this->assertDatabaseHas('user_permissions', [
-        'user_id' => $user->id,
-        'permission' => 'create-projects',
-    ]);
+    // Re-fetch to prove the grant persisted to the package, not just in memory.
+    expect($user->fresh()->hasPermission(Permission::CreateProjects))->toBeTrue();
 });
 
 it('revokes permissions that are not part of the synced set', function () {
@@ -50,10 +39,6 @@ it('revokes permissions that are not part of the synced set', function () {
 
     expect($user->hasPermission(Permission::InviteUsers))->toBeTrue()
         ->and($user->hasPermission(Permission::CreateProjects))->toBeFalse();
-    $this->assertDatabaseMissing('user_permissions', [
-        'user_id' => $user->id,
-        'permission' => 'create-projects',
-    ]);
 });
 
 it('is idempotent and never duplicates a grant', function () {
@@ -62,7 +47,7 @@ it('is idempotent and never duplicates a grant', function () {
     $user->syncPermissions([Permission::CreateProjects]);
     $user->syncPermissions([Permission::CreateProjects]);
 
-    expect($user->permissions()->where('permission', 'create-projects')->count())->toBe(1);
+    expect($user->roles()->where('name', 'create-projects')->count())->toBe(1);
 });
 
 it('accepts string values as well as enum instances', function () {
@@ -95,13 +80,4 @@ it('gates project creation behind the granted permission', function () {
 
     expect($allowed->can('create', Project::class))->toBeTrue()
         ->and($denied->can('create', Project::class))->toBeFalse();
-});
-
-it('casts the stored permission column back to the enum', function () {
-    $user = User::factory()->canInviteUsers()->create();
-
-    $grant = $user->permissions()->sole();
-
-    expect($grant)->toBeInstanceOf(UserPermission::class)
-        ->and($grant->permission)->toBe(Permission::InviteUsers);
 });

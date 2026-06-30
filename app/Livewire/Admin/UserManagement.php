@@ -4,6 +4,7 @@ namespace App\Livewire\Admin;
 
 use App\Actions\AddProjectMember;
 use App\Actions\RemoveProjectMember;
+use App\Authorization\AccountPermissionProvisioner;
 use App\Authorization\ProjectRoleProvisioner;
 use App\Enums\Permission;
 use App\Mail\InvitationMail;
@@ -74,7 +75,7 @@ class UserManagement extends Component
     public function users(): Collection
     {
         return User::query()
-            ->with(['permissions', 'pendingInvitations'])
+            ->with(['pendingInvitations'])
             ->when($this->search !== '', function ($query): void {
                 $term = '%'.$this->search.'%';
                 $query->where(static function ($query) use ($term): void {
@@ -123,16 +124,13 @@ class UserManagement extends Component
             return;
         }
 
-        $values = $user->permissions
-            ->map(static fn ($userPermission): Permission => $userPermission->permission)
-            ->reject(static fn (Permission $existing): bool => $granted && $existing === $case)
-            ->all();
+        $provisioner = app(AccountPermissionProvisioner::class);
 
-        if (! $granted) {
-            $values[] = $case;
+        if ($granted) {
+            $provisioner->revoke($user, $case);
+        } else {
+            $provisioner->grant($user, $case);
         }
-
-        $user->syncPermissions($values);
 
         unset($this->users);
 

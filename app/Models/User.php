@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Authorization\AccountPermissionProvisioner;
 use App\Enums\Permission;
 use Database\Factories\UserFactory;
 use Fanmade\DelegatedPermissions\Concerns\HasRoles;
@@ -9,7 +10,6 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -43,7 +43,6 @@ use Laravel\Sanctum\HasApiTokens;
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property array<string, mixed>|null $preferences
- * @property-read Collection<int, UserPermission> $permissions
  */
 #[Fillable(['name', 'email', 'password'])]
 #[Hidden(['password', 'two_factor_secret', 'two_factor_recovery_codes', 'remember_token'])]
@@ -194,16 +193,6 @@ class User extends Authenticatable implements PasskeyUser
     }
 
     /**
-     * The permissions granted to this user.
-     *
-     * @return HasMany<UserPermission, $this>
-     */
-    public function permissions(): HasMany
-    {
-        return $this->hasMany(UserPermission::class);
-    }
-
-    /**
      * The invitations this user has sent.
      *
      * @return HasMany<Invitation, $this>
@@ -227,20 +216,15 @@ class User extends Authenticatable implements PasskeyUser
     }
 
     /**
-     * Determine whether the user has been granted the given permission.
+     * Determine whether the user has been granted the given account permission.
+     *
+     * Account permissions resolve entirely from the package's global scope: the
+     * user holds the permission's global role (or the system role, which holds
+     * every permission as break-glass). See {@see AccountPermissionProvisioner}.
      */
     public function hasPermission(Permission $permission): bool
     {
-        // Account permissions live in the package's global catalog (KAN-242), so
-        // the system role grants them as a unified break-glass. Direct per-user
-        // grants are still stored in `user_permissions`.
-        if ($this->hasScopedPermission($permission->value)) {
-            return true;
-        }
-
-        return $this->permissions->contains(
-            static fn (UserPermission $userPermission): bool => $userPermission->permission === $permission
-        );
+        return $this->hasScopedPermission($permission->value);
     }
 
     /**
@@ -255,7 +239,8 @@ class User extends Authenticatable implements PasskeyUser
     }
 
     /**
-     * Replace the user's granted permissions with the given set.
+     * Replace the user's account permissions with the given set, assigning the
+     * matching global roles on the package and removing the rest.
      *
      * @param  array<int, Permission|string>  $values
      */
@@ -263,24 +248,15 @@ class User extends Authenticatable implements PasskeyUser
     {
         $permissions = collect($values)
             ->map(static fn (Permission|string $value): Permission => $value instanceof Permission ? $value : Permission::from($value))
-            ->unique(static fn (Permission $permission): string => $permission->value);
+            ->all();
 
-        $keys = $permissions->map(static fn (Permission $permission): string => $permission->value)->all();
-
-        $this->permissions()->whereNotIn('permission', $keys)->delete();
-
-        $existing = $this->permissions()->pluck('permission')
-            ->map(static fn (Permission|string $permission): string => $permission instanceof Permission ? $permission->value : $permission);
-
-        $permissions
-            ->reject(static fn (Permission $permission): bool => $existing->contains($permission->value))
-            ->each(fn (Permission $permission) => $this->permissions()->create(['permission' => $permission]));
-
-        $this->unsetRelation('permissions');
+        app(AccountPermissionProvisioner::class)->sync($this, $permissions);
     }
 
     /**
-     * Scope a query to users that have been granted the given permission.
+     * Scope a query to users that hold the given account permission's global
+     * role. (System-role break-glass holders are not matched here — this targets
+     * an explicit grant.)
      *
      * @param  Builder<User>  $query
      * @return Builder<User>
@@ -288,10 +264,9 @@ class User extends Authenticatable implements PasskeyUser
     #[Scope]
     protected function wherePermission(Builder $query, Permission $permission): Builder
     {
-        return $query->whereHas(
-            'permissions',
-            static fn (Builder $relation): Builder => $relation->where('permission', $permission->value)
-        );
+        $role = app(AccountPermissionProvisioner::class)->provision()[$permission->value];
+
+        return $query->whereHas('roles', static fn (Builder $relation): Builder => $relation->whereKey($role->getKey()));
     }
 
     /**

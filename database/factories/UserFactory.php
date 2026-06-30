@@ -2,6 +2,7 @@
 
 namespace Database\Factories;
 
+use App\Authorization\AccountPermissionProvisioner;
 use App\Enums\Permission;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
@@ -93,8 +94,10 @@ class UserFactory extends Factory
     public function withPermission(Permission ...$permissions): static
     {
         return $this->afterCreating(function (User $user) use ($permissions): void {
+            $provisioner = app(AccountPermissionProvisioner::class);
+
             foreach ($permissions as $permission) {
-                $user->permissions()->firstOrCreate(['permission' => $permission]);
+                $provisioner->grant($user, $permission);
             }
         });
     }

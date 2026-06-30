@@ -18,7 +18,7 @@ it('grants every account permission to a system-role holder as break-glass', fun
     }
 });
 
-it('still honours explicit per-user grants from user_permissions', function () {
+it('honours an explicit per-user account-permission grant', function () {
     $user = User::factory()->canManageUsers()->create();
 
     expect($user->hasPermission(Permission::ManageUsers))->toBeTrue()
