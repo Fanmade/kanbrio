@@ -4,7 +4,9 @@ use App\Authorization\Exceptions\OwnerAlreadyAssigned;
 use App\Authorization\ProjectRoleProvisioner;
 use App\Models\Project;
 use App\Models\User;
+use Fanmade\DelegatedPermissions\Exceptions\OutOfBoundsGrant;
 use Fanmade\DelegatedPermissions\Exceptions\RoleLimitExceeded;
+use Fanmade\DelegatedPermissions\RoleManager;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 
@@ -116,3 +118,14 @@ it('rejects an assignment that exceeds the configured per-scope cap', function (
 
     provisioner()->addRole($project, $user, 'admin');
 })->throws(RoleLimitExceeded::class);
+
+it('rejects a grant that exceeds the parent role bounds at the engine level', function () {
+    // The app UI pre-filters out-of-bounds permissions, but the delegation engine
+    // must also hard-reject them so a package regression can't silently widen a
+    // child role's grants. `member` lacks `manage-settings` (admin+ only), so
+    // granting it to a child of `member` must throw.
+    $project = Project::factory()->create();
+    $memberRole = provisioner()->roleFor($project, 'member');
+
+    app(RoleManager::class)->createRole('Overreach', $memberRole, ['manage-settings'], $project);
+})->throws(OutOfBoundsGrant::class);
