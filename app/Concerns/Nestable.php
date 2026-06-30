@@ -39,7 +39,7 @@ trait Nestable
      * Reads the loaded `ancestors` relation, sorted by the depth the
      * adjacency-list package records under {@see getDepthName()} — the single
      * source of the breadcrumb ordering rendered by both the task header and the
-     * {@see \resources\views\components\task-breadcrumb.blade.php} component.
+     * `resources/views/components/task-breadcrumb.blade.php` component.
      *
      * @return SupportCollection<int, static>
      */

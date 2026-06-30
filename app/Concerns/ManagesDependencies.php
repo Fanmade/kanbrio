@@ -67,6 +67,7 @@ trait ManagesDependencies
         $groups = [];
 
         foreach (RelationshipType::keywords() as $keyword) {
+            /** @var BaseCollection<int, array{link: Dependency, related: Task, keyword: string}>|null $group */
             $group = $byKeyword->get($keyword);
             $resolved = RelationshipType::fromKeyword($keyword);
 

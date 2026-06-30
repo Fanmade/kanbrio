@@ -4,6 +4,9 @@
     'canEdit' => false,
     'size' => 'sm',
 ])
+@php
+/** @var \App\Enums\Status $status */
+@endphp
 
 @if ($canEdit)
     <x-badge-dropdown :model="$model" test="status-control">
