@@ -1,6 +1,5 @@
 <?php
 
-use App\Authorization\ProjectRoleProvisioner;
 use App\Livewire\Projects\ProjectShow;
 use App\Models\Project;
 use App\Models\User;
@@ -25,18 +24,6 @@ function ownerMemberProject(): array
         ->create(['short_name' => 'ABC']);
 
     return [$owner, $member, $project];
-}
-
-/**
- * Add a user to the project with the given package role.
- */
-function memberWithRole(Project $project, string $role): User
-{
-    $user = User::factory()->create();
-    $project->members()->attach($user);
-    app(ProjectRoleProvisioner::class)->syncMember($project, $user, $role);
-
-    return $user;
 }
 
 function showAs(User $user, Project $project): Testable
@@ -82,7 +69,7 @@ it('keeps the membership when a member still holds another role', function () {
 
 it('forbids an admin or member from changing roles', function () {
     [$owner, $member, $project] = ownerMemberProject();
-    $admin = memberWithRole($project, 'admin');
+    $admin = userWithRole($project, 'admin');
 
     showAs($admin, $project)
         ->call('addMemberRole', $member->id, 'admin')
@@ -160,7 +147,7 @@ it('offers only matching non-members in the add picker', function () {
 
 it('shows the manage-members control only to the owner', function () {
     [$owner, $member, $project] = ownerMemberProject();
-    $admin = memberWithRole($project, 'admin');
+    $admin = userWithRole($project, 'admin');
 
     showAs($owner, $project)->assertSee('manage-members', false);
     showAs($admin, $project)->assertDontSee('manage-members', false);

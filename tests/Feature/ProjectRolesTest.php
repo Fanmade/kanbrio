@@ -1,29 +1,16 @@
 <?php
 
-use App\Authorization\ProjectRoleProvisioner;
 use App\Models\Project;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
 
-/**
- * Add a user to the project with the given package role.
- */
-function projectMember(Project $project, string $role): User
-{
-    $user = User::factory()->create();
-    $project->members()->attach($user);
-    app(ProjectRoleProvisioner::class)->syncMember($project, $user, $role);
-
-    return $user;
-}
-
 it('ranks roles by privilege through the permissions they hold', function () {
     $project = Project::factory()->create();
-    $owner = projectMember($project, 'owner');
-    $admin = projectMember($project, 'admin');
-    $member = projectMember($project, 'member');
+    $owner = userWithRole($project, 'owner');
+    $admin = userWithRole($project, 'admin');
+    $member = userWithRole($project, 'member');
 
     // Owner outranks admin outranks member: each higher role holds a strict
     // superset of the permissions below it.
@@ -36,9 +23,9 @@ it('ranks roles by privilege through the permissions they hold', function () {
 
 it('reports each member\'s role name, and null for a stranger', function () {
     $project = Project::factory()->create();
-    $owner = projectMember($project, 'owner');
-    $admin = projectMember($project, 'admin');
-    $member = projectMember($project, 'member');
+    $owner = userWithRole($project, 'owner');
+    $admin = userWithRole($project, 'admin');
+    $member = userWithRole($project, 'member');
     $stranger = User::factory()->create();
 
     expect($project->roleNameFor($owner))->toBe('owner')
@@ -49,8 +36,8 @@ it('reports each member\'s role name, and null for a stranger', function () {
 
 it('treats only the owner as owner', function () {
     $project = Project::factory()->create();
-    $owner = projectMember($project, 'owner');
-    $admin = projectMember($project, 'admin');
+    $owner = userWithRole($project, 'owner');
+    $admin = userWithRole($project, 'admin');
 
     expect($project->isOwner($owner))->toBeTrue()
         ->and($project->isOwner($admin))->toBeFalse();
